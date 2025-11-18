@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, PlayCircle, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Send, Loader2, PlayCircle } from 'lucide-react';
 import { INITIAL_PROMPTS } from '../constants';
 
 interface ChatInterfaceProps {

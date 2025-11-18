@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    X, Shield, AlertOctagon, Activity, FileText, ArrowRight, 
-    CheckCircle2, Split, Target, FileCheck, BarChart3, Layers, Map, BookOpen,
+    X, Shield, AlertOctagon, Activity, ArrowRight, 
+    CheckCircle2, Split, Target, BarChart3, Map,
     ChevronDown, ChevronUp
 } from 'lucide-react';
 import { ProcessStep, SopResponse } from '../types';
