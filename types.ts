@@ -94,4 +94,4 @@ export interface HistoryItem {
 export type LayoutType = 'SWIMLANE' | 'TREE' | 'HORIZONTAL';
 
 // Navigation types
-export type View = 'HOME' | 'CANVAS' | 'HISTORY';
+export type View = 'HOME' | 'CANVAS' | 'HISTORY' | 'SOPS';
