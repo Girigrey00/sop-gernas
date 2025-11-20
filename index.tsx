@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import 'reactflow/dist/style.css'; // Import ReactFlow styles locally
+import './index.css'; // Import Tailwind and custom styles
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
