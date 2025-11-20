@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { 
     X, Shield, AlertOctagon, Activity, ArrowRight, 
     CheckCircle2, Split, Target, BarChart3, Map,
-    ChevronDown, ChevronUp
+    ChevronDown, ChevronUp, Book, ScrollText
 } from 'lucide-react';
 import { ProcessStep, SopResponse } from '../types';
 
@@ -19,11 +19,13 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
   // State for collapsible sections
   const [isControlsOpen, setIsControlsOpen] = useState(true);
   const [isRisksOpen, setIsRisksOpen] = useState(true);
+  const [isPoliciesOpen, setIsPoliciesOpen] = useState(true);
 
   // Reset expanded state when the step changes
   useEffect(() => {
     setIsControlsOpen(true);
     setIsRisksOpen(true);
+    setIsPoliciesOpen(true);
   }, [step?.stepId]);
 
   // View: Process Overview (When no step selected)
@@ -45,21 +47,25 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 mb-3">
                         <Target size={14} /> Process Objectives
                     </h3>
-                    <div className="space-y-3">
-                        {processData.processObjectives.map(obj => (
-                            <div key={obj.id} className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-lg">
-                                <p className="text-sm text-slate-700 font-medium">{obj.description}</p>
-                            </div>
-                        ))}
-                    </div>
+                    {processData.processObjectives && processData.processObjectives.length > 0 ? (
+                        <div className="space-y-3">
+                            {processData.processObjectives.map(obj => (
+                                <div key={obj.id} className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-lg">
+                                    <p className="text-sm text-slate-700 font-medium">{obj.description}</p>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-slate-400 italic">No specific objectives defined for this process.</p>
+                    )}
                 </section>
 
                 {/* Metrics */}
-                {processData.metricsAndMeasures && (
-                    <section>
-                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 mb-3">
-                            <BarChart3 size={14} /> Key Metrics
-                        </h3>
+                <section>
+                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 mb-3">
+                        <BarChart3 size={14} /> Key Metrics
+                    </h3>
+                    {processData.metricsAndMeasures && processData.metricsAndMeasures.length > 0 ? (
                         <div className="grid grid-cols-2 gap-3">
                             {processData.metricsAndMeasures.slice(0, 4).map((m: any, i: number) => (
                                 <div key={i} className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-center">
@@ -68,8 +74,10 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
                                 </div>
                             ))}
                         </div>
-                    </section>
-                )}
+                    ) : (
+                        <p className="text-sm text-slate-400 italic">No KPIs defined.</p>
+                    )}
+                </section>
 
                 {/* Risks Summary */}
                 <section>
@@ -171,6 +179,35 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
         </div>
 
         <div className="border-t border-slate-100"></div>
+
+        {/* Policies Section (New) */}
+        {step.policies && step.policies.length > 0 && (
+            <div className="border border-slate-200 rounded-xl overflow-hidden">
+                <button 
+                    onClick={() => setIsPoliciesOpen(!isPoliciesOpen)}
+                    className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
+                >
+                    <div className="flex items-center gap-2">
+                        <Book size={16} className="text-slate-500" />
+                        <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Policies & Standards</span>
+                        <span className="px-2 py-0.5 bg-slate-200 text-slate-600 text-[10px] rounded-full font-bold">{step.policies.length}</span>
+                    </div>
+                    {isPoliciesOpen ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+                </button>
+                
+                {isPoliciesOpen && (
+                    <div className="p-4 bg-white border-t border-slate-100 space-y-2">
+                        {step.policies.map((policy, idx) => (
+                            <div key={idx} className="flex items-start gap-2.5">
+                                <ScrollText size={14} className="text-blue-400 mt-0.5 shrink-0" />
+                                <span className="text-sm text-slate-700 font-medium">{policy}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        )}
+
 
         {/* Risk & Control Grid - Collapsible */}
         <div className="grid grid-cols-1 gap-6">

@@ -40,6 +40,7 @@ export interface ProcessStep {
   decisionBranches?: DecisionBranch[];
   risksMitigated?: string[]; // IDs
   controls?: Control[];
+  policies?: string[]; // Added support for policies list
   automationLevel?: string;
   manualEffort?: number;
 }
