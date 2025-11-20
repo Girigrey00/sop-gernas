@@ -152,11 +152,11 @@ const createEdges = (nodes: Node[], data: SopResponse, layoutType: LayoutType): 
             type, 
             markerEnd: { type: MarkerType.ArrowClosed, color },
             style: { stroke: color, strokeWidth: 2, strokeDasharray }, 
-            pathOptions: { borderRadius: 20 } as any,
+            pathOptions: { borderRadius: 20 },
             labelStyle: { fill: color, fontWeight: 700, fontSize: 11 },
             labelBgStyle: { fill: '#ffffff', fillOpacity: 0.85 },
             zIndex: 20,
-        });
+        } as any);
     };
 
     // 1. Start -> First Step

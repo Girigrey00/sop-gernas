@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Compass, PenTool, FileClock, LogOut, Hexagon, ChevronRight } from 'lucide-react';
+import { Compass, FileClock, LogOut, Hexagon, ChevronRight, BookOpen } from 'lucide-react';
 import { View } from '../types';
 
 interface SidebarProps {
@@ -12,15 +12,15 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout }) => {
   
   const navItems = [
-    { id: 'HOME', label: 'SOP Discovery', icon: Compass },
-    { id: 'CANVAS', label: 'Studio Canvas', icon: PenTool },
-    { id: 'HISTORY', label: 'Session Logs', icon: FileClock },
+    { id: 'HOME', label: 'CBG KNOWLEDGE HUB', icon: Compass },
+    { id: 'LIBRARY', label: 'Library', icon: BookOpen },
+    { id: 'HISTORY', label: 'History', icon: FileClock },
   ];
 
   return (
-    <div className="w-64 h-screen bg-[#0b1120] text-slate-400 flex flex-col shadow-2xl border-r border-slate-800/50 relative overflow-hidden">
+    <div className="h-full w-full bg-[#0b1120] text-slate-400 flex flex-col shadow-2xl border-r border-slate-800/50">
       {/* Branding */}
-      <div className="p-6 flex items-center gap-3 border-b border-slate-800/50">
+      <div className="p-6 flex items-center gap-3 border-b border-slate-800/50 flex-shrink-0">
         <div className="w-9 h-9 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-900/50 relative group">
            <Hexagon size={18} className="fill-white/10 text-white" strokeWidth={2.5} />
            <span className="absolute inset-0 bg-blue-500/20 blur-lg rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></span>
@@ -36,8 +36,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout }) 
         <p className="px-3 mb-2 text-[10px] font-bold text-slate-600 uppercase tracking-wider">Navigation</p>
         {navItems.map(item => {
             const Icon = item.icon;
-            // Map SOPS view to HOME for sidebar highlighting if needed, though App handles it
-            const isActive = currentView === item.id || (item.id === 'HOME' && currentView === 'SOPS');
+            // Map CANVAS view to HOME (Hub) for sidebar highlighting if needed, or keep strict
+            const isActive = currentView === item.id || (item.id === 'HOME' && (currentView === 'CANVAS' || currentView === 'SOPS'));
             return (
               <button
                 key={item.id}
@@ -59,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout }) 
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-slate-800/50 bg-slate-900/30">
+      <div className="p-4 border-t border-slate-800/50 bg-slate-900/30 flex-shrink-0">
         <button 
             onClick={onLogout}
             className="w-full flex items-center gap-3 p-2.5 rounded-lg text-rose-400 hover:bg-rose-950/30 hover:text-rose-300 transition-all group"

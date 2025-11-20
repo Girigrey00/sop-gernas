@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import CanvasPage from './pages/CanvasPage';
@@ -18,20 +19,20 @@ import {
     Home,
     Banknote,
     Wallet,
-    PlusCircle,
     Briefcase,
     Building2,
-    Smartphone,
     Coins,
     Gem,
     Percent,
-    BadgeDollarSign
+    BadgeDollarSign,
+    Menu,
+    BookOpen
 } from 'lucide-react';
 
 // --- Constants ---
 // Specific Banking Product List with Unique Icons
 const ALL_SOP_TEMPLATES = [
-    { icon: Banknote, title: "Personal Income Loan", desc: "Standard personal loan onboarding process", category: "Loans" },
+    { icon: Banknote, title: "PERSONAL INCOME LOAN", desc: "Standard personal loan onboarding process", category: "Loans" },
     { icon: Briefcase, title: "PIL CONVENTIONAL", desc: "Conventional personal income loan flow", category: "Loans" },
     { icon: Gem, title: "PIL ISLAMIC", desc: "Sharia-compliant personal finance flow", category: "Islamic" },
     { icon: Car, title: "AUTO LOAN", desc: "Vehicle financing and approval process", category: "Auto" },
@@ -158,11 +159,25 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
     );
 };
 
-// --- Home Page (SOP Discovery) ---
+// --- Library Dummy Page ---
+const LibraryPage = () => {
+    return (
+        <div className="h-full flex flex-col items-center justify-center bg-slate-50/50 p-8">
+            <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 mb-6">
+                <BookOpen size={40} />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-700 mb-2">SOP Library</h2>
+            <p className="text-slate-500 text-sm max-w-md text-center">
+                This module is currently under development. It will contain a comprehensive archive of all organizational standard operating procedures.
+            </p>
+        </div>
+    );
+};
+
+// --- Home Page (CBG Knowledge Hub) ---
 const HomePage = ({ onStart }: { onStart: (prompt: string) => void }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
-    const [customPrompt, setCustomPrompt] = useState('');
 
     const categories = ['All', ...Array.from(new Set(ALL_SOP_TEMPLATES.map(t => t.category)))];
 
@@ -179,33 +194,11 @@ const HomePage = ({ onStart }: { onStart: (prompt: string) => void }) => {
                 
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-900 mb-1">SOP Discovery</h2>
+                        <h2 className="text-2xl font-bold text-slate-900 mb-1">CBG KNOWLEDGE HUB</h2>
                         <p className="text-slate-500 text-sm">Select a product to generate its workflow or search the repository.</p>
                     </div>
                     
                     <div className="flex items-center gap-3 w-full md:w-auto">
-                         {/* Quick Generate Input */}
-                         <div className="relative hidden lg:block w-64">
-                            <input 
-                                type="text" 
-                                placeholder="Generate custom flow..." 
-                                value={customPrompt}
-                                onChange={(e) => setCustomPrompt(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && customPrompt.trim()) {
-                                        onStart(customPrompt);
-                                    }
-                                }}
-                                className="w-full pl-3 pr-10 py-2 bg-slate-100 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm"
-                            />
-                            <button 
-                                onClick={() => customPrompt.trim() && onStart(customPrompt)}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-blue-600 hover:text-blue-800"
-                            >
-                                <PlusCircle size={16} />
-                            </button>
-                        </div>
-
                         {/* Search Bar */}
                         <div className="relative w-full md:w-64">
                             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -300,7 +293,7 @@ const HistoryPage = ({
     <div className="h-full flex flex-col bg-slate-50/50">
       {/* Header */}
       <div className="px-8 py-8 border-b border-slate-200 bg-white">
-        <h2 className="text-2xl font-bold text-slate-900 mb-1">Session History</h2>
+        <h2 className="text-2xl font-bold text-slate-900 mb-1">History</h2>
         <p className="text-slate-500 text-sm">View and manage your previously generated workflows.</p>
       </div>
 
@@ -358,6 +351,7 @@ const HistoryPage = ({
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentView, setCurrentView] = useState<View>('HOME');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedSop, setSelectedSop] = useState<SopResponse | null>(null);
@@ -383,6 +377,7 @@ const App: React.FC = () => {
           setInitialPrompt(prompt);
           setSelectedSop(null); // Clear any selected history
           setCurrentView('CANVAS');
+          setIsSidebarOpen(false);
       }
   };
 
@@ -405,12 +400,13 @@ const App: React.FC = () => {
       setSelectedSop(item.data);
       setInitialPrompt(''); // Clear prompt so it uses data
       setCurrentView('CANVAS');
+      setIsSidebarOpen(false);
   };
 
   const renderContent = () => {
     switch (currentView) {
       case 'HOME':
-        // Home is now the SOP Library
+        // Home is now the CBG Knowledge Hub
         return (
             <HomePage 
                 onStart={handleStart} 
@@ -423,12 +419,15 @@ const App: React.FC = () => {
                 onStart={handleStart} 
             />
         );
+      case 'LIBRARY':
+        return <LibraryPage />;
       case 'CANVAS':
         return (
             <CanvasPage 
                 initialPrompt={initialPrompt} 
                 initialData={selectedSop}
                 onFlowGenerated={handleFlowGenerated}
+                onBack={() => setCurrentView('HOME')}
             />
         );
       case 'HISTORY':
@@ -444,13 +443,34 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
-      <Sidebar 
-        currentView={currentView === 'SOPS' ? 'HOME' : currentView} 
-        onNavigate={setCurrentView} 
-        onLogout={handleLogout}
-      />
-      <main className="flex-1 h-full overflow-hidden relative bg-white">
-        {renderContent()}
+       {/* Mobile Sidebar Toggle */}
+      <div className={`fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)}></div>
+      
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 transform lg:relative lg:translate-x-0 transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <Sidebar 
+            currentView={currentView === 'SOPS' ? 'HOME' : currentView} 
+            onNavigate={(view) => { setCurrentView(view); setIsSidebarOpen(false); }} 
+            onLogout={handleLogout}
+          />
+      </div>
+
+      <main className="flex-1 h-full overflow-hidden relative bg-white flex flex-col">
+        {/* Mobile Header */}
+        <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 bg-white z-30">
+            <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                    <Hexagon size={18} />
+                </div>
+                <span className="font-bold text-slate-900">GERNAS</span>
+            </div>
+            <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                <Menu size={24} />
+            </button>
+        </div>
+        
+        <div className="flex-1 overflow-hidden relative">
+            {renderContent()}
+        </div>
       </main>
     </div>
   );

@@ -7,7 +7,6 @@ import ReactFlow, {
     Node,
     ReactFlowProvider,
     useReactFlow,
-    Edge,
     getRectOfNodes
 } from 'reactflow';
 import { toJpeg } from 'html-to-image';
@@ -20,7 +19,10 @@ import {
     Maximize,
     MessageSquareText,
     FileText,
-    Download
+    Download,
+    ArrowLeft,
+    Users,
+    X
 } from 'lucide-react';
 
 import FlowDetails from '../components/FlowDetails';
@@ -34,9 +36,10 @@ interface CanvasPageProps {
     initialPrompt?: string;
     initialData?: SopResponse | null;
     onFlowGenerated?: (data: SopResponse, prompt: string) => void;
+    onBack: () => void;
 }
 
-const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, onFlowGenerated }) => {
+const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, onFlowGenerated, onBack }) => {
     // Flow State
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -50,6 +53,7 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
     const [activePanel, setActivePanel] = useState<'GUIDE' | 'CHAT'>('GUIDE');
     const [isLoading, setIsLoading] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isLegendOpen, setIsLegendOpen] = useState(false);
 
     const { fitView, setCenter, getNodes } = useReactFlow();
 
@@ -100,7 +104,9 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
         setIsLoading(true);
 
         // SHORTCUT: If the prompt matches our demo content, load it immediately without API calls
-        if (prompt.includes("Personal Income Loan") || prompt.includes("PIL")) {
+        // Fix: Case insensitive check
+        const upperPrompt = prompt.toUpperCase();
+        if (upperPrompt.includes("PERSONAL INCOME LOAN") || upperPrompt.includes("PIL")) {
             console.log("Loading Matching Mock Data for:", prompt);
             loadData(MOCK_SOP_DATA);
             if (onFlowGenerated) onFlowGenerated(MOCK_SOP_DATA, prompt);
@@ -275,26 +281,17 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
     const actorLegend = useMemo(() => {
         if (!sopData) return [];
         const actors = new Set<string>();
-        // Add start/end for completeness
-        if (sopData.startNode) actors.add('Start');
-        sopData.processFlow.stages.forEach(s => s.steps.forEach(st => actors.add(st.actor)));
-        if (sopData.endNode) actors.add('End');
+        // Filter out "Start" and "End" nodes from the legend logic
+        // Only include actual actors from the process steps
+        sopData.processFlow.stages.forEach(s => s.steps.forEach(st => {
+            if (st.actor && st.actor !== 'Start' && st.actor !== 'End') {
+                actors.add(st.actor);
+            }
+        }));
 
         return Array.from(actors).map(actor => {
             const theme = getActorTheme(actor);
-            // Override for Start/End to match special coloring in layoutUtils if desired,
-            // but layoutUtils uses specific logic. Let's match that manually for the legend.
-            let bg = theme.bg;
-            let border = theme.border;
-            let text = theme.text;
-
-            if (actor === 'Start') {
-                 bg = '#dcfce7'; border = '#4ade80'; text = '#14532d';
-            } else if (actor === 'End') {
-                 bg = '#fee2e2'; border = '#f87171'; text = '#7f1d1d';
-            }
-
-            return { label: actor, bg, border, text };
+            return { label: actor, bg: theme.bg, border: theme.border, text: theme.text };
         });
     }, [sopData]);
 
@@ -306,16 +303,27 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-3 w-full max-w-7xl px-4 pointer-events-none">
                 
                 {/* Controls Row */}
-                <div className="flex items-center gap-3 pointer-events-auto">
+                <div className="flex items-center gap-3 pointer-events-auto w-full justify-center relative">
+                    
+                    {/* Back Button */}
+                    <button 
+                        onClick={onBack}
+                        className="absolute left-0 bg-white text-slate-600 hover:bg-slate-100 shadow-md border border-slate-200 rounded-full p-2.5 flex items-center gap-2 text-xs font-bold transition-all"
+                        title="Back to Hub"
+                    >
+                        <ArrowLeft size={16} />
+                        <span className="hidden md:inline">Back to Hub</span>
+                    </button>
+
                     {/* 1. Layout Switcher */}
-                    <div className="bg-white shadow-lg border border-slate-200 rounded-full p-1.5 flex items-center gap-1">
+                    <div className="bg-white shadow-lg border border-slate-200 rounded-full p-1.5 flex items-center gap-1 overflow-x-auto max-w-[200px] md:max-w-none scrollbar-hide">
                         {layoutOptions.map(opt => {
                             const Icon = opt.icon;
                             return (
                                 <button 
                                     key={opt.id}
                                     onClick={() => setLayoutMode(opt.id)}
-                                    className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold transition-all ${
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
                                         layoutMode === opt.id 
                                         ? 'bg-slate-800 text-white shadow-md' 
                                         : 'text-slate-500 hover:bg-slate-100'
@@ -333,7 +341,7 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
                     <button
                         onClick={handleDownload}
                         disabled={isDownloading}
-                        className="bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 border border-blue-500 rounded-full p-2.5 px-4 flex items-center gap-2 text-xs font-bold transition-all disabled:opacity-70"
+                        className="bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 border border-blue-500 rounded-full p-2.5 px-4 flex items-center gap-2 text-xs font-bold transition-all disabled:opacity-70 flex-shrink-0"
                         title="Download as JPG"
                     >
                         {isDownloading ? (
@@ -347,7 +355,7 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
 
                 {/* 3. Stage Navigation Bar */}
                 {sopData && sopData.processFlow && sopData.processFlow.stages && (
-                    <div className="bg-white/90 backdrop-blur shadow-md border border-slate-200 rounded-xl p-1 flex items-center gap-1 overflow-x-auto max-w-full pointer-events-auto no-scrollbar">
+                    <div className="bg-white/90 backdrop-blur shadow-md border border-slate-200 rounded-xl p-1 flex items-center gap-1 overflow-x-auto max-w-full pointer-events-auto no-scrollbar w-auto">
                          <button 
                             onClick={() => setActiveStage('ALL')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
@@ -378,27 +386,50 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
                 )}
             </div>
 
-            {/* Legend Overlay - Moved to Bottom Left (Transparent) */}
-            <div className="absolute bottom-12 left-6 z-10 bg-transparent border-none p-4 w-52 hidden xl:block pointer-events-none">
-                <div className="flex items-center gap-2 mb-3 text-slate-500 pb-2 border-b border-slate-300/50">
-                    <Info size={14} />
-                    <span className="text-xs font-bold uppercase tracking-wider">Responsible Actors</span>
-                </div>
-                <div className="space-y-2">
-                    {actorLegend.map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-3">
-                            <div 
-                                className="w-3 h-3 rounded-full border shadow-sm" 
-                                style={{ backgroundColor: item.bg, borderColor: item.border }}
-                            ></div>
-                            <span 
-                                className="text-[10px] font-bold uppercase truncate text-slate-600"
-                            >
-                                {item.label}
-                            </span>
+            {/* Responsible Actors Legend & Toggle */}
+            <div className="absolute bottom-6 left-6 z-30 flex flex-col items-start gap-2">
+                {/* Legend Card */}
+                {isLegendOpen && (
+                    <div className="bg-white/90 backdrop-blur-md border border-slate-200/50 shadow-xl rounded-2xl p-4 w-52 animate-in fade-in slide-in-from-bottom-2 duration-200 mb-2">
+                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200/50">
+                            <div className="flex items-center gap-2 text-slate-600">
+                                <Info size={14} />
+                                <span className="text-[10px] font-bold uppercase tracking-wider">Responsible Actors</span>
+                            </div>
+                            <button onClick={() => setIsLegendOpen(false)} className="text-slate-400 hover:text-slate-600">
+                                <X size={14} />
+                            </button>
                         </div>
-                    ))}
-                </div>
+                        <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
+                            {actorLegend.map((item, idx) => (
+                                <div key={idx} className="flex items-center gap-3">
+                                    <div 
+                                        className="w-2.5 h-2.5 rounded-full shadow-sm ring-1 ring-inset ring-black/5" 
+                                        style={{ backgroundColor: item.bg, borderColor: item.border }}
+                                    ></div>
+                                    <span 
+                                        className="text-[10px] font-bold uppercase truncate text-slate-600"
+                                    >
+                                        {item.label}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Toggle Button */}
+                <button 
+                    onClick={() => setIsLegendOpen(!isLegendOpen)}
+                    className={`p-3 rounded-full shadow-lg border transition-all duration-200 ${
+                        isLegendOpen 
+                        ? 'bg-slate-800 text-white border-slate-700' 
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:scale-105'
+                    }`}
+                    title="View Actors"
+                >
+                    <Users size={20} />
+                </button>
             </div>
 
             {/* Canvas */}
@@ -419,7 +450,7 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
                     fitView
                     minZoom={0.1}
                     maxZoom={2}
-                    attributionPosition="bottom-left"
+                    attributionPosition="bottom-right"
                 >
                     <Background color="#e2e8f0" gap={24} size={2} />
                 </ReactFlow>
@@ -427,12 +458,12 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
 
             {/* Right Sidebar - Process Guide / Chat */}
             <div 
-                className={`bg-white border-l border-slate-200 shadow-2xl z-30 transition-all duration-300 flex flex-col absolute right-0 top-0 h-full ${
-                    isSidebarOpen ? 'w-[420px] translate-x-0' : 'w-[420px] translate-x-full'
+                className={`bg-white border-l border-slate-200 shadow-2xl z-30 transition-all duration-300 flex flex-col absolute right-0 top-0 h-full w-full md:w-[420px] ${
+                    isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
                 }`}
             >
                 {/* Sidebar Toggle Tabs */}
-                <div className="absolute right-[420px] top-6 flex flex-col gap-2">
+                <div className="absolute right-full top-6 flex flex-col gap-2 mr-[-1px]">
                      <button 
                         onClick={() => {
                             if (isSidebarOpen && activePanel === 'GUIDE') setIsSidebarOpen(false);
@@ -487,10 +518,11 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
     );
 };
 
-const CanvasPage = ({ initialPrompt, initialData, onFlowGenerated }: { 
+const CanvasPage = ({ initialPrompt, initialData, onFlowGenerated, onBack }: { 
     initialPrompt?: string, 
     initialData?: SopResponse | null,
-    onFlowGenerated?: (data: SopResponse, prompt: string) => void
+    onFlowGenerated?: (data: SopResponse, prompt: string) => void,
+    onBack: () => void
 }) => {
     return (
         <ReactFlowProvider>
@@ -498,6 +530,7 @@ const CanvasPage = ({ initialPrompt, initialData, onFlowGenerated }: {
                 initialPrompt={initialPrompt} 
                 initialData={initialData} 
                 onFlowGenerated={onFlowGenerated} 
+                onBack={onBack}
              />
         </ReactFlowProvider>
     );
