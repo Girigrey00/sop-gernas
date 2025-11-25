@@ -91,6 +91,20 @@ export interface HistoryItem {
     data: SopResponse;
 }
 
+// --- New Library Document Interface ---
+export interface LibraryDocument {
+  id: string;
+  sopName: string;
+  documentName: string;
+  description: string;
+  pageCount: number;
+  uploadedBy: string;
+  uploadedDate: string;
+  indexName: string;
+  status: 'Active' | 'Draft' | 'Archived';
+  version: string;
+}
+
 // Layout types
 export type LayoutType = 'SWIMLANE' | 'TREE' | 'HORIZONTAL';
 

@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import CanvasPage from './pages/CanvasPage';
+import LibraryPage from './pages/LibraryPage';
 import { View, HistoryItem, SopResponse } from './types';
 import { 
     FileText,
@@ -30,7 +30,6 @@ import {
 } from 'lucide-react';
 
 // --- Constants ---
-// Specific Banking Product List with Unique Icons
 const ALL_SOP_TEMPLATES = [
     { icon: Banknote, title: "PERSONAL INCOME LOAN", desc: "Standard personal loan onboarding process", category: "Loans" },
     { icon: Briefcase, title: "PIL CONVENTIONAL", desc: "Conventional personal income loan flow", category: "Loans" },
@@ -58,7 +57,6 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
         setError('');
         setIsLoading(true);
 
-        // Simulate network delay for effect
         setTimeout(() => {
             const success = onLogin(username, password);
             if (!success) {
@@ -69,67 +67,66 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
     };
 
     return (
-        <div className="h-screen w-screen bg-slate-950 flex items-center justify-center relative overflow-hidden">
+        <div className="h-screen w-screen bg-fab-navy flex items-center justify-center relative overflow-hidden">
             {/* Background Effects */}
             <div className="absolute inset-0 overflow-hidden">
-                 <div className="absolute top-[-30%] left-[-10%] w-[800px] h-[800px] bg-blue-600/20 blur-[120px] rounded-full animate-pulse"></div>
-                 <div className="absolute bottom-[-30%] right-[-10%] w-[800px] h-[800px] bg-indigo-600/10 blur-[120px] rounded-full animate-pulse delay-700"></div>
-                 <div className="absolute top-[40%] left-[40%] w-[300px] h-[300px] bg-purple-500/10 blur-[80px] rounded-full"></div>
+                 <div className="absolute top-[-30%] left-[-10%] w-[800px] h-[800px] bg-fab-royal/40 blur-[120px] rounded-full animate-pulse"></div>
+                 <div className="absolute bottom-[-30%] right-[-10%] w-[800px] h-[800px] bg-fab-blue/30 blur-[120px] rounded-full animate-pulse delay-700"></div>
             </div>
 
             <div className="w-full max-w-md z-10 p-6">
-                <div className="bg-slate-900/60 backdrop-blur-2xl border border-slate-800 rounded-3xl p-8 shadow-2xl shadow-black/50 relative overflow-hidden">
+                <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-2xl shadow-black/50 relative overflow-hidden">
                     
                     {/* Logo / Brand */}
                     <div className="flex flex-col items-center gap-4 mb-10 relative z-10">
-                        <div className="w-20 h-20 bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-blue-900/50 mb-2 ring-1 ring-white/20 transform hover:scale-105 transition-transform duration-500">
+                        <div className="w-20 h-20 bg-gradient-to-tr from-fab-royal to-fab-light rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-black/50 mb-2 ring-1 ring-white/20 transform hover:scale-105 transition-transform duration-500">
                             <Hexagon size={40} strokeWidth={2} className="fill-white/10" />
                         </div>
                         <div className="text-center">
                             <h1 className="text-3xl font-bold text-white tracking-tight">GERNAS</h1>
                             <div className="flex items-center gap-2 justify-center mt-2">
-                                <span className="h-px w-4 bg-blue-500/50"></span>
-                                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.25em]">SOP FLOW</p>
-                                <span className="h-px w-4 bg-blue-500/50"></span>
+                                <span className="h-px w-4 bg-fab-sky/50"></span>
+                                <p className="text-[10px] font-bold text-fab-sky uppercase tracking-[0.25em]">SOP FLOW</p>
+                                <span className="h-px w-4 bg-fab-sky/50"></span>
                             </div>
                         </div>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-slate-400 ml-1 uppercase tracking-wide">Admin Access</label>
+                            <label className="text-xs font-semibold text-fab-sky/80 ml-1 uppercase tracking-wide">Admin Access</label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <User size={18} className="text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                                    <User size={18} className="text-white/50 group-focus-within:text-fab-sky transition-colors" />
                                 </div>
                                 <input 
                                     type="text" 
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                                    className="w-full pl-10 pr-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fab-sky/50 focus:border-fab-sky/50 transition-all"
                                     placeholder="Username"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-slate-400 ml-1 uppercase tracking-wide">Secure Key</label>
+                            <label className="text-xs font-semibold text-fab-sky/80 ml-1 uppercase tracking-wide">Secure Key</label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Lock size={18} className="text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                                    <Lock size={18} className="text-white/50 group-focus-within:text-fab-sky transition-colors" />
                                 </div>
                                 <input 
                                     type="password" 
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                                    className="w-full pl-10 pr-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fab-sky/50 focus:border-fab-sky/50 transition-all"
                                     placeholder="Password"
                                 />
                             </div>
                         </div>
 
                         {error && (
-                            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 text-xs text-center font-medium flex items-center justify-center gap-2">
+                            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-300 text-xs text-center font-medium flex items-center justify-center gap-2">
                                 <ShieldAlert size={14} /> {error}
                             </div>
                         )}
@@ -137,7 +134,7 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
                         <button 
                             type="submit"
                             disabled={isLoading}
-                            className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-semibold shadow-lg shadow-blue-900/20 transition-all transform hover:scale-[1.02] disabled:opacity-70 disabled:scale-100 flex items-center justify-center gap-2 mt-4"
+                            className="w-full py-3.5 bg-gradient-to-r from-fab-royal to-fab-light hover:from-fab-blue hover:to-fab-royal text-white rounded-xl font-semibold shadow-lg shadow-black/20 transition-all transform hover:scale-[1.02] disabled:opacity-70 disabled:scale-100 flex items-center justify-center gap-2 mt-4"
                         >
                             {isLoading ? (
                                 <>
@@ -151,25 +148,10 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
                     </form>
                     
                     <div className="mt-8 text-center">
-                        <p className="text-[10px] text-slate-600">Restricted System • Authorized Personnel Only</p>
+                        <p className="text-[10px] text-fab-sky/50">Restricted System • Authorized Personnel Only</p>
                     </div>
                 </div>
             </div>
-        </div>
-    );
-};
-
-// --- Library Dummy Page ---
-const LibraryPage = () => {
-    return (
-        <div className="h-full flex flex-col items-center justify-center bg-slate-50/50 p-8">
-            <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 mb-6">
-                <BookOpen size={40} />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-700 mb-2">SOP Library</h2>
-            <p className="text-slate-500 text-sm max-w-md text-center">
-                This module is currently under development. It will contain a comprehensive archive of all organizational standard operating procedures.
-            </p>
         </div>
     );
 };
@@ -188,13 +170,13 @@ const HomePage = ({ onStart }: { onStart: (prompt: string) => void }) => {
     });
 
     return (
-        <div className="h-full flex flex-col bg-slate-50/50">
+        <div className="h-full flex flex-col bg-slate-50">
             {/* Header & Controls */}
             <div className="px-8 pt-8 pb-6 flex flex-col gap-6 bg-white border-b border-slate-200">
                 
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-900 mb-1">CBG KNOWLEDGE HUB</h2>
+                        <h2 className="text-2xl font-bold text-fab-navy mb-1">CBG KNOWLEDGE HUB</h2>
                         <p className="text-slate-500 text-sm">Select a product to generate its workflow or search the repository.</p>
                     </div>
                     
@@ -207,7 +189,7 @@ const HomePage = ({ onStart }: { onStart: (prompt: string) => void }) => {
                                 placeholder="Search products..." 
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm"
+                                className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-fab-royal/50 text-sm"
                             />
                         </div>
                     </div>
@@ -221,7 +203,7 @@ const HomePage = ({ onStart }: { onStart: (prompt: string) => void }) => {
                             onClick={() => setActiveCategory(cat)}
                             className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${
                                 activeCategory === cat 
-                                ? 'bg-slate-900 text-white border-slate-900 shadow-sm' 
+                                ? 'bg-fab-navy text-white border-fab-navy shadow-sm' 
                                 : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                             }`}
                         >
@@ -238,23 +220,23 @@ const HomePage = ({ onStart }: { onStart: (prompt: string) => void }) => {
                         <button 
                             key={i}
                             onClick={() => onStart(item.title)}
-                            className="p-5 rounded-xl border border-slate-200 bg-white hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/5 transition-all text-left group flex flex-col h-full relative overflow-hidden"
+                            className="p-5 rounded-xl border border-slate-200 bg-white hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all text-left group flex flex-col h-full relative overflow-hidden"
                         >
                             <div className="flex justify-between items-start mb-4">
-                                <div className="p-2.5 bg-slate-50 group-hover:bg-blue-50 text-slate-400 group-hover:text-blue-600 rounded-xl transition-colors border border-slate-100">
+                                <div className="p-2.5 bg-fab-sky/10 group-hover:bg-fab-royal/10 text-fab-light group-hover:text-fab-royal rounded-xl transition-colors border border-fab-sky/20">
                                     <item.icon size={24} strokeWidth={1.5} />
                                 </div>
-                                <span className="text-[9px] font-bold uppercase text-slate-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100 group-hover:border-blue-100 group-hover:text-blue-400 transition-colors">
+                                <span className="text-[9px] font-bold uppercase text-slate-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100 group-hover:border-fab-sky/30 group-hover:text-fab-royal transition-colors">
                                     {item.category}
                                 </span>
                             </div>
                             
-                            <h3 className="text-sm font-bold text-slate-800 group-hover:text-blue-700 mb-2">{item.title}</h3>
+                            <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-2">{item.title}</h3>
                             <p className="text-xs text-slate-500 leading-relaxed mb-4 flex-1">{item.desc}</p>
 
                             <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-auto">
                                 <span className="text-[10px] font-medium text-slate-400">v2025.1</span>
-                                <div className="flex items-center gap-1 text-xs font-bold text-blue-600 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+                                <div className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
                                     Open <ArrowRight size={14} />
                                 </div>
                             </div>
@@ -270,7 +252,7 @@ const HomePage = ({ onStart }: { onStart: (prompt: string) => void }) => {
                         <p className="text-slate-500 font-medium">No products found matching your search.</p>
                         <button 
                             onClick={() => {setSearchQuery(''); setActiveCategory('All');}}
-                            className="text-blue-600 text-sm font-bold mt-2 hover:underline"
+                            className="text-fab-royal text-sm font-bold mt-2 hover:underline"
                         >
                             Clear filters
                         </button>
@@ -290,10 +272,10 @@ const HistoryPage = ({
     onOpenItem: (item: HistoryItem) => void 
 }) => {
   return (
-    <div className="h-full flex flex-col bg-slate-50/50">
+    <div className="h-full flex flex-col bg-slate-50">
       {/* Header */}
       <div className="px-8 py-8 border-b border-slate-200 bg-white">
-        <h2 className="text-2xl font-bold text-slate-900 mb-1">History</h2>
+        <h2 className="text-2xl font-bold text-fab-navy mb-1">History</h2>
         <p className="text-slate-500 text-sm">View and manage your previously generated workflows.</p>
       </div>
 
@@ -315,12 +297,12 @@ const HistoryPage = ({
                     <button
                         key={item.id}
                         onClick={() => onOpenItem(item)}
-                        className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/5 transition-all text-left flex flex-col h-full relative overflow-hidden"
+                        className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all text-left flex flex-col h-full relative overflow-hidden"
                     >
-                         <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                         <div className="absolute top-0 left-0 w-1 h-full bg-fab-royal opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         
                         <div className="flex justify-between items-start mb-4 w-full">
-                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                            <div className="p-2 bg-fab-sky/10 text-fab-royal rounded-lg group-hover:bg-fab-royal group-hover:text-white transition-colors">
                                 <FileText size={20} />
                             </div>
                             <span className="text-[10px] font-medium text-slate-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100">
@@ -328,14 +310,14 @@ const HistoryPage = ({
                             </span>
                         </div>
 
-                        <h3 className="text-sm font-bold text-slate-800 group-hover:text-blue-700 mb-1 line-clamp-1">
+                        <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-1 line-clamp-1">
                             {item.title}
                         </h3>
                         <p className="text-xs text-slate-500 mb-4 line-clamp-2 flex-1">
                             {item.data.processDefinition.title}
                         </p>
 
-                        <div className="flex items-center gap-1 text-xs font-bold text-blue-600 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                        <div className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
                             Open Flow <ChevronRight size={14} />
                         </div>
                     </button>
@@ -406,19 +388,9 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (currentView) {
       case 'HOME':
-        // Home is now the CBG Knowledge Hub
-        return (
-            <HomePage 
-                onStart={handleStart} 
-            />
-        );
+        return <HomePage onStart={handleStart} />;
       case 'SOPS':
-        // Fallback if SOPS view is triggered, just show Home
-        return (
-             <HomePage 
-                onStart={handleStart} 
-            />
-        );
+        return <HomePage onStart={handleStart} />;
       case 'LIBRARY':
         return <LibraryPage />;
       case 'CANVAS':
@@ -458,10 +430,10 @@ const App: React.FC = () => {
         {/* Mobile Header */}
         <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 bg-white z-30">
             <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                <div className="w-8 h-8 bg-fab-royal rounded-lg flex items-center justify-center text-white">
                     <Hexagon size={18} />
                 </div>
-                <span className="font-bold text-slate-900">GERNAS</span>
+                <span className="font-bold text-fab-navy">GERNAS</span>
             </div>
             <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
                 <Menu size={24} />

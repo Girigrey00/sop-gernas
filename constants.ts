@@ -5,7 +5,8 @@ export const MOCK_SOP_DATA: SopResponse = {
   "processDefinition": {
     "title": "Personal Installment Loan (PIL) Process Flow",
     "version": "1.0",
-    "classification": "Internal"
+    "classification": "Internal",
+    "documentLink": "#"
   },
   "startNode": {
     "stepId": "START",
