@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import CanvasPage from './pages/CanvasPage';
 import LibraryPage from './pages/LibraryPage';
 import { View, HistoryItem, SopResponse } from './types';
+import { apiService } from './services/apiService';
 import { 
     FileText,
     Clock,
@@ -14,35 +15,13 @@ import {
     ArrowRight,
     Search,
     ShieldAlert, 
-    CreditCard,
-    Landmark,
-    Car,
-    Home,
-    Banknote,
-    Wallet,
     Briefcase,
-    Building2,
-    Coins,
-    Gem,
-    Percent,
-    BadgeDollarSign,
     Menu
 } from 'lucide-react';
 
 // --- Constants ---
 const ALL_SOP_TEMPLATES = [
-    { icon: Banknote, title: "PERSONAL INCOME LOAN", desc: "Standard personal loan onboarding process", category: "Loans" },
-    { icon: Briefcase, title: "PIL CONVENTIONAL", desc: "Conventional personal income loan flow", category: "Loans" },
-    { icon: Gem, title: "PIL ISLAMIC", desc: "Sharia-compliant personal finance flow", category: "Islamic" },
-    { icon: Car, title: "AUTO LOAN", desc: "Vehicle financing and approval process", category: "Auto" },
-    { icon: Coins, title: "AUTO FINANCE ISLAMIC", desc: "Islamic vehicle financing (Murabaha)", category: "Islamic" },
-    { icon: Wallet, title: "CASA CONVENTIONAL", desc: "Current & Savings Account opening", category: "Accounts" },
-    { icon: Building2, title: "CASA ISLAMIC", desc: "Islamic Current & Savings Account", category: "Islamic" },
-    { icon: Home, title: "HOME LOAN", desc: "Mortgage application and disbursal", category: "Mortgages" },
-    { icon: Landmark, title: "IJARA ISLAMIC", desc: "Islamic home finance (Ijara) process", category: "Islamic" },
-    { icon: CreditCard, title: "FAB CREDIT CARD", desc: "FAB credit card issuance journey", category: "Cards" },
-    { icon: Percent, title: "ISLAMIC CREDIT CARD", desc: "Sharia-compliant credit card processing", category: "Islamic" },
-    { icon: BadgeDollarSign, title: "DUBAI FIRST CREDIT CARD", desc: "Dubai First card application flow", category: "Cards" },
+    { icon: Briefcase, title: "PIL CONVENTIONAL", desc: "Conventional personal income loan flow", category: "Loans", productId: "PIL-CONV-001" },
 ];
 
 // --- Login Page Component ---
@@ -157,31 +136,45 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
 };
 
 // --- Home Page (CBG Knowledge Hub) ---
-const HomePage = ({ onStart }: { onStart: (prompt: string) => void }) => {
+const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => void, onRedirectToUpload: () => void }) => {
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeCategory, setActiveCategory] = useState('All');
-
-    const categories = ['All', ...Array.from(new Set(ALL_SOP_TEMPLATES.map(t => t.category)))];
+    const [isLoading, setIsLoading] = useState(false);
 
     const filteredSops = ALL_SOP_TEMPLATES.filter(item => {
-        const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || item.desc.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
-        return matchesSearch && matchesCategory;
+        return item.title.toLowerCase().includes(searchQuery.toLowerCase()) || item.desc.toLowerCase().includes(searchQuery.toLowerCase());
     });
+
+    const handleCardClick = async (item: typeof ALL_SOP_TEMPLATES[0]) => {
+        setIsLoading(true);
+        try {
+            // Attempt to fetch the process flow
+            const flowData = await apiService.getProcessFlow('ProcessHub', item.productId);
+            if (flowData && flowData.processFlow) {
+                // If flow exists, open it
+                onStart(flowData);
+            } else {
+                // If not found or empty (though getProcessFlow throws on 404 usually), redirect to upload
+                onRedirectToUpload();
+            }
+        } catch (error) {
+            console.log("Flow not found, redirecting to library to upload", error);
+            onRedirectToUpload();
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <div className="h-full flex flex-col bg-slate-50">
             {/* Header & Controls */}
             <div className="px-8 pt-8 pb-6 flex flex-col gap-6 bg-white border-b border-slate-200">
-                
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                     <div>
                         <h2 className="text-2xl font-bold text-fab-navy mb-1">CBG KNOWLEDGE HUB</h2>
-                        <p className="text-slate-500 text-sm">Select a product to generate its workflow or search the repository.</p>
+                        <p className="text-slate-500 text-sm">Select a product to view its workflow or upload new documents.</p>
                     </div>
                     
                     <div className="flex items-center gap-3 w-full md:w-auto">
-                        {/* Search Bar */}
                         <div className="relative w-full md:w-64">
                             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                             <input 
@@ -194,68 +187,43 @@ const HomePage = ({ onStart }: { onStart: (prompt: string) => void }) => {
                         </div>
                     </div>
                 </div>
-
-                {/* Category Tabs */}
-                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                    {categories.map(cat => (
-                        <button 
-                            key={cat}
-                            onClick={() => setActiveCategory(cat)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${
-                                activeCategory === cat 
-                                ? 'bg-fab-navy text-white border-fab-navy shadow-sm' 
-                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                            }`}
-                        >
-                            {cat}
-                        </button>
-                    ))}
-                </div>
             </div>
 
             {/* Grid Content */}
             <div className="flex-1 overflow-y-auto px-8 py-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                    {filteredSops.map((item, i) => (
-                        <button 
-                            key={i}
-                            onClick={() => onStart(item.title)}
-                            className="p-5 rounded-xl border border-slate-200 bg-white hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all text-left group flex flex-col h-full relative overflow-hidden"
-                        >
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="p-2.5 bg-fab-sky/10 group-hover:bg-fab-royal/10 text-fab-light group-hover:text-fab-royal rounded-xl transition-colors border border-fab-sky/20">
-                                    <item.icon size={24} strokeWidth={1.5} />
+                {isLoading ? (
+                     <div className="flex flex-col items-center justify-center h-64 text-slate-500">
+                        <div className="w-10 h-10 border-4 border-fab-royal/20 border-t-fab-royal rounded-full animate-spin mb-4"></div>
+                        <p>Checking for existing documentation...</p>
+                     </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                        {filteredSops.map((item, i) => (
+                            <button 
+                                key={i}
+                                onClick={() => handleCardClick(item)}
+                                className="p-5 rounded-xl border border-slate-200 bg-white hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all text-left group flex flex-col h-full relative overflow-hidden"
+                            >
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="p-2.5 bg-fab-sky/10 group-hover:bg-fab-royal/10 text-fab-light group-hover:text-fab-royal rounded-xl transition-colors border border-fab-sky/20">
+                                        <item.icon size={24} strokeWidth={1.5} />
+                                    </div>
+                                    <span className="text-[9px] font-bold uppercase text-slate-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100 group-hover:border-fab-sky/30 group-hover:text-fab-royal transition-colors">
+                                        {item.category}
+                                    </span>
                                 </div>
-                                <span className="text-[9px] font-bold uppercase text-slate-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100 group-hover:border-fab-sky/30 group-hover:text-fab-royal transition-colors">
-                                    {item.category}
-                                </span>
-                            </div>
-                            
-                            <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-2">{item.title}</h3>
-                            <p className="text-xs text-slate-500 leading-relaxed mb-4 flex-1">{item.desc}</p>
+                                
+                                <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-2">{item.title}</h3>
+                                <p className="text-xs text-slate-500 leading-relaxed mb-4 flex-1">{item.desc}</p>
 
-                            <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-auto">
-                                <span className="text-[10px] font-medium text-slate-400">v2025.1</span>
-                                <div className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
-                                    Open <ArrowRight size={14} />
+                                <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-auto">
+                                    <span className="text-[10px] font-medium text-slate-400">ID: {item.productId}</span>
+                                    <div className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+                                        Open <ArrowRight size={14} />
+                                    </div>
                                 </div>
-                            </div>
-                        </button>
-                    ))}
-                </div>
-                
-                {filteredSops.length === 0 && (
-                    <div className="text-center py-20">
-                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-                            <Search size={24} />
-                        </div>
-                        <p className="text-slate-500 font-medium">No products found matching your search.</p>
-                        <button 
-                            onClick={() => {setSearchQuery(''); setActiveCategory('All');}}
-                            className="text-fab-royal text-sm font-bold mt-2 hover:underline"
-                        >
-                            Clear filters
-                        </button>
+                            </button>
+                        ))}
                     </div>
                 )}
             </div>
@@ -273,13 +241,10 @@ const HistoryPage = ({
 }) => {
   return (
     <div className="h-full flex flex-col bg-slate-50">
-      {/* Header */}
       <div className="px-8 py-8 border-b border-slate-200 bg-white">
         <h2 className="text-2xl font-bold text-fab-navy mb-1">History</h2>
         <p className="text-slate-500 text-sm">View and manage your previously generated workflows.</p>
       </div>
-
-      {/* Content */}
       <div className="flex-1 overflow-y-auto px-8 py-8">
           {history.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-16 text-center flex flex-col items-center gap-4 max-w-xl mx-auto mt-10">
@@ -337,6 +302,9 @@ const App: React.FC = () => {
   const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedSop, setSelectedSop] = useState<SopResponse | null>(null);
+  
+  // State to trigger upload modal automatically when entering library
+  const [autoOpenUpload, setAutoOpenUpload] = useState(false);
 
   // Authentication Logic
   const handleLogin = (u: string, p: string) => {
@@ -354,17 +322,19 @@ const App: React.FC = () => {
       setSelectedSop(null);
   };
 
-  const handleStart = (prompt?: string) => {
-      if (prompt) {
-          setInitialPrompt(prompt);
-          setSelectedSop(null); // Clear any selected history
-          setCurrentView('CANVAS');
-          setIsSidebarOpen(false);
-      }
+  const handleStartWithData = (data: SopResponse) => {
+      setSelectedSop(data);
+      setInitialPrompt('');
+      setCurrentView('CANVAS');
+      setIsSidebarOpen(false);
+  };
+
+  const handleRedirectToUpload = () => {
+      setAutoOpenUpload(true);
+      setCurrentView('LIBRARY');
   };
 
   const handleFlowGenerated = (data: SopResponse, prompt: string) => {
-      // Avoid duplicates by title for this simple example
       const exists = history.some(h => h.title === data.processDefinition.title);
       if (exists) return;
 
@@ -380,15 +350,14 @@ const App: React.FC = () => {
 
   const handleOpenHistoryItem = (item: HistoryItem) => {
       setSelectedSop(item.data);
-      setInitialPrompt(''); // Clear prompt so it uses data
+      setInitialPrompt('');
       setCurrentView('CANVAS');
       setIsSidebarOpen(false);
   };
 
-  // Handler for opening an SOP from Library
   const handleOpenSopFromLibrary = (data: SopResponse) => {
       setSelectedSop(data);
-      setInitialPrompt(''); // Not from prompt
+      setInitialPrompt('');
       setCurrentView('CANVAS');
       setIsSidebarOpen(false);
   };
@@ -396,11 +365,17 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (currentView) {
       case 'HOME':
-        return <HomePage onStart={handleStart} />;
+        return <HomePage onStart={handleStartWithData} onRedirectToUpload={handleRedirectToUpload} />;
       case 'SOPS':
-        return <HomePage onStart={handleStart} />;
+        return <HomePage onStart={handleStartWithData} onRedirectToUpload={handleRedirectToUpload} />;
       case 'LIBRARY':
-        return <LibraryPage onOpenSop={handleOpenSopFromLibrary} />;
+        return (
+            <LibraryPage 
+                onOpenSop={handleOpenSopFromLibrary} 
+                initialUploadOpen={autoOpenUpload}
+                onCloseInitialUpload={() => setAutoOpenUpload(false)}
+            />
+        );
       case 'CANVAS':
         return (
             <CanvasPage 
@@ -413,7 +388,7 @@ const App: React.FC = () => {
       case 'HISTORY':
         return <HistoryPage history={history} onOpenItem={handleOpenHistoryItem} />;
       default:
-        return <HomePage onStart={handleStart} />;
+        return <HomePage onStart={handleStartWithData} onRedirectToUpload={handleRedirectToUpload} />;
     }
   };
 
@@ -423,7 +398,6 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
-       {/* Mobile Sidebar Toggle */}
       <div className={`fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)}></div>
       
       <div className={`fixed inset-y-0 left-0 z-50 w-64 transform lg:relative lg:translate-x-0 transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -435,7 +409,6 @@ const App: React.FC = () => {
       </div>
 
       <main className="flex-1 h-full overflow-hidden relative bg-white flex flex-col">
-        {/* Mobile Header */}
         <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 bg-white z-30">
             <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-fab-royal rounded-lg flex items-center justify-center text-white">

@@ -2,16 +2,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
     Upload, FileText, Search, Filter, Eye, Edit2, Trash2, 
-    CheckSquare, Square, X, Save, File, RefreshCw, PlayCircle
+    CheckSquare, Square, X, Save, File, RefreshCw, PlayCircle,
+    Bot, GitMerge
 } from 'lucide-react';
 import { LibraryDocument, SopResponse } from '../types';
 import { apiService } from '../services/apiService';
 
 interface LibraryPageProps {
     onOpenSop?: (data: SopResponse) => void;
+    initialUploadOpen?: boolean;
+    onCloseInitialUpload?: () => void;
 }
 
-const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop }) => {
+const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen = false, onCloseInitialUpload }) => {
     const [documents, setDocuments] = useState<LibraryDocument[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -22,11 +25,20 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop }) => {
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [currentDoc, setCurrentDoc] = useState<LibraryDocument | null>(null);
 
-    // Form States
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [formData, setFormData] = useState<Partial<LibraryDocument> & { productId?: string }>({});
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    // Upload State
+    const [sopFile, setSopFile] = useState<File | null>(null);
+    const [llmFile, setLlmFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+
+    const sopInputRef = useRef<HTMLInputElement>(null);
+    const llmInputRef = useRef<HTMLInputElement>(null);
+
+    // Handle Initial Open Prop
+    useEffect(() => {
+        if (initialUploadOpen) {
+            setIsUploadModalOpen(true);
+        }
+    }, [initialUploadOpen]);
 
     // Fetch documents on load
     const fetchDocuments = async () => {
@@ -36,7 +48,6 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop }) => {
             setDocuments(docs);
         } catch (error) {
             console.error("Failed to fetch documents", error);
-            // Fallback to empty or show notification
         } finally {
             setIsLoading(false);
         }
@@ -48,33 +59,50 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop }) => {
 
     // --- Actions ---
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setSelectedFile(e.target.files[0]);
-        }
+    const handleSopFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) setSopFile(e.target.files[0]);
     };
 
-    const handleSaveNew = async () => {
-        if (!selectedFile) return;
+    const handleLlmFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) setLlmFile(e.target.files[0]);
+    };
+
+    const handleUploadAll = async () => {
+        if (!sopFile && !llmFile) return;
 
         setIsUploading(true);
         try {
-            // Map form data to metadata expected by backend
-            const metadata = {
-                productId: formData.productId || formData.sopName || selectedFile.name,
-                linkedApp: 'ProcessHub', // Defaulting for now
-                description: formData.description,
-                target_index: formData.indexName
-            };
+            // 1. Upload SOP File (for Flow Generation)
+            if (sopFile) {
+                const metadata = {
+                    productId: 'PIL-CONV-001', // Hardcoded for this MVP scenario
+                    sopName: 'PIL CONVENTIONAL',
+                    linkedApp: 'ProcessHub',
+                    category: 'SOP',
+                    description: 'Uploaded via Library',
+                    generate_flow: true // Key flag
+                };
+                await apiService.uploadDocument(sopFile, metadata);
+            }
 
-            await apiService.uploadDocument(selectedFile, metadata);
+            // 2. Upload LLM File (for RAG/Chat)
+            if (llmFile) {
+                const metadata = {
+                    productId: 'PIL-CONV-001-KB', // Different ID or tag for KB
+                    linkedApp: 'ProcessHub',
+                    category: 'KnowledgeBase',
+                    description: 'Supporting documentation for PIL',
+                    generate_flow: false
+                };
+                await apiService.uploadDocument(llmFile, metadata);
+            }
             
             // Refresh list
             await fetchDocuments();
             resetForm();
         } catch (error) {
             console.error("Upload failed", error);
-            alert("Failed to upload document. Please check the backend connection.");
+            alert("Failed to upload documents. Please check the backend connection.");
         } finally {
             setIsUploading(false);
         }
@@ -93,8 +121,6 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop }) => {
     };
 
     const handleVisualize = async (doc: LibraryDocument) => {
-        // We need product_id and linked_app to fetch the flow
-        // These should be stored in the document metadata or inferred
         const productId = doc.metadata?.productId || doc.sopName;
         const linkedApp = doc.metadata?.linkedApp || 'ProcessHub';
 
@@ -120,11 +146,12 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop }) => {
     };
 
     const resetForm = () => {
-        setFormData({});
-        setSelectedFile(null);
+        setSopFile(null);
+        setLlmFile(null);
         setCurrentDoc(null);
         setIsUploadModalOpen(false);
         setIsViewModalOpen(false);
+        if (onCloseInitialUpload) onCloseInitialUpload();
     };
 
     const toggleSelectAll = () => {
@@ -142,7 +169,6 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop }) => {
         setSelectedIds(newSet);
     };
 
-    // Filter Logic
     const filteredDocs = documents.filter(d => 
         (d.sopName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
         (d.indexName || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -161,7 +187,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop }) => {
                         onClick={() => setIsUploadModalOpen(true)}
                         className="bg-fab-royal hover:bg-fab-blue text-white px-5 py-2.5 rounded-lg shadow-lg shadow-fab-royal/20 flex items-center gap-2 text-sm font-semibold transition-all"
                     >
-                        <Upload size={18} /> Upload Document
+                        <Upload size={18} /> Upload Documents
                     </button>
                 </div>
 
@@ -201,7 +227,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop }) => {
                                 <th className="p-4 w-12">S.No</th>
                                 <th className="p-4">SOP Name / Product ID</th>
                                 <th className="p-4">File Name</th>
-                                <th className="p-4">Index</th>
+                                <th className="p-4">Type</th>
                                 <th className="p-4">Date</th>
                                 <th className="p-4">Status</th>
                                 <th className="p-4 text-right">Actions</th>
@@ -226,7 +252,11 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop }) => {
                                             {doc.documentName}
                                         </div>
                                     </td>
-                                    <td className="p-4 text-sm text-slate-600 font-mono">{doc.indexName || '-'}</td>
+                                    <td className="p-4">
+                                        <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded font-medium">
+                                            {doc.metadata?.category || 'General'}
+                                        </span>
+                                    </td>
                                     <td className="p-4 text-sm text-slate-600">{doc.uploadedDate}</td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${
@@ -257,146 +287,97 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop }) => {
                             ))}
                         </tbody>
                     </table>
-                    {filteredDocs.length === 0 && (
-                        <div className="p-10 text-center text-slate-400">
-                            {isLoading ? "Loading documents..." : "No documents found."}
-                        </div>
-                    )}
                 </div>
             </div>
 
-            {/* Upload Modal */}
+            {/* Simplified Upload Modal */}
             {isUploadModalOpen && (
                 <div className="fixed inset-0 z-50 bg-fab-navy/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                            <h3 className="font-bold text-fab-navy">Upload New SOP</h3>
+                            <h3 className="font-bold text-fab-navy">Upload Documents for PIL CONVENTIONAL</h3>
                             <button onClick={resetForm} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
                         </div>
                         
-                        <div className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Product ID / SOP Name (Required)</label>
-                                <input 
-                                    type="text" 
-                                    value={formData.productId || ''}
-                                    onChange={e => setFormData({...formData, productId: e.target.value, sopName: e.target.value})}
-                                    className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-fab-royal/20 outline-none text-sm"
-                                    placeholder="e.g. PIL-2025"
-                                />
-                                <p className="text-[10px] text-slate-400 mt-1">This ID is used to retrieve the generated flow.</p>
-                            </div>
+                        <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                             
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Index Name (Optional)</label>
-                                <input 
-                                    type="text" 
-                                    value={formData.indexName || ''}
-                                    onChange={e => setFormData({...formData, indexName: e.target.value})}
-                                    className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-fab-royal/20 outline-none text-sm"
-                                    placeholder="e.g. custom-index"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Description</label>
-                                <textarea 
-                                    value={formData.description || ''}
-                                    onChange={e => setFormData({...formData, description: e.target.value})}
-                                    className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-fab-royal/20 outline-none text-sm h-20 resize-none"
-                                    placeholder="Brief description..."
-                                />
-                            </div>
-
-                            <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                                <input 
-                                    type="file" 
-                                    hidden 
-                                    ref={fileInputRef} 
-                                    onChange={handleFileUpload} 
-                                    accept=".pdf,.docx,.xlsx,.pptx"
-                                />
-                                <div className="w-10 h-10 bg-fab-sky/20 text-fab-royal rounded-full flex items-center justify-center mx-auto mb-2">
-                                    <Upload size={20} />
+                            {/* SOP Flow Upload */}
+                            <div 
+                                className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-48 ${sopFile ? 'border-fab-royal bg-fab-sky/10' : 'border-slate-200 hover:bg-slate-50'}`}
+                                onClick={() => sopInputRef.current?.click()}
+                            >
+                                <input type="file" hidden ref={sopInputRef} onChange={handleSopFileChange} accept=".pdf,.docx" />
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${sopFile ? 'bg-fab-royal text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                    <GitMerge size={24} />
                                 </div>
-                                <p className="text-sm font-medium text-fab-navy">
-                                    {selectedFile ? selectedFile.name : "Click to browse files"}
-                                </p>
-                                <p className="text-xs text-slate-400 mt-1">
-                                    {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : "Supports PDF, DOCX, XLSX, PPTX"}
+                                <h4 className="font-bold text-slate-700 text-sm">SOP Flow Chart Document</h4>
+                                <p className="text-xs text-slate-500 px-4">
+                                    {sopFile ? sopFile.name : "Upload the procedure document to generate the workflow"}
                                 </p>
                             </div>
+
+                            {/* LLM Knowledge Base Upload */}
+                            <div 
+                                className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-48 ${llmFile ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:bg-slate-50'}`}
+                                onClick={() => llmInputRef.current?.click()}
+                            >
+                                <input type="file" hidden ref={llmInputRef} onChange={handleLlmFileChange} accept=".pdf,.docx,.txt" />
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${llmFile ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                    <Bot size={24} />
+                                </div>
+                                <h4 className="font-bold text-slate-700 text-sm">Knowledge Base Document</h4>
+                                <p className="text-xs text-slate-500 px-4">
+                                    {llmFile ? llmFile.name : "Upload policies or manuals for the AI Assistant"}
+                                </p>
+                            </div>
+
                         </div>
 
-                        <div className="p-6 pt-2 flex gap-3">
-                            <button onClick={resetForm} disabled={isUploading} className="flex-1 py-2.5 border border-slate-200 text-slate-600 rounded-lg font-medium hover:bg-slate-50 transition-colors">
-                                Cancel
-                            </button>
-                            <button 
-                                onClick={handleSaveNew}
-                                disabled={isUploading || !selectedFile}
-                                className="flex-1 py-2.5 bg-fab-royal text-white rounded-lg font-medium hover:bg-fab-blue shadow-lg shadow-fab-royal/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
-                            >
-                                {isUploading ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />} 
-                                {isUploading ? 'Uploading...' : 'Upload & Process'}
-                            </button>
+                        <div className="px-8 pb-8 pt-2">
+                             <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex items-start gap-2 mb-6">
+                                <div className="mt-0.5 text-blue-500"><PlayCircle size={16} /></div>
+                                <p className="text-xs text-blue-700">
+                                    Uploading these documents will automatically link them to <strong>PIL CONVENTIONAL</strong>. The SOP document will be processed to generate the visualization.
+                                </p>
+                             </div>
+
+                             <div className="flex gap-3">
+                                <button onClick={resetForm} disabled={isUploading} className="flex-1 py-3 border border-slate-200 text-slate-600 rounded-xl font-medium hover:bg-slate-50 transition-colors">
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handleUploadAll}
+                                    disabled={isUploading || (!sopFile && !llmFile)}
+                                    className="flex-[2] py-3 bg-fab-royal text-white rounded-xl font-medium hover:bg-fab-blue shadow-lg shadow-fab-royal/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:grayscale"
+                                >
+                                    {isUploading ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />} 
+                                    {isUploading ? 'Processing...' : 'Upload & Process'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
 
-             {/* View Details Modal */}
-             {isViewModalOpen && currentDoc && (
+            {/* View Details Modal (Simplified) */}
+            {isViewModalOpen && currentDoc && (
                 <div className="fixed inset-0 z-50 bg-fab-navy/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-fab-navy text-white">
-                            <h3 className="font-bold flex items-center gap-2"><FileText size={18} /> Document Details</h3>
+                            <h3 className="font-bold">Document Details</h3>
                             <button onClick={resetForm} className="text-white/70 hover:text-white"><X size={20} /></button>
                         </div>
-                        
-                        <div className="p-8 grid grid-cols-2 gap-y-6 gap-x-8">
-                            <div>
-                                <label className="text-xs font-bold text-slate-400 uppercase">SOP Name / Product ID</label>
-                                <p className="text-lg font-bold text-fab-navy">{currentDoc.sopName || currentDoc.metadata?.productId}</p>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-slate-400 uppercase">Index Reference</label>
-                                <p className="text-base font-mono text-slate-700">{currentDoc.indexName || 'N/A'}</p>
-                            </div>
-                            
-                            <div className="col-span-2">
-                                <label className="text-xs font-bold text-slate-400 uppercase">Description</label>
-                                <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100 mt-1">{currentDoc.description}</p>
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-bold text-slate-400 uppercase">Document File</label>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <File size={16} className="text-fab-light" />
-                                    <span className="text-sm font-medium text-slate-700">{currentDoc.documentName}</span>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-slate-400 uppercase">Status</label>
-                                <p className="text-sm font-bold text-slate-700">{currentDoc.status}</p>
-                            </div>
-
-                             <div>
-                                <label className="text-xs font-bold text-slate-400 uppercase">Uploaded By</label>
-                                <p className="text-sm text-slate-700">{currentDoc.uploadedBy}</p>
-                            </div>
-                             <div>
-                                <label className="text-xs font-bold text-slate-400 uppercase">Upload Date</label>
-                                <p className="text-sm text-slate-700">{currentDoc.uploadedDate}</p>
-                            </div>
-
-                            <div className="col-span-2 pt-4 border-t border-slate-100 flex justify-end gap-3">
-                                <button onClick={resetForm} className="px-6 py-2 bg-fab-royal text-white rounded-lg font-bold hover:bg-fab-blue shadow-lg shadow-fab-royal/20">Close</button>
+                        <div className="p-6">
+                            <pre className="text-xs bg-slate-50 p-4 rounded-lg overflow-auto max-h-60">
+                                {JSON.stringify(currentDoc, null, 2)}
+                            </pre>
+                             <div className="mt-4 flex justify-end">
+                                <button onClick={resetForm} className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">Close</button>
                             </div>
                         </div>
                     </div>
                 </div>
-             )}
+            )}
         </div>
     );
 };

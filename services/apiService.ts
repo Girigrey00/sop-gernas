@@ -1,7 +1,7 @@
 
 import { LibraryDocument, SopResponse } from '../types';
 
-const API_BASE_URL = 'http://127.0.0.1:8000'; // Default local backend
+const API_BASE_URL = 'https://cbgknowledgehubmvp.gernas.bankfab.com/api';
 
 // Helper to handle API errors
 const handleResponse = async (response: Response) => {
@@ -43,7 +43,8 @@ export const apiService = {
             // Store metadata needed for flow retrieval
             metadata: {
                 linkedApp: 'ProcessHub', // Default/Assumed for now if missing
-                productId: doc.product_id
+                productId: doc.product_id,
+                category: doc.category
             }
         }));
     },
