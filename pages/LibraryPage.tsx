@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
     Upload, FileText, Search, Filter, Eye, Edit2, Trash2, 
     CheckSquare, Square, X, Save, File, RefreshCw, PlayCircle,
-    Bot, GitMerge
+    Bot, GitMerge, FileStack, CheckCircle2
 } from 'lucide-react';
 import { LibraryDocument, SopResponse } from '../types';
 import { apiService } from '../services/apiService';
@@ -27,7 +27,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
 
     // Upload State
     const [sopFile, setSopFile] = useState<File | null>(null);
-    const [llmFile, setLlmFile] = useState<File | null>(null);
+    const [llmFiles, setLlmFiles] = useState<File[]>([]);
     const [isUploading, setIsUploading] = useState(false);
 
     const sopInputRef = useRef<HTMLInputElement>(null);
@@ -64,11 +64,20 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
     };
 
     const handleLlmFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) setLlmFile(e.target.files[0]);
+        if (e.target.files && e.target.files.length > 0) {
+            // Convert FileList to Array and append to existing files
+            const newFiles = Array.from(e.target.files);
+            setLlmFiles(prev => [...prev, ...newFiles]);
+        }
+    };
+
+    const removeSopFile = () => setSopFile(null);
+    const removeLlmFile = (index: number) => {
+        setLlmFiles(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleUploadAll = async () => {
-        if (!sopFile && !llmFile) return;
+        if (!sopFile && llmFiles.length === 0) return;
 
         setIsUploading(true);
         try {
@@ -85,16 +94,18 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
                 await apiService.uploadDocument(sopFile, metadata);
             }
 
-            // 2. Upload LLM File (for RAG/Chat)
-            if (llmFile) {
-                const metadata = {
-                    productId: 'PIL-CONV-001-KB', // Different ID or tag for KB
-                    linkedApp: 'ProcessHub',
-                    category: 'KnowledgeBase',
-                    description: 'Supporting documentation for PIL',
-                    generate_flow: false
-                };
-                await apiService.uploadDocument(llmFile, metadata);
+            // 2. Upload LLM Files (for RAG/Chat)
+            if (llmFiles.length > 0) {
+                for (const file of llmFiles) {
+                    const metadata = {
+                        productId: 'PIL-CONV-001-KB', // Different ID or tag for KB
+                        linkedApp: 'ProcessHub',
+                        category: 'KnowledgeBase',
+                        description: 'Supporting documentation for PIL',
+                        generate_flow: false
+                    };
+                    await apiService.uploadDocument(file, metadata);
+                }
             }
             
             // Refresh list
@@ -147,7 +158,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
 
     const resetForm = () => {
         setSopFile(null);
-        setLlmFile(null);
+        setLlmFiles([]);
         setCurrentDoc(null);
         setIsUploadModalOpen(false);
         setIsViewModalOpen(false);
@@ -293,67 +304,113 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
             {/* Simplified Upload Modal */}
             {isUploadModalOpen && (
                 <div className="fixed inset-0 z-50 bg-fab-navy/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 flex-shrink-0">
                             <h3 className="font-bold text-fab-navy">Upload Documents for PIL CONVENTIONAL</h3>
                             <button onClick={resetForm} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
                         </div>
                         
-                        <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                            
-                            {/* SOP Flow Upload */}
-                            <div 
-                                className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-48 ${sopFile ? 'border-fab-royal bg-fab-sky/10' : 'border-slate-200 hover:bg-slate-50'}`}
-                                onClick={() => sopInputRef.current?.click()}
-                            >
-                                <input type="file" hidden ref={sopInputRef} onChange={handleSopFileChange} accept=".pdf,.docx" />
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${sopFile ? 'bg-fab-royal text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                    <GitMerge size={24} />
+                        <div className="p-6 overflow-y-auto">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                {/* SOP Flow Upload */}
+                                <div 
+                                    className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-40 ${sopFile ? 'border-fab-royal bg-fab-sky/10' : 'border-slate-200 hover:bg-slate-50'}`}
+                                    onClick={() => sopInputRef.current?.click()}
+                                >
+                                    <input type="file" hidden ref={sopInputRef} onChange={handleSopFileChange} accept=".pdf,.docx" />
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${sopFile ? 'bg-fab-royal text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                        <GitMerge size={24} />
+                                    </div>
+                                    <h4 className="font-bold text-slate-700 text-sm">SOP Flow Chart Document</h4>
+                                    <p className="text-xs text-slate-500 px-4">
+                                        Single file upload (.pdf, .docx)
+                                    </p>
                                 </div>
-                                <h4 className="font-bold text-slate-700 text-sm">SOP Flow Chart Document</h4>
-                                <p className="text-xs text-slate-500 px-4">
-                                    {sopFile ? sopFile.name : "Upload the procedure document to generate the workflow"}
-                                </p>
+
+                                {/* LLM Knowledge Base Upload */}
+                                <div 
+                                    className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-40 ${llmFiles.length > 0 ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:bg-slate-50'}`}
+                                    onClick={() => llmInputRef.current?.click()}
+                                >
+                                    <input type="file" hidden ref={llmInputRef} onChange={handleLlmFileChange} accept=".pdf,.docx,.txt" multiple />
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${llmFiles.length > 0 ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                        <Bot size={24} />
+                                    </div>
+                                    <h4 className="font-bold text-slate-700 text-sm">Knowledge Base Documents</h4>
+                                    <p className="text-xs text-slate-500 px-4">
+                                        Multiple file upload supported
+                                    </p>
+                                </div>
                             </div>
 
-                            {/* LLM Knowledge Base Upload */}
-                            <div 
-                                className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-48 ${llmFile ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:bg-slate-50'}`}
-                                onClick={() => llmInputRef.current?.click()}
-                            >
-                                <input type="file" hidden ref={llmInputRef} onChange={handleLlmFileChange} accept=".pdf,.docx,.txt" />
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${llmFile ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                    <Bot size={24} />
+                            {/* Selected Documents List */}
+                            {(sopFile || llmFiles.length > 0) && (
+                                <div className="mb-6">
+                                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Selected Documents</h4>
+                                    <div className="space-y-2">
+                                        {/* SOP File */}
+                                        {sopFile && (
+                                            <div className="flex items-center justify-between p-3 bg-fab-sky/10 border border-fab-royal/20 rounded-lg">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-white rounded-md text-fab-royal">
+                                                        <GitMerge size={16} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-fab-navy">{sopFile.name}</p>
+                                                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                                                            SOP Flow Source • {(sopFile.size / 1024).toFixed(0)} KB
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button onClick={removeSopFile} className="text-slate-400 hover:text-rose-500 p-1">
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {/* LLM Files */}
+                                        {llmFiles.map((file, index) => (
+                                            <div key={`${file.name}-${index}`} className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-100 rounded-lg">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-white rounded-md text-emerald-600">
+                                                        <FileStack size={16} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-slate-800">{file.name}</p>
+                                                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                                                            Knowledge Base • {(file.size / 1024).toFixed(0)} KB
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => removeLlmFile(index)} className="text-slate-400 hover:text-rose-500 p-1">
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                                <h4 className="font-bold text-slate-700 text-sm">Knowledge Base Document</h4>
-                                <p className="text-xs text-slate-500 px-4">
-                                    {llmFile ? llmFile.name : "Upload policies or manuals for the AI Assistant"}
-                                </p>
-                            </div>
+                            )}
 
-                        </div>
-
-                        <div className="px-8 pb-8 pt-2">
-                             <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex items-start gap-2 mb-6">
+                             <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex items-start gap-2 mb-2">
                                 <div className="mt-0.5 text-blue-500"><PlayCircle size={16} /></div>
                                 <p className="text-xs text-blue-700">
                                     Uploading these documents will automatically link them to <strong>PIL CONVENTIONAL</strong>. The SOP document will be processed to generate the visualization.
                                 </p>
                              </div>
+                        </div>
 
-                             <div className="flex gap-3">
-                                <button onClick={resetForm} disabled={isUploading} className="flex-1 py-3 border border-slate-200 text-slate-600 rounded-xl font-medium hover:bg-slate-50 transition-colors">
-                                    Cancel
-                                </button>
-                                <button 
-                                    onClick={handleUploadAll}
-                                    disabled={isUploading || (!sopFile && !llmFile)}
-                                    className="flex-[2] py-3 bg-fab-royal text-white rounded-xl font-medium hover:bg-fab-blue shadow-lg shadow-fab-royal/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:grayscale"
-                                >
-                                    {isUploading ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />} 
-                                    {isUploading ? 'Processing...' : 'Upload & Process'}
-                                </button>
-                            </div>
+                        <div className="px-6 pb-6 pt-2 flex gap-3 flex-shrink-0">
+                            <button onClick={resetForm} disabled={isUploading} className="flex-1 py-3 border border-slate-200 text-slate-600 rounded-xl font-medium hover:bg-slate-50 transition-colors">
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={handleUploadAll}
+                                disabled={isUploading || (!sopFile && llmFiles.length === 0)}
+                                className="flex-[2] py-3 bg-fab-royal text-white rounded-xl font-medium hover:bg-fab-blue shadow-lg shadow-fab-royal/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:grayscale"
+                            >
+                                {isUploading ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />} 
+                                {isUploading ? 'Processing...' : 'Upload & Process'}
+                            </button>
                         </div>
                     </div>
                 </div>
