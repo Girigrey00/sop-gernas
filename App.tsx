@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import CanvasPage from './pages/CanvasPage';
@@ -25,8 +26,7 @@ import {
     Gem,
     Percent,
     BadgeDollarSign,
-    Menu,
-    BookOpen
+    Menu
 } from 'lucide-react';
 
 // --- Constants ---
@@ -385,6 +385,14 @@ const App: React.FC = () => {
       setIsSidebarOpen(false);
   };
 
+  // Handler for opening an SOP from Library
+  const handleOpenSopFromLibrary = (data: SopResponse) => {
+      setSelectedSop(data);
+      setInitialPrompt(''); // Not from prompt
+      setCurrentView('CANVAS');
+      setIsSidebarOpen(false);
+  };
+
   const renderContent = () => {
     switch (currentView) {
       case 'HOME':
@@ -392,7 +400,7 @@ const App: React.FC = () => {
       case 'SOPS':
         return <HomePage onStart={handleStart} />;
       case 'LIBRARY':
-        return <LibraryPage />;
+        return <LibraryPage onOpenSop={handleOpenSopFromLibrary} />;
       case 'CANVAS':
         return (
             <CanvasPage 

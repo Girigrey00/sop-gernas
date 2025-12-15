@@ -101,8 +101,13 @@ export interface LibraryDocument {
   uploadedBy: string;
   uploadedDate: string;
   indexName: string;
-  status: 'Active' | 'Draft' | 'Archived';
+  status: 'Active' | 'Draft' | 'Archived' | 'Processing' | 'Completed' | 'Failed';
   version: string;
+  metadata?: {
+      linkedApp?: string;
+      productId?: string;
+      [key: string]: any;
+  };
 }
 
 // Layout types
