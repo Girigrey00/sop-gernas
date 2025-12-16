@@ -148,17 +148,20 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
         setIsLoading(true);
         try {
             // Attempt to fetch the process flow
+            // Note: The getProcessFlow service now handles normalization of snake_case to camelCase
             const flowData = await apiService.getProcessFlow('ProcessHub', item.productId);
-            if (flowData && flowData.processFlow) {
-                // If flow exists, open it
+            
+            if (flowData) {
+                // If flow exists, open it directly in Canvas
                 onStart(flowData);
             } else {
-                // If not found or empty (though getProcessFlow throws on 404 usually), redirect to upload
-                onRedirectToUpload();
+                console.warn("API returned no data for flow");
+                alert("The flow data for this product could not be retrieved. Please check the backend.");
             }
         } catch (error) {
-            console.log("Flow not found, redirecting to library to upload", error);
-            onRedirectToUpload();
+            console.error("Flow fetch error:", error);
+            // We do NOT redirect to library anymore. We stay here and show error.
+            alert("Failed to load the process flow. Please try again or check your connection.");
         } finally {
             setIsLoading(false);
         }
@@ -194,7 +197,7 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
                 {isLoading ? (
                      <div className="flex flex-col items-center justify-center h-64 text-slate-500">
                         <div className="w-10 h-10 border-4 border-fab-royal/20 border-t-fab-royal rounded-full animate-spin mb-4"></div>
-                        <p>Checking for existing documentation...</p>
+                        <p>Loading Workflow Data...</p>
                      </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">

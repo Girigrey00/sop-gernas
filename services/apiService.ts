@@ -49,7 +49,8 @@ export const apiService = {
             metadata: {
                 linkedApp: 'ProcessHub', // Default/Assumed for now if missing
                 productId: doc.product_id,
-                category: doc.category
+                category: doc.category,
+                generate_flow: doc.generate_flow // Ensure we keep track if it generates a flow
             }
         }));
     },
@@ -139,7 +140,57 @@ export const apiService = {
         // We use productId directly as the ID path parameter
         const url = `${API_BASE_URL}/process-flow/${productId}`;
         console.log("Fetching Flow from:", url);
-        const data = await handleResponse(await fetch(url));
-        return data as SopResponse;
+        
+        const json = await handleResponse(await fetch(url));
+        
+        console.log("Raw Process Flow Response:", json);
+
+        // Normalize snake_case (backend) to camelCase (frontend)
+        // Check both conventions to be safe
+        const flow = json.processFlow || json.process_flow;
+        const def = json.processDefinition || json.process_definition;
+        const start = json.startNode || json.start_node;
+        const end = json.endNode || json.end_node;
+        const risks = json.inherentRisks || json.inherent_risks || [];
+        
+        // Deep normalize Stages if necessary
+        if (flow && flow.stages) {
+            flow.stages = flow.stages.map((s: any) => ({
+                stageId: s.stageId || s.stage_id,
+                stageName: s.stageName || s.stage_name,
+                description: s.description,
+                steps: (s.steps || []).map((st: any) => ({
+                    stepId: st.stepId || st.step_id,
+                    stepName: st.stepName || st.step_name,
+                    description: st.description,
+                    actor: st.actor,
+                    stepType: st.stepType || st.step_type,
+                    nextStep: st.nextStep || st.next_step,
+                    decisionBranches: (st.decisionBranches || st.decision_branches || []).map((b: any) => ({
+                        condition: b.condition,
+                        nextStep: b.nextStep || b.next_step
+                    })),
+                    risksMitigated: st.risksMitigated || st.risks_mitigated || [],
+                    controls: st.controls || [],
+                    policies: st.policies || [],
+                    automationLevel: st.automationLevel || st.automation_level
+                }))
+            }));
+        }
+
+        const normalizedData: SopResponse = {
+            startNode: start,
+            endNode: end,
+            processDefinition: def,
+            processObjectives: json.processObjectives || json.process_objectives || [],
+            inherentRisks: risks,
+            processFlow: flow,
+            metricsAndMeasures: json.metricsAndMeasures || json.metrics_and_measures || [],
+            policiesAndStandards: json.policiesAndStandards || json.policies_and_standards || [],
+            qualityAssurance: json.qualityAssurance || json.quality_assurance || [],
+            metadata: json.metadata
+        };
+
+        return normalizedData;
     }
 };
