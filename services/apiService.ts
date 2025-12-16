@@ -135,60 +135,69 @@ export const apiService = {
     },
 
     // Retrieve the generated Process Flow JSON
-    // Updated to use the direct ID endpoint as requested: /api/process-flow/:id
+    // Updated to handle deeply nested JSON structure from backend
     getProcessFlow: async (linkedApp: string, productId: string): Promise<SopResponse> => {
-        // We use productId directly as the ID path parameter
         const url = `${API_BASE_URL}/process-flow/${productId}`;
         console.log("Fetching Flow from:", url);
         
         const json = await handleResponse(await fetch(url));
-        
         console.log("Raw Process Flow Response:", json);
 
-        // Normalize snake_case (backend) to camelCase (frontend)
-        // Check both conventions to be safe
-        const flow = json.processFlow || json.process_flow;
-        const def = json.processDefinition || json.process_definition;
-        const start = json.startNode || json.start_node;
-        const end = json.endNode || json.end_node;
-        const risks = json.inherentRisks || json.inherent_risks || [];
-        
-        // Deep normalize Stages if necessary
-        if (flow && flow.stages) {
-            flow.stages = flow.stages.map((s: any) => ({
-                stageId: s.stageId || s.stage_id,
-                stageName: s.stageName || s.stage_name,
-                description: s.description,
-                steps: (s.steps || []).map((st: any) => ({
-                    stepId: st.stepId || st.step_id,
-                    stepName: st.stepName || st.step_name,
-                    description: st.description,
-                    actor: st.actor,
-                    stepType: st.stepType || st.step_type,
-                    nextStep: st.nextStep || st.next_step,
-                    decisionBranches: (st.decisionBranches || st.decision_branches || []).map((b: any) => ({
-                        condition: b.condition,
-                        nextStep: b.nextStep || b.next_step
-                    })),
-                    risksMitigated: st.risksMitigated || st.risks_mitigated || [],
-                    controls: st.controls || [],
-                    policies: st.policies || [],
-                    automationLevel: st.automationLevel || st.automation_level
-                }))
-            }));
+        // 1. Extract the Core Data Container
+        // The API returns { document_id, ..., process_flow: { ... content ... } }
+        // We need to look inside 'process_flow' (snake_case) or 'processFlow' (camelCase)
+        // If the API returns the object directly, use 'json' itself.
+        const core = json.process_flow || json.processFlow || json;
+
+        if (!core) {
+            throw new Error("Invalid API Response: Missing process_flow data");
         }
 
+        // 2. Extract the Stages Container
+        // Inside the core data, the stages are usually inside a 'processFlow' property (yes, nested again)
+        const flowContainer = core.processFlow || core.process_flow || {};
+        const rawStages = flowContainer.stages || core.stages || [];
+
+        console.log("Extracted Stages:", rawStages.length);
+
+        // 3. Normalize Stages & Steps
+        const stages = rawStages.map((s: any) => ({
+            stageId: s.stageId || s.stage_id,
+            stageName: s.stageName || s.stage_name,
+            description: s.description,
+            steps: (s.steps || []).map((st: any) => ({
+                stepId: st.stepId || st.step_id,
+                stepName: st.stepName || st.step_name,
+                description: st.description,
+                actor: st.actor,
+                stepType: st.stepType || st.step_type,
+                nextStep: st.nextStep || st.next_step,
+                decisionBranches: (st.decisionBranches || st.decision_branches || []).map((b: any) => ({
+                    condition: b.condition,
+                    nextStep: b.nextStep || b.next_step
+                })),
+                risksMitigated: st.risksMitigated || st.risks_mitigated || [],
+                controls: st.controls || [],
+                policies: st.policies || [],
+                automationLevel: st.automationLevel || st.automation_level
+            }))
+        }));
+
+        // 4. Construct Final Response
+        // We look for definitions in 'core' (the SOP object level)
         const normalizedData: SopResponse = {
-            startNode: start,
-            endNode: end,
-            processDefinition: def,
-            processObjectives: json.processObjectives || json.process_objectives || [],
-            inherentRisks: risks,
-            processFlow: flow,
-            metricsAndMeasures: json.metricsAndMeasures || json.metrics_and_measures || [],
-            policiesAndStandards: json.policiesAndStandards || json.policies_and_standards || [],
-            qualityAssurance: json.qualityAssurance || json.quality_assurance || [],
-            metadata: json.metadata
+            startNode: core.startNode || core.start_node,
+            endNode: core.endNode || core.end_node,
+            processDefinition: core.processDefinition || core.process_definition,
+            processObjectives: core.processObjectives || core.process_objectives || [],
+            inherentRisks: core.inherentRisks || core.inherent_risks || [],
+            processFlow: {
+                stages: stages
+            },
+            metricsAndMeasures: core.metricsAndMeasures || core.metrics_and_measures || [],
+            policiesAndStandards: core.policiesAndStandards || core.policies_and_standards || [],
+            qualityAssurance: core.qualityAssurance || core.quality_assurance || [],
+            metadata: core.metadata || json.metadata
         };
 
         return normalizedData;

@@ -453,8 +453,8 @@ export const convertSopToFlowData = (data: SopResponse, layoutType: LayoutType =
     let nodes: Node[] = [];
 
     // Validation
-    if (!data || !data.startNode || !data.processFlow) {
-        console.warn("Invalid data passed to layout converter");
+    if (!data || !data.startNode) {
+        console.warn("Invalid data passed to layout converter: Missing startNode");
         return { nodes: [], edges: [] };
     }
 

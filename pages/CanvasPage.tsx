@@ -60,7 +60,11 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
     // Helper to safely load data
     const loadData = useCallback((data: SopResponse) => {
         try {
-            console.log("Loading data...", data.processDefinition?.title);
+            console.log("Loading data into Canvas...", data?.processDefinition?.title);
+            if (!data || !data.processFlow) {
+                console.warn("Cannot load data: missing processFlow structure");
+                return;
+            }
             setSopData(data);
             const { nodes: newNodes, edges: newEdges } = convertSopToFlowData(data, layoutMode);
             setNodes(newNodes);
@@ -172,7 +176,7 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
 
     // --- Filtering Logic for Stages ---
     const visibleData = useMemo(() => {
-        if (activeStage === 'ALL' || !sopData || !sopData.processFlow) {
+        if (activeStage === 'ALL' || !sopData || !sopData.processFlow || !sopData.processFlow.stages) {
             return { nodes, edges };
         }
 
@@ -182,8 +186,8 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
         const stageStepIds = new Set(currentStageObj.steps.map(s => s.stepId));
         
         // Determine if we should show start/end nodes
-        const isFirstStage = sopData.processFlow.stages[0].stageId === activeStage;
-        const isLastStage = sopData.processFlow.stages[sopData.processFlow.stages.length - 1].stageId === activeStage;
+        const isFirstStage = sopData.processFlow.stages[0]?.stageId === activeStage;
+        const isLastStage = sopData.processFlow.stages[sopData.processFlow.stages.length - 1]?.stageId === activeStage;
 
         const filteredNodes = nodes.filter(node => {
             // Always show the Stage Group Header if in Swimlane
@@ -232,7 +236,7 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
             setCenter(targetNode.position.x + 150, targetNode.position.y + 75, { zoom: 1, duration: 1000 });
             
             // If we are in stage view, switch to the stage containing this step
-            if (activeStage !== 'ALL' && sopData && sopData.processFlow) {
+            if (activeStage !== 'ALL' && sopData && sopData.processFlow && sopData.processFlow.stages) {
                  const stage = sopData.processFlow.stages.find(s => s.steps.some(step => step.stepId === nextStepId));
                  if (stage && stage.stageId !== activeStage) {
                      setActiveStage(stage.stageId);
@@ -257,13 +261,19 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
 
     // Dynamic Actor Legend
     const actorLegend = useMemo(() => {
-        if (!sopData || !sopData.processFlow) return [];
+        // Strict null checks to prevent crashes if data is partial
+        if (!sopData || !sopData.processFlow || !Array.isArray(sopData.processFlow.stages)) return [];
+        
         const actors = new Set<string>();
-        sopData.processFlow.stages.forEach(s => s.steps.forEach(st => {
-            if (st.actor && st.actor !== 'Start' && st.actor !== 'End') {
-                actors.add(st.actor);
+        sopData.processFlow.stages.forEach(s => {
+            if (s && Array.isArray(s.steps)) {
+                s.steps.forEach(st => {
+                    if (st && st.actor && st.actor !== 'Start' && st.actor !== 'End') {
+                        actors.add(st.actor);
+                    }
+                });
             }
-        }));
+        });
 
         return Array.from(actors).map(actor => {
             const theme = getActorTheme(actor);
