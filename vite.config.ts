@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
     base: './', // Ensures assets are loaded correctly on static hosts
     plugins: [react()],
     server: {
-      port: 3000, // Using 3000 to avoid EACCES errors on non-root environments (443 requires root)
+      port: 3000, // Keep port 3000 to avoid EACCES permission issues
       proxy: {
         '/api': {
           target: 'https://cbgknowledgehubmvp.gernas.bankfab.com',

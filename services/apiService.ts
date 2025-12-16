@@ -1,7 +1,10 @@
 
 import { LibraryDocument, SopResponse } from '../types';
 
-const API_BASE_URL = 'https://cbgknowledgehubmvp.gernas.bankfab.com/api';
+// CHANGED: Use relative path to leverage Vite Proxy configured in vite.config.ts
+// This resolves CORS issues by routing requests through the local dev server
+const API_BASE_URL = '/api';
+
 // Container SAS URL for direct upload
 const AZURE_SAS_URL = "https://auranpunawlsa.blob.core.windows.net/cbg-knowledge-hub?sp=rawl&st=2025-11-28T17:25:15Z&se=2026-03-31T01:40:15Z&spr=https&sv=2024-11-04&sr=c&sig=YE9KebhPjaR8a4lsQXgIBWOxIx2tQg2x%2FpeFOmTGpNY%3D";
 
