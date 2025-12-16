@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
     base: './', // Ensures assets are loaded correctly on static hosts
     plugins: [react()],
     server: {
-      port: 443,
+      port: 3000,
       proxy: {
         '/api': {
           target: 'https://cbgknowledgehubmvp.gernas.bankfab.com',

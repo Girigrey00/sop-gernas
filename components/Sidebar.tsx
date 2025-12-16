@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Compass, FileClock, LogOut, Hexagon, ChevronRight, BookOpen } from 'lucide-react';
+import { Compass, FileClock, LogOut, Hexagon, ChevronRight, BookOpen, GitMerge } from 'lucide-react';
 import { View } from '../types';
 
 interface SidebarProps {
@@ -11,9 +12,10 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout }) => {
   
   const navItems = [
-    { id: 'HOME', label: 'CBG KNOWLEDGE HUB', icon: Compass },
-    { id: 'LIBRARY', label: 'Library', icon: BookOpen },
+    { id: 'HOME', label: 'Home', icon: Compass },
+    { id: 'CANVAS', label: 'Canvas', icon: GitMerge },
     { id: 'HISTORY', label: 'History', icon: FileClock },
+    { id: 'LIBRARY', label: 'Library', icon: BookOpen },
   ];
 
   return (
@@ -35,8 +37,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout }) 
         <p className="px-3 mb-2 text-[10px] font-bold text-fab-sky/50 uppercase tracking-wider">Navigation</p>
         {navItems.map(item => {
             const Icon = item.icon;
-            // Map CANVAS view to HOME (Hub) for sidebar highlighting if needed
-            const isActive = currentView === item.id || (item.id === 'HOME' && (currentView === 'CANVAS' || currentView === 'SOPS'));
+            // Highlight logic
+            const isActive = currentView === item.id || (item.id === 'HOME' && currentView === 'SOPS');
+            
             return (
               <button
                 key={item.id}
