@@ -33,9 +33,6 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
     const sopInputRef = useRef<HTMLInputElement>(null);
     const llmInputRef = useRef<HTMLInputElement>(null);
 
-    // UUID for PIL CONVENTIONAL
-    const PIL_CONV_ID = "ccaf1e1e-1fb4-4403-aad3-a70019dfb1ee";
-
     // Handle Initial Open Prop
     useEffect(() => {
         if (initialUploadOpen) {
@@ -87,7 +84,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
             // 1. Upload SOP File (for Flow Generation)
             if (sopFile) {
                 const metadata = {
-                    productId: PIL_CONV_ID, // Use specific UUID
+                    productId: 'PIL-CONV-001', // Standardized Product ID
                     sopName: 'PIL CONVENTIONAL',
                     linkedApp: 'ProcessHub',
                     category: 'SOP',
@@ -101,7 +98,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
             if (llmFiles.length > 0) {
                 for (const file of llmFiles) {
                     const metadata = {
-                        productId: PIL_CONV_ID, // Link to same UUID
+                        productId: 'PIL-CONV-001', // Same Product ID to link them
                         linkedApp: 'ProcessHub',
                         category: 'KnowledgeBase',
                         description: 'Supporting Knowledge Base Document',
@@ -403,7 +400,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
                              <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex items-start gap-2 mb-2">
                                 <div className="mt-0.5 text-blue-500"><PlayCircle size={16} /></div>
                                 <p className="text-xs text-blue-700 leading-relaxed">
-                                    All documents will be linked to <strong>PIL CONVENTIONAL (ID: {PIL_CONV_ID.substring(0, 8)}...)</strong>. The SOP file will be analyzed to generate the process flow visualization.
+                                    All documents will be linked to <strong>PIL CONVENTIONAL (ID: PIL-CONV-001)</strong>. The SOP file will be analyzed to generate the process flow visualization.
                                 </p>
                              </div>
                         </div>
