@@ -60,7 +60,7 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
     // Helper to safely load data
     const loadData = useCallback((data: SopResponse) => {
         try {
-            console.log("Loading data...", data.processDefinition.title);
+            console.log("Loading data...", data.processDefinition?.title);
             setSopData(data);
             const { nodes: newNodes, edges: newEdges } = convertSopToFlowData(data, layoutMode);
             setNodes(newNodes);
@@ -77,15 +77,13 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
     // Initial Load Effect
     useEffect(() => {
         if (initialData) {
-            // If history data is passed, use it directly
+            // Use real data passed from App/API
             loadData(initialData);
         } else if (initialPrompt) {
-            // Otherwise generate from prompt
+            // Generate from prompt
             handleGenerateFlow(initialPrompt);
-        } else {
-            // Fallback / Default
-            loadData(MOCK_SOP_DATA);
-        }
+        } 
+        // Removed default MOCK_SOP_DATA fallback to prevent confusion
     }, [initialPrompt, initialData]);
 
     // Re-run layout when layoutMode changes
@@ -98,39 +96,19 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
     // Reset active stage when loading new data
     useEffect(() => {
         setActiveStage('ALL');
-    }, [sopData?.processDefinition.title]);
+    }, [sopData?.processDefinition?.title]);
 
     const handleGenerateFlow = async (prompt: string) => {
         setIsLoading(true);
 
-        // SHORTCUT: If the prompt matches our demo content, load it immediately without API calls
-        // Fix: Case insensitive check
-        const upperPrompt = prompt.toUpperCase();
-        if (upperPrompt.includes("PERSONAL INCOME LOAN") || upperPrompt.includes("PIL")) {
-            console.log("Loading Matching Mock Data for:", prompt);
-            loadData(MOCK_SOP_DATA);
-            if (onFlowGenerated) onFlowGenerated(MOCK_SOP_DATA, prompt);
-            setIsLoading(false);
-            return;
-        }
-
         try {
             if (!process.env.API_KEY) {
-                console.log("Demo Mode: Simulating Generation");
-                setTimeout(() => {
-                    try {
-                        loadData(MOCK_SOP_DATA);
-                        if (onFlowGenerated) onFlowGenerated(MOCK_SOP_DATA, prompt);
-                    } catch (e) {
-                        console.error("Mock load failed", e);
-                    } finally {
-                        setIsLoading(false);
-                    }
-                }, 1500);
+                console.warn("No API Key found for generation. Demo mode disabled for production accuracy.");
+                setIsLoading(false);
                 return;
             }
             
-            // Real API Call
+            // Real API Call to Gemini
             const response = await generateSopFlow(prompt);
             loadData(response);
             if (onFlowGenerated) onFlowGenerated(response, prompt);
@@ -176,7 +154,7 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
             })
             .then((dataUrl) => {
                 const link = document.createElement('a');
-                link.download = `${sopData?.processDefinition.title.replace(/\s+/g, '_') || 'sop-flow'}.jpg`;
+                link.download = `${sopData?.processDefinition?.title.replace(/\s+/g, '_') || 'sop-flow'}.jpg`;
                 link.href = dataUrl;
                 link.click();
             })
@@ -194,7 +172,7 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
 
     // --- Filtering Logic for Stages ---
     const visibleData = useMemo(() => {
-        if (activeStage === 'ALL' || !sopData) {
+        if (activeStage === 'ALL' || !sopData || !sopData.processFlow) {
             return { nodes, edges };
         }
 
@@ -212,10 +190,10 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
             if (node.id === `stage-${activeStage}`) return true;
             
             // Show Start Node if first stage
-            if (isFirstStage && node.id === sopData.startNode.stepId) return true;
+            if (isFirstStage && sopData.startNode && node.id === sopData.startNode.stepId) return true;
             
             // Show End Node if last stage
-            if (isLastStage && node.id === sopData.endNode.stepId) return true;
+            if (isLastStage && sopData.endNode && node.id === sopData.endNode.stepId) return true;
 
             // Show steps belonging to this stage
             return stageStepIds.has(node.id);
@@ -254,14 +232,14 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
             setCenter(targetNode.position.x + 150, targetNode.position.y + 75, { zoom: 1, duration: 1000 });
             
             // If we are in stage view, switch to the stage containing this step
-            if (activeStage !== 'ALL' && sopData) {
+            if (activeStage !== 'ALL' && sopData && sopData.processFlow) {
                  const stage = sopData.processFlow.stages.find(s => s.steps.some(step => step.stepId === nextStepId));
                  if (stage && stage.stageId !== activeStage) {
                      setActiveStage(stage.stageId);
                  }
             }
 
-        } else if (nextStepId === 'END' && sopData) {
+        } else if (nextStepId === 'END' && sopData && sopData.endNode) {
             setSelectedStep(sopData.endNode);
             const endNode = nodes.find(n => n.id === sopData.endNode.stepId);
             if (endNode) {
@@ -279,10 +257,8 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
 
     // Dynamic Actor Legend
     const actorLegend = useMemo(() => {
-        if (!sopData) return [];
+        if (!sopData || !sopData.processFlow) return [];
         const actors = new Set<string>();
-        // Filter out "Start" and "End" nodes from the legend logic
-        // Only include actual actors from the process steps
         sopData.processFlow.stages.forEach(s => s.steps.forEach(st => {
             if (st.actor && st.actor !== 'Start' && st.actor !== 'End') {
                 actors.add(st.actor);

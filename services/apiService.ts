@@ -57,16 +57,21 @@ export const apiService = {
     // Upload to Azure Blob Storage using SAS Token
     uploadToAzure: async (file: File): Promise<string> => {
         const sasUrl = new URL(AZURE_SAS_URL);
-        const containerUrl = `${sasUrl.origin}${sasUrl.pathname}`;
-        const sasToken = sasUrl.search;
-        
-        // Construct full URL: Container + / + Filename + SAS
-        // Note: Filename should be URL encoded
         const fileName = encodeURIComponent(file.name);
-        const uploadUrl = `${containerUrl}/${fileName}${sasToken}`;
         
-        // We PUT the file to this URL
-        const response = await fetch(uploadUrl, {
+        // 1. Construct the Real URL (this is what the backend needs to know)
+        // Format: https://host/container/filename?sas
+        const realBlobUrl = `${sasUrl.origin}${sasUrl.pathname}/${fileName}${sasUrl.search}`;
+
+        // 2. Construct the Proxy URL (this is what the browser uses to upload to bypass CORS)
+        // Format: /azure-blob/container/filename?sas
+        // We strip the origin and replace it with our proxy prefix defined in vite.config.ts
+        const proxyUploadUrl = `/azure-blob${sasUrl.pathname}/${fileName}${sasUrl.search}`;
+        
+        console.log("Uploading to Proxy URL:", proxyUploadUrl);
+
+        // We PUT the file to the PROXY URL
+        const response = await fetch(proxyUploadUrl, {
             method: 'PUT',
             headers: {
                 'x-ms-blob-type': 'BlockBlob',
@@ -79,10 +84,8 @@ export const apiService = {
             throw new Error(`Azure Upload Failed: ${response.statusText}`);
         }
 
-        // Return the blob URL (usually we include the SAS token for the backend if it needs to read it immediately without its own credentials, 
-        // OR just the clean URL if backend has Managed Identity. 
-        // Based on the example payload, it expects the URL with SAS token)
-        return uploadUrl;
+        // Return the REAL URL to the backend, not the proxy URL
+        return realBlobUrl;
     },
 
     // Upload Document: 1. Upload to Azure, 2. Call Ingest API
@@ -91,7 +94,7 @@ export const apiService = {
             // 1. Upload to Azure Blob
             console.log("Starting Azure Upload...");
             const blobUrl = await apiService.uploadToAzure(file);
-            console.log("Azure Upload Success. Blob URL:", blobUrl);
+            console.log("Azure Upload Success. Real Blob URL:", blobUrl);
 
             // 2. Prepare Ingest Payload
             const payload = {

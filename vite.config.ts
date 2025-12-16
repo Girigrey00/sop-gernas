@@ -22,13 +22,21 @@ export default defineConfig(({ mode }) => {
               console.log('Proxy error:', err);
             });
             proxy.on('proxyReq', (_proxyReq, req) => {
-              console.log('Proxying:', req.method, req.url, '→', (options.target || '') + (req.url || ''));
-            });
-            proxy.on('proxyRes', (proxyRes, req) => {
-              console.log('Proxy response:', proxyRes.statusCode, req.url);
+              console.log('Proxying API:', req.method, req.url);
             });
           },
         },
+        '/azure-blob': {
+          target: 'https://auranpunawlsa.blob.core.windows.net',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/azure-blob/, ''),
+          configure: (proxy, options) => {
+             proxy.on('proxyReq', (_proxyReq, req) => {
+              console.log('Proxying Azure Blob:', req.method, req.url);
+            });
+          }
+        }
       },
     },
     define: {
