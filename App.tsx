@@ -20,8 +20,9 @@ import {
 } from 'lucide-react';
 
 // --- Constants ---
+// Updated Product ID to the specific UUID provided for PIL CONVENTIONAL
 const ALL_SOP_TEMPLATES = [
-    { icon: Briefcase, title: "PIL CONVENTIONAL", desc: "Conventional personal income loan flow", category: "Loans", productId: "PIL-CONV-001" },
+    { icon: Briefcase, title: "PIL CONVENTIONAL", desc: "Conventional personal income loan flow", category: "Loans", productId: "ccaf1e1e-1fb4-4403-aad3-a70019dfb1ee" },
 ];
 
 // --- Login Page Component ---
@@ -147,13 +148,13 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
     const handleCardClick = async (item: typeof ALL_SOP_TEMPLATES[0]) => {
         setIsLoading(true);
         try {
-            // Attempt to fetch the process flow
+            // Attempt to fetch the process flow using the specific ID
             const flowData = await apiService.getProcessFlow('ProcessHub', item.productId);
             if (flowData && flowData.processFlow) {
                 // If flow exists, open it
                 onStart(flowData);
             } else {
-                // If not found or empty (though getProcessFlow throws on 404 usually), redirect to upload
+                // If not found or empty, redirect to upload
                 onRedirectToUpload();
             }
         } catch (error) {
@@ -217,7 +218,7 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
                                 <p className="text-xs text-slate-500 leading-relaxed mb-4 flex-1">{item.desc}</p>
 
                                 <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-auto">
-                                    <span className="text-[10px] font-medium text-slate-400">ID: {item.productId}</span>
+                                    <span className="text-[10px] font-medium text-slate-400">ID: {item.productId.substring(0, 8)}...</span>
                                     <div className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
                                         Open <ArrowRight size={14} />
                                     </div>

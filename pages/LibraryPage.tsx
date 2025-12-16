@@ -1,9 +1,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-    Upload, FileText, Search, Filter, Eye, Edit2, Trash2, 
-    CheckSquare, Square, X, Save, File, RefreshCw, PlayCircle,
-    Bot, GitMerge, FileStack, CheckCircle2
+    Upload, FileText, Search, Eye, Trash2, 
+    CheckSquare, Square, X, Save, RefreshCw, PlayCircle,
+    Bot, GitMerge, FileStack
 } from 'lucide-react';
 import { LibraryDocument, SopResponse } from '../types';
 import { apiService } from '../services/apiService';
@@ -32,6 +32,9 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
 
     const sopInputRef = useRef<HTMLInputElement>(null);
     const llmInputRef = useRef<HTMLInputElement>(null);
+
+    // UUID for PIL CONVENTIONAL
+    const PIL_CONV_ID = "ccaf1e1e-1fb4-4403-aad3-a70019dfb1ee";
 
     // Handle Initial Open Prop
     useEffect(() => {
@@ -84,12 +87,12 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
             // 1. Upload SOP File (for Flow Generation)
             if (sopFile) {
                 const metadata = {
-                    productId: 'PIL-CONV-001', // Hardcoded for this MVP scenario
+                    productId: PIL_CONV_ID, // Use specific UUID
                     sopName: 'PIL CONVENTIONAL',
                     linkedApp: 'ProcessHub',
                     category: 'SOP',
-                    description: 'Uploaded via Library',
-                    generate_flow: true // Key flag
+                    description: 'Primary SOP Document for Flow Generation',
+                    generate_flow: true // Triggers backend flow extraction
                 };
                 await apiService.uploadDocument(sopFile, metadata);
             }
@@ -98,10 +101,10 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
             if (llmFiles.length > 0) {
                 for (const file of llmFiles) {
                     const metadata = {
-                        productId: 'PIL-CONV-001-KB', // Different ID or tag for KB
+                        productId: PIL_CONV_ID, // Link to same UUID
                         linkedApp: 'ProcessHub',
                         category: 'KnowledgeBase',
-                        description: 'Supporting documentation for PIL',
+                        description: 'Supporting Knowledge Base Document',
                         generate_flow: false
                     };
                     await apiService.uploadDocument(file, metadata);
@@ -238,7 +241,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
                                 <th className="p-4 w-12">S.No</th>
                                 <th className="p-4">SOP Name / Product ID</th>
                                 <th className="p-4">File Name</th>
-                                <th className="p-4">Type</th>
+                                <th className="p-4">Category</th>
                                 <th className="p-4">Date</th>
                                 <th className="p-4">Status</th>
                                 <th className="p-4 text-right">Actions</th>
@@ -264,7 +267,11 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
                                         </div>
                                     </td>
                                     <td className="p-4">
-                                        <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded font-medium">
+                                        <span className={`text-xs px-2 py-1 rounded font-medium border ${
+                                            doc.metadata?.category === 'SOP' 
+                                            ? 'bg-purple-50 text-purple-600 border-purple-100' 
+                                            : 'bg-teal-50 text-teal-600 border-teal-100'
+                                        }`}>
                                             {doc.metadata?.category || 'General'}
                                         </span>
                                     </td>
@@ -310,59 +317,63 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
                             <button onClick={resetForm} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
                         </div>
                         
-                        <div className="p-6 overflow-y-auto">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div className="p-6 overflow-y-auto custom-scrollbar">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                 {/* SOP Flow Upload */}
                                 <div 
-                                    className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-40 ${sopFile ? 'border-fab-royal bg-fab-sky/10' : 'border-slate-200 hover:bg-slate-50'}`}
+                                    className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-40 group ${sopFile ? 'border-fab-royal bg-fab-sky/5' : 'border-slate-200 hover:border-fab-royal hover:bg-slate-50'}`}
                                     onClick={() => sopInputRef.current?.click()}
                                 >
                                     <input type="file" hidden ref={sopInputRef} onChange={handleSopFileChange} accept=".pdf,.docx" />
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${sopFile ? 'bg-fab-royal text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${sopFile ? 'bg-fab-royal text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-fab-royal/10 group-hover:text-fab-royal'}`}>
                                         <GitMerge size={24} />
                                     </div>
-                                    <h4 className="font-bold text-slate-700 text-sm">SOP Flow Chart Document</h4>
-                                    <p className="text-xs text-slate-500 px-4">
-                                        Single file upload (.pdf, .docx)
+                                    <h4 className="font-bold text-slate-700 text-sm">SOP Flow Chart</h4>
+                                    <p className="text-[10px] text-slate-500 px-2 leading-tight">
+                                        Main procedure document for visualization
                                     </p>
                                 </div>
 
                                 {/* LLM Knowledge Base Upload */}
                                 <div 
-                                    className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-40 ${llmFiles.length > 0 ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:bg-slate-50'}`}
+                                    className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-40 group ${llmFiles.length > 0 ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-200 hover:border-emerald-500 hover:bg-slate-50'}`}
                                     onClick={() => llmInputRef.current?.click()}
                                 >
                                     <input type="file" hidden ref={llmInputRef} onChange={handleLlmFileChange} accept=".pdf,.docx,.txt" multiple />
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${llmFiles.length > 0 ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${llmFiles.length > 0 ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-emerald-100 group-hover:text-emerald-600'}`}>
                                         <Bot size={24} />
                                     </div>
-                                    <h4 className="font-bold text-slate-700 text-sm">Knowledge Base Documents</h4>
-                                    <p className="text-xs text-slate-500 px-4">
-                                        Multiple file upload supported
+                                    <h4 className="font-bold text-slate-700 text-sm">Knowledge Base</h4>
+                                    <p className="text-[10px] text-slate-500 px-2 leading-tight">
+                                        Policies, manuals & guidelines (Multi-upload)
                                     </p>
                                 </div>
                             </div>
 
                             {/* Selected Documents List */}
                             {(sopFile || llmFiles.length > 0) && (
-                                <div className="mb-6">
-                                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Selected Documents</h4>
-                                    <div className="space-y-2">
+                                <div className="mb-6 bg-slate-50 rounded-xl border border-slate-200 p-4">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Selected Documents</h4>
+                                        <span className="text-[10px] font-bold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
+                                            Total: {(sopFile ? 1 : 0) + llmFiles.length}
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
                                         {/* SOP File */}
                                         {sopFile && (
-                                            <div className="flex items-center justify-between p-3 bg-fab-sky/10 border border-fab-royal/20 rounded-lg">
+                                            <div className="flex items-center justify-between p-2.5 bg-white border border-fab-royal/20 rounded-lg shadow-sm">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-white rounded-md text-fab-royal">
+                                                    <div className="p-1.5 bg-fab-sky/20 rounded text-fab-royal">
                                                         <GitMerge size={16} />
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-bold text-fab-navy">{sopFile.name}</p>
-                                                        <p className="text-xs text-slate-500 flex items-center gap-1">
-                                                            SOP Flow Source • {(sopFile.size / 1024).toFixed(0)} KB
-                                                        </p>
+                                                        <p className="text-sm font-bold text-fab-navy truncate max-w-[200px]">{sopFile.name}</p>
+                                                        <span className="text-[10px] text-fab-royal bg-fab-sky/20 px-1.5 py-0.5 rounded">SOP Source</span>
                                                     </div>
                                                 </div>
-                                                <button onClick={removeSopFile} className="text-slate-400 hover:text-rose-500 p-1">
+                                                <button onClick={removeSopFile} className="text-slate-400 hover:text-rose-500 p-1.5 hover:bg-rose-50 rounded-md transition-colors">
                                                     <X size={16} />
                                                 </button>
                                             </div>
@@ -370,19 +381,17 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
 
                                         {/* LLM Files */}
                                         {llmFiles.map((file, index) => (
-                                            <div key={`${file.name}-${index}`} className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-100 rounded-lg">
+                                            <div key={`${file.name}-${index}`} className="flex items-center justify-between p-2.5 bg-white border border-emerald-100 rounded-lg shadow-sm">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-white rounded-md text-emerald-600">
+                                                    <div className="p-1.5 bg-emerald-100 rounded text-emerald-600">
                                                         <FileStack size={16} />
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-bold text-slate-800">{file.name}</p>
-                                                        <p className="text-xs text-slate-500 flex items-center gap-1">
-                                                            Knowledge Base • {(file.size / 1024).toFixed(0)} KB
-                                                        </p>
+                                                        <p className="text-sm font-bold text-slate-800 truncate max-w-[200px]">{file.name}</p>
+                                                        <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Knowledge Base</span>
                                                     </div>
                                                 </div>
-                                                <button onClick={() => removeLlmFile(index)} className="text-slate-400 hover:text-rose-500 p-1">
+                                                <button onClick={() => removeLlmFile(index)} className="text-slate-400 hover:text-rose-500 p-1.5 hover:bg-rose-50 rounded-md transition-colors">
                                                     <X size={16} />
                                                 </button>
                                             </div>
@@ -393,8 +402,8 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
 
                              <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex items-start gap-2 mb-2">
                                 <div className="mt-0.5 text-blue-500"><PlayCircle size={16} /></div>
-                                <p className="text-xs text-blue-700">
-                                    Uploading these documents will automatically link them to <strong>PIL CONVENTIONAL</strong>. The SOP document will be processed to generate the visualization.
+                                <p className="text-xs text-blue-700 leading-relaxed">
+                                    All documents will be linked to <strong>PIL CONVENTIONAL (ID: {PIL_CONV_ID.substring(0, 8)}...)</strong>. The SOP file will be analyzed to generate the process flow visualization.
                                 </p>
                              </div>
                         </div>
@@ -416,7 +425,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
                 </div>
             )}
 
-            {/* View Details Modal (Simplified) */}
+            {/* View Details Modal */}
             {isViewModalOpen && currentDoc && (
                 <div className="fixed inset-0 z-50 bg-fab-navy/50 backdrop-blur-sm flex items-center justify-center p-4">
                      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -425,7 +434,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
                             <button onClick={resetForm} className="text-white/70 hover:text-white"><X size={20} /></button>
                         </div>
                         <div className="p-6">
-                            <pre className="text-xs bg-slate-50 p-4 rounded-lg overflow-auto max-h-60">
+                            <pre className="text-xs bg-slate-50 p-4 rounded-lg overflow-auto max-h-60 custom-scrollbar">
                                 {JSON.stringify(currentDoc, null, 2)}
                             </pre>
                              <div className="mt-4 flex justify-end">
