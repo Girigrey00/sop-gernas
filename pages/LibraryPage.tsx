@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
     Upload, FileText, Search, Eye, Trash2, 
     CheckSquare, Square, X, Save, RefreshCw, PlayCircle,
-    Bot, GitMerge, FileStack
+    Bot, GitMerge, FileStack, Plus, Loader2, AlertCircle
 } from 'lucide-react';
 import { LibraryDocument, SopResponse } from '../types';
 import { apiService } from '../services/apiService';
@@ -22,13 +22,15 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
     
     // Modal States
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-    const [currentDoc, setCurrentDoc] = useState<LibraryDocument | null>(null);
-
+    
     // Upload State
     const [sopFile, setSopFile] = useState<File | null>(null);
     const [llmFiles, setLlmFiles] = useState<File[]>([]);
     const [isUploading, setIsUploading] = useState(false);
+    
+    // Metadata State
+    const [productId, setProductId] = useState('PIL-CONV-001'); // Default/Example
+    const [category, setCategory] = useState('Policy');
 
     const sopInputRef = useRef<HTMLInputElement>(null);
     const llmInputRef = useRef<HTMLInputElement>(null);
@@ -76,6 +78,14 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
         setLlmFiles(prev => prev.filter((_, i) => i !== index));
     };
 
+    const resetForm = () => {
+        setSopFile(null);
+        setLlmFiles([]);
+        setProductId('PIL-CONV-001');
+        setIsUploadModalOpen(false);
+        if (onCloseInitialUpload) onCloseInitialUpload();
+    };
+
     const handleUploadAll = async () => {
         if (!sopFile && llmFiles.length === 0) return;
 
@@ -84,12 +94,14 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
             // 1. Upload SOP File (for Flow Generation)
             if (sopFile) {
                 const metadata = {
-                    productId: 'PIL-CONV-001', // Standardized Product ID
-                    sopName: 'PIL CONVENTIONAL',
-                    linkedApp: 'ProcessHub',
-                    category: 'SOP',
-                    description: 'Primary SOP Document for Flow Generation',
-                    generate_flow: true // Triggers backend flow extraction
+                    category: category,
+                    Root_Folder: "PIL", 
+                    Linked_App: "cbgknowledgehub",
+                    target_index: "cbgknowledgehub",
+                    generate_flow: true,
+                    // Pass specific ID if needed, or let backend handle
+                    productId: productId, 
+                    sopName: sopFile.name.replace(/\.[^/.]+$/, "")
                 };
                 await apiService.uploadDocument(sopFile, metadata);
             }
@@ -98,11 +110,12 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
             if (llmFiles.length > 0) {
                 for (const file of llmFiles) {
                     const metadata = {
-                        productId: 'PIL-CONV-001', // Same Product ID to link them
-                        linkedApp: 'ProcessHub',
-                        category: 'KnowledgeBase',
-                        description: 'Supporting Knowledge Base Document',
-                        generate_flow: false
+                        category: "KnowledgeBase",
+                        Root_Folder: "PIL",
+                        Linked_App: "cbgknowledgehub",
+                        target_index: "cbgknowledgehub",
+                        generate_flow: false,
+                        description: 'Supporting Knowledge Base Document'
                     };
                     await apiService.uploadDocument(file, metadata);
                 }
@@ -113,7 +126,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
             resetForm();
         } catch (error) {
             console.error("Upload failed", error);
-            alert("Failed to upload documents. Please check the backend connection.");
+            alert("Failed to upload documents. See console for details.");
         } finally {
             setIsUploading(false);
         }
@@ -132,311 +145,327 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
     };
 
     const handleVisualize = async (doc: LibraryDocument) => {
-        const productId = doc.metadata?.productId || doc.sopName;
-        const linkedApp = doc.metadata?.linkedApp || 'ProcessHub';
+        // The productId is crucial for fetching the flow
+        // Fallback to sopName if productId is missing in metadata
+        const targetId = doc.metadata?.productId || doc.sopName;
 
-        if (!productId) {
-            alert("Cannot visualize: Missing Product ID in document metadata.");
+        if (!targetId) {
+            alert("Cannot visualize: Missing Product ID (SOP Name) in document metadata.");
             return;
         }
 
-        try {
-            const sopData = await apiService.getProcessFlow(linkedApp, productId);
-            if (sopData && onOpenSop) {
-                onOpenSop(sopData);
+        if (onOpenSop) {
+            setIsLoading(true);
+            try {
+                // Try to fetch flow
+                const flowData = await apiService.getProcessFlow('ProcessHub', targetId);
+                onOpenSop(flowData);
+            } catch (e) {
+                console.error("Error fetching flow", e);
+                alert(`Could not load Process Flow for ID: ${targetId}. It might still be processing.`);
+            } finally {
+                setIsLoading(false);
             }
-        } catch (error) {
-            console.error("Failed to fetch flow", error);
-            alert("Could not retrieve process flow. It might not be generated yet.");
         }
     };
 
-    const openView = (doc: LibraryDocument) => {
-        setCurrentDoc(doc);
-        setIsViewModalOpen(true);
-    };
+    // --- Render ---
 
-    const resetForm = () => {
-        setSopFile(null);
-        setLlmFiles([]);
-        setCurrentDoc(null);
-        setIsUploadModalOpen(false);
-        setIsViewModalOpen(false);
-        if (onCloseInitialUpload) onCloseInitialUpload();
-    };
-
-    const toggleSelectAll = () => {
-        if (selectedIds.size === documents.length) {
-            setSelectedIds(new Set());
-        } else {
-            setSelectedIds(new Set(documents.map(d => d.id)));
-        }
-    };
-
-    const toggleSelectOne = (id: string) => {
-        const newSet = new Set(selectedIds);
-        if (newSet.has(id)) newSet.delete(id);
-        else newSet.add(id);
-        setSelectedIds(newSet);
-    };
-
-    const filteredDocs = documents.filter(d => 
-        (d.sopName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-        (d.indexName || '').toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredDocuments = documents.filter(doc => 
+        doc.documentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        doc.sopName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
-        <div className="h-full flex flex-col bg-slate-50">
+        <div className="h-full flex flex-col bg-slate-50 relative">
+            
             {/* Header */}
-            <div className="px-8 py-6 bg-white border-b border-slate-200">
-                <div className="flex justify-between items-center mb-4">
-                    <div>
-                        <h2 className="text-2xl font-bold text-fab-navy">SOP Library</h2>
-                        <p className="text-slate-500 text-sm mt-1">Manage and organize organizational procedures and documents.</p>
-                    </div>
-                    <button 
-                        onClick={() => setIsUploadModalOpen(true)}
-                        className="bg-fab-royal hover:bg-fab-blue text-white px-5 py-2.5 rounded-lg shadow-lg shadow-fab-royal/20 flex items-center gap-2 text-sm font-semibold transition-all"
-                    >
-                        <Upload size={18} /> Upload Documents
-                    </button>
+            <div className="px-8 py-6 bg-white border-b border-slate-200 flex justify-between items-center">
+                <div>
+                    <h2 className="text-2xl font-bold text-fab-navy mb-1">Document Library</h2>
+                    <p className="text-slate-500 text-sm">Manage source documents and knowledge base assets.</p>
                 </div>
-
-                {/* Filters */}
-                <div className="flex gap-4">
-                    <div className="relative flex-1 max-w-md">
-                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input 
-                            type="text" 
-                            placeholder="Search by Name or Index..." 
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-fab-sky/50 text-sm"
-                        />
-                    </div>
+                <div className="flex gap-3">
                     <button 
-                        onClick={fetchDocuments}
-                        className="px-4 py-2 border border-slate-200 rounded-lg text-slate-600 bg-white hover:bg-slate-50 flex items-center gap-2 text-sm font-medium"
+                        onClick={fetchDocuments} 
+                        className="p-2 text-slate-400 hover:text-fab-royal hover:bg-slate-50 rounded-lg transition-colors"
                         title="Refresh List"
                     >
-                        <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /> Refresh
+                        <RefreshCw size={20} className={isLoading ? "animate-spin" : ""} />
+                    </button>
+                    <button 
+                        onClick={() => setIsUploadModalOpen(true)}
+                        className="px-4 py-2 bg-fab-royal text-white rounded-lg text-sm font-bold shadow-lg shadow-fab-royal/20 hover:bg-fab-blue transition-all flex items-center gap-2"
+                    >
+                        <Upload size={16} />
+                        Upload New
                     </button>
                 </div>
             </div>
 
+            {/* Search Bar */}
+            <div className="px-8 py-4 bg-slate-50 border-b border-slate-200/50">
+                <div className="relative max-w-lg">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input 
+                        type="text" 
+                        placeholder="Search documents by name or ID..." 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-fab-royal/30 text-sm"
+                    />
+                </div>
+            </div>
+
             {/* Table */}
-            <div className="flex-1 overflow-auto px-8 py-6">
+            <div className="flex-1 overflow-auto px-8 py-4">
                 <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                <th className="p-4 w-10">
-                                    <button onClick={toggleSelectAll} className="text-slate-400 hover:text-fab-royal">
-                                        {selectedIds.size === documents.length && documents.length > 0 ? <CheckSquare size={18} /> : <Square size={18} />}
-                                    </button>
+                            <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold tracking-wider">
+                                <th className="p-4 w-10 text-center">
+                                    <Square size={16} className="text-slate-300 mx-auto" />
                                 </th>
-                                <th className="p-4 w-12">S.No</th>
-                                <th className="p-4">SOP Name / Product ID</th>
-                                <th className="p-4">File Name</th>
+                                <th className="p-4">Document Name</th>
                                 <th className="p-4">Category</th>
-                                <th className="p-4">Date</th>
+                                <th className="p-4">Upload Date</th>
                                 <th className="p-4">Status</th>
                                 <th className="p-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {filteredDocs.map((doc, index) => (
-                                <tr key={doc.id} className="hover:bg-fab-sky/10 transition-colors group">
-                                    <td className="p-4">
-                                        <button onClick={() => toggleSelectOne(doc.id)} className={`transition-colors ${selectedIds.has(doc.id) ? 'text-fab-royal' : 'text-slate-300'}`}>
-                                            {selectedIds.has(doc.id) ? <CheckSquare size={18} /> : <Square size={18} />}
-                                        </button>
-                                    </td>
-                                    <td className="p-4 text-sm text-slate-500">{index + 1}</td>
-                                    <td className="p-4">
-                                        <div className="font-semibold text-fab-navy text-sm">{doc.sopName || doc.metadata?.productId}</div>
-                                        <div className="text-xs text-slate-400 truncate max-w-[200px]">{doc.description}</div>
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                                            <FileText size={14} className="text-fab-light" />
-                                            {doc.documentName}
-                                        </div>
-                                    </td>
-                                    <td className="p-4">
-                                        <span className={`text-xs px-2 py-1 rounded font-medium border ${
-                                            doc.metadata?.category === 'SOP' 
-                                            ? 'bg-purple-50 text-purple-600 border-purple-100' 
-                                            : 'bg-teal-50 text-teal-600 border-teal-100'
-                                        }`}>
-                                            {doc.metadata?.category || 'General'}
-                                        </span>
-                                    </td>
-                                    <td className="p-4 text-sm text-slate-600">{doc.uploadedDate}</td>
-                                    <td className="p-4">
-                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${
-                                            doc.status === 'Completed' || doc.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                                            doc.status === 'Processing' ? 'bg-amber-50 text-amber-600 border-amber-100' : 
-                                            doc.status === 'Failed' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                            'bg-slate-100 text-slate-500 border-slate-200'
-                                        }`}>
-                                            {doc.status || 'Unknown'}
-                                        </span>
-                                    </td>
-                                    <td className="p-4 text-right">
-                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {(doc.status === 'Completed' || doc.status === 'Active') && (
-                                                <button onClick={() => handleVisualize(doc)} className="p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" title="Visualize Process Flow">
-                                                    <PlayCircle size={16} />
-                                                </button>
-                                            )}
-                                            <button onClick={() => openView(doc)} className="p-1.5 text-slate-400 hover:text-fab-royal hover:bg-fab-sky/20 rounded-lg transition-colors" title="View Details">
-                                                <Eye size={16} />
-                                            </button>
-                                            <button onClick={() => handleDelete(doc.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Delete">
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
+                            {filteredDocuments.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="p-10 text-center text-slate-400 text-sm">
+                                        No documents found. Upload a file to get started.
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                filteredDocuments.map((doc) => (
+                                    <tr key={doc.id} className="hover:bg-slate-50 transition-colors group">
+                                        <td className="p-4 text-center">
+                                            {/* Selection Logic Placeholder */}
+                                            <Square size={16} className="text-slate-300 mx-auto group-hover:text-slate-400 cursor-pointer" />
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                                    <FileText size={18} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-slate-700">{doc.documentName}</p>
+                                                    <p className="text-xs text-slate-400">{doc.sopName || 'No Product ID'}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase rounded-full border border-slate-200">
+                                                {doc.metadata?.category || 'General'}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-sm text-slate-500">
+                                            {doc.uploadedDate}
+                                        </td>
+                                        <td className="p-4">
+                                             <span className={`px-2 py-1 text-[10px] font-bold uppercase rounded-full border flex items-center gap-1 w-fit ${
+                                                doc.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                doc.status === 'Processing' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                                doc.status === 'Failed' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                                'bg-slate-100 text-slate-500 border-slate-200'
+                                             }`}>
+                                                {doc.status === 'Processing' && <RefreshCw size={10} className="animate-spin" />}
+                                                {doc.status || 'Unknown'}
+                                             </span>
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                {doc.metadata?.generate_flow !== false && (
+                                                    <button 
+                                                        onClick={() => handleVisualize(doc)}
+                                                        className="p-1.5 text-slate-400 hover:text-fab-royal hover:bg-fab-royal/10 rounded transition-colors"
+                                                        title="Visualize Flow"
+                                                    >
+                                                        <GitMerge size={16} />
+                                                    </button>
+                                                )}
+                                                <button 
+                                                    onClick={() => handleDelete(doc.id)}
+                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            {/* Simplified Upload Modal */}
+            {/* Upload Modal */}
             {isUploadModalOpen && (
-                <div className="fixed inset-0 z-50 bg-fab-navy/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 flex-shrink-0">
-                            <h3 className="font-bold text-fab-navy">Upload Documents for PIL CONVENTIONAL</h3>
-                            <button onClick={resetForm} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        {/* Modal Header */}
+                        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <h3 className="font-bold text-lg text-fab-navy flex items-center gap-2">
+                                <Upload size={20} className="text-fab-royal" />
+                                Upload Documents
+                            </h3>
+                            <button onClick={resetForm} className="text-slate-400 hover:text-slate-600">
+                                <X size={20} />
+                            </button>
                         </div>
-                        
-                        <div className="p-6 overflow-y-auto custom-scrollbar">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                {/* SOP Flow Upload */}
-                                <div 
-                                    className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-40 group ${sopFile ? 'border-fab-royal bg-fab-sky/5' : 'border-slate-200 hover:border-fab-royal hover:bg-slate-50'}`}
-                                    onClick={() => sopInputRef.current?.click()}
-                                >
-                                    <input type="file" hidden ref={sopInputRef} onChange={handleSopFileChange} accept=".pdf,.docx" />
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${sopFile ? 'bg-fab-royal text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-fab-royal/10 group-hover:text-fab-royal'}`}>
-                                        <GitMerge size={24} />
-                                    </div>
-                                    <h4 className="font-bold text-slate-700 text-sm">SOP Flow Chart</h4>
-                                    <p className="text-[10px] text-slate-500 px-2 leading-tight">
-                                        Main procedure document for visualization
-                                    </p>
-                                </div>
 
-                                {/* LLM Knowledge Base Upload */}
-                                <div 
-                                    className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 h-40 group ${llmFiles.length > 0 ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-200 hover:border-emerald-500 hover:bg-slate-50'}`}
-                                    onClick={() => llmInputRef.current?.click()}
-                                >
-                                    <input type="file" hidden ref={llmInputRef} onChange={handleLlmFileChange} accept=".pdf,.docx,.txt" multiple />
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${llmFiles.length > 0 ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-emerald-100 group-hover:text-emerald-600'}`}>
-                                        <Bot size={24} />
+                        {/* Modal Content */}
+                        <div className="p-6 overflow-y-auto space-y-8">
+                            
+                            {/* Section 1: SOP Flow Generation */}
+                            <div className="space-y-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="p-2 bg-fab-royal/10 text-fab-royal rounded-lg mt-1">
+                                        <GitMerge size={20} />
                                     </div>
-                                    <h4 className="font-bold text-slate-700 text-sm">Knowledge Base</h4>
-                                    <p className="text-[10px] text-slate-500 px-2 leading-tight">
-                                        Policies, manuals & guidelines (Multi-upload)
-                                    </p>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-800">SOP Source File (Process Flow)</h4>
+                                        <p className="text-xs text-slate-500">Upload the main policy/procedure document to generate the workflow.</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="pl-12 space-y-3">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-slate-500 uppercase">Product ID / Name</label>
+                                            <input 
+                                                type="text" 
+                                                value={productId}
+                                                onChange={(e) => setProductId(e.target.value)}
+                                                className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-sm focus:border-fab-royal/50 outline-none"
+                                            />
+                                        </div>
+                                         <div className="space-y-1">
+                                            <label className="text-xs font-bold text-slate-500 uppercase">Category</label>
+                                            <select 
+                                                value={category}
+                                                onChange={(e) => setCategory(e.target.value)}
+                                                className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-sm focus:border-fab-royal/50 outline-none"
+                                            >
+                                                <option value="Policy">Policy</option>
+                                                <option value="Procedure">Procedure</option>
+                                                <option value="Manual">Manual</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {!sopFile ? (
+                                        <div 
+                                            onClick={() => sopInputRef.current?.click()}
+                                            className="border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:border-fab-royal/50 hover:bg-fab-royal/5 transition-all group"
+                                        >
+                                            <Upload size={24} className="text-slate-300 group-hover:text-fab-royal mb-2" />
+                                            <p className="text-sm font-medium text-slate-600 group-hover:text-fab-royal">Click to upload SOP document</p>
+                                            <p className="text-xs text-slate-400">Supported: DOCX, PDF</p>
+                                            <input 
+                                                type="file" 
+                                                ref={sopInputRef}
+                                                onChange={handleSopFileChange}
+                                                accept=".pdf,.docx,.doc,.txt"
+                                                className="hidden"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-between p-3 bg-fab-royal/5 border border-fab-royal/20 rounded-lg">
+                                            <div className="flex items-center gap-3">
+                                                <FileText size={20} className="text-fab-royal" />
+                                                <span className="text-sm font-medium text-fab-navy truncate max-w-[200px]">{sopFile.name}</span>
+                                            </div>
+                                            <button onClick={removeSopFile} className="text-slate-400 hover:text-rose-500">
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-                            {/* Selected Documents List */}
-                            {(sopFile || llmFiles.length > 0) && (
-                                <div className="mb-6 bg-slate-50 rounded-xl border border-slate-200 p-4">
-                                    <div className="flex justify-between items-center mb-3">
-                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Selected Documents</h4>
-                                        <span className="text-[10px] font-bold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
-                                            Total: {(sopFile ? 1 : 0) + llmFiles.length}
-                                        </span>
-                                    </div>
-                                    
-                                    <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
-                                        {/* SOP File */}
-                                        {sopFile && (
-                                            <div className="flex items-center justify-between p-2.5 bg-white border border-fab-royal/20 rounded-lg shadow-sm">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-1.5 bg-fab-sky/20 rounded text-fab-royal">
-                                                        <GitMerge size={16} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-fab-navy truncate max-w-[200px]">{sopFile.name}</p>
-                                                        <span className="text-[10px] text-fab-royal bg-fab-sky/20 px-1.5 py-0.5 rounded">SOP Source</span>
-                                                    </div>
-                                                </div>
-                                                <button onClick={removeSopFile} className="text-slate-400 hover:text-rose-500 p-1.5 hover:bg-rose-50 rounded-md transition-colors">
-                                                    <X size={16} />
-                                                </button>
-                                            </div>
-                                        )}
+                            <div className="border-t border-slate-100"></div>
 
-                                        {/* LLM Files */}
-                                        {llmFiles.map((file, index) => (
-                                            <div key={`${file.name}-${index}`} className="flex items-center justify-between p-2.5 bg-white border border-emerald-100 rounded-lg shadow-sm">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-1.5 bg-emerald-100 rounded text-emerald-600">
-                                                        <FileStack size={16} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-slate-800 truncate max-w-[200px]">{file.name}</p>
-                                                        <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Knowledge Base</span>
-                                                    </div>
-                                                </div>
-                                                <button onClick={() => removeLlmFile(index)} className="text-slate-400 hover:text-rose-500 p-1.5 hover:bg-rose-50 rounded-md transition-colors">
-                                                    <X size={16} />
-                                                </button>
-                                            </div>
-                                        ))}
+                            {/* Section 2: Knowledge Base Files */}
+                            <div className="space-y-4">
+                                 <div className="flex items-start gap-3">
+                                    <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg mt-1">
+                                        <Bot size={20} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-800">Knowledge Base Files (RAG)</h4>
+                                        <p className="text-xs text-slate-500">Additional documents for the AI Chatbot context.</p>
                                     </div>
                                 </div>
-                            )}
 
-                             <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex items-start gap-2 mb-2">
-                                <div className="mt-0.5 text-blue-500"><PlayCircle size={16} /></div>
-                                <p className="text-xs text-blue-700 leading-relaxed">
-                                    All documents will be linked to <strong>PIL CONVENTIONAL (ID: PIL-CONV-001)</strong>. The SOP file will be analyzed to generate the process flow visualization.
-                                </p>
-                             </div>
+                                <div className="pl-12">
+                                     <div 
+                                        onClick={() => llmInputRef.current?.click()}
+                                        className="border border-slate-200 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all mb-3"
+                                    >
+                                        <Plus size={18} className="text-emerald-500" />
+                                        <span className="text-sm font-medium text-slate-600">Add Supporting Documents</span>
+                                        <input 
+                                            type="file" 
+                                            ref={llmInputRef}
+                                            onChange={handleLlmFileChange}
+                                            accept=".pdf,.docx,.doc,.txt"
+                                            multiple
+                                            className="hidden"
+                                        />
+                                    </div>
+
+                                    {llmFiles.length > 0 && (
+                                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                                            {llmFiles.map((file, idx) => (
+                                                <div key={idx} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-100 rounded text-sm">
+                                                    <div className="flex items-center gap-2">
+                                                        <FileStack size={14} className="text-slate-400" />
+                                                        <span className="text-slate-700 truncate max-w-[200px]">{file.name}</span>
+                                                    </div>
+                                                    <button onClick={() => removeLlmFile(idx)} className="text-slate-400 hover:text-rose-500">
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="px-6 pb-6 pt-2 flex gap-3 flex-shrink-0">
-                            <button onClick={resetForm} disabled={isUploading} className="flex-1 py-3 border border-slate-200 text-slate-600 rounded-xl font-medium hover:bg-slate-50 transition-colors">
+                        {/* Footer */}
+                        <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+                            <button 
+                                onClick={resetForm}
+                                className="px-4 py-2 text-slate-600 font-bold text-sm hover:bg-slate-200 rounded-lg transition-colors"
+                                disabled={isUploading}
+                            >
                                 Cancel
                             </button>
                             <button 
                                 onClick={handleUploadAll}
                                 disabled={isUploading || (!sopFile && llmFiles.length === 0)}
-                                className="flex-[2] py-3 bg-fab-royal text-white rounded-xl font-medium hover:bg-fab-blue shadow-lg shadow-fab-royal/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:grayscale"
+                                className="px-6 py-2 bg-fab-royal text-white rounded-lg font-bold text-sm shadow-lg shadow-fab-royal/20 hover:bg-fab-blue hover:scale-105 transition-all disabled:opacity-70 disabled:scale-100 flex items-center gap-2"
                             >
-                                {isUploading ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />} 
-                                {isUploading ? 'Processing...' : 'Upload & Process'}
+                                {isUploading ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload size={16} />
+                                        Start Ingestion
+                                    </>
+                                )}
                             </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* View Details Modal */}
-            {isViewModalOpen && currentDoc && (
-                <div className="fixed inset-0 z-50 bg-fab-navy/50 backdrop-blur-sm flex items-center justify-center p-4">
-                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-fab-navy text-white">
-                            <h3 className="font-bold">Document Details</h3>
-                            <button onClick={resetForm} className="text-white/70 hover:text-white"><X size={20} /></button>
-                        </div>
-                        <div className="p-6">
-                            <pre className="text-xs bg-slate-50 p-4 rounded-lg overflow-auto max-h-60 custom-scrollbar">
-                                {JSON.stringify(currentDoc, null, 2)}
-                            </pre>
-                             <div className="mt-4 flex justify-end">
-                                <button onClick={resetForm} className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">Close</button>
-                            </div>
                         </div>
                     </div>
                 </div>

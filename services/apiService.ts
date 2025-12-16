@@ -2,6 +2,8 @@
 import { LibraryDocument, SopResponse } from '../types';
 
 const API_BASE_URL = 'https://cbgknowledgehubmvp.gernas.bankfab.com/api';
+// Container SAS URL for direct upload
+const AZURE_SAS_URL = "https://auranpunawlsa.blob.core.windows.net/cbg-knowledge-hub?sp=rawl&st=2025-11-28T17:25:15Z&se=2026-03-31T01:40:15Z&spr=https&sv=2024-11-04&sr=c&sig=YE9KebhPjaR8a4lsQXgIBWOxIx2tQg2x%2FpeFOmTGpNY%3D";
 
 // Helper to handle API errors
 const handleResponse = async (response: Response) => {
@@ -49,26 +51,73 @@ export const apiService = {
         }));
     },
 
-    // Upload a new document
-    uploadDocument: async (file: File, metadata: any): Promise<any> => {
-        const formData = new FormData();
-        formData.append('file', file);
+    // Upload to Azure Blob Storage using SAS Token
+    uploadToAzure: async (file: File): Promise<string> => {
+        const sasUrl = new URL(AZURE_SAS_URL);
+        const containerUrl = `${sasUrl.origin}${sasUrl.pathname}`;
+        const sasToken = sasUrl.search;
         
-        // Ensure strictly required metadata for flow generation exists
-        const metaPayload = {
-            category: 'SOP',
-            Linked_App: metadata.linkedApp || 'ProcessHub', 
-            product_id: metadata.productId || file.name, // Use filename as product ID if missing
-            generate_flow: true, // Trigger flow gen logic if supported by ingestion
-            ...metadata
-        };
+        // Construct full URL: Container + / + Filename + SAS
+        // Note: Filename should be URL encoded
+        const fileName = encodeURIComponent(file.name);
+        const uploadUrl = `${containerUrl}/${fileName}${sasToken}`;
         
-        formData.append('metadata', JSON.stringify(metaPayload));
+        // We PUT the file to this URL
+        const response = await fetch(uploadUrl, {
+            method: 'PUT',
+            headers: {
+                'x-ms-blob-type': 'BlockBlob',
+                'Content-Type': file.type || 'application/octet-stream' // Important for Azure
+            },
+            body: file
+        });
 
-        return handleResponse(await fetch(`${API_BASE_URL}/ingest`, {
-            method: 'POST',
-            body: formData,
-        }));
+        if (!response.ok) {
+            throw new Error(`Azure Upload Failed: ${response.statusText}`);
+        }
+
+        // Return the blob URL (usually we include the SAS token for the backend if it needs to read it immediately without its own credentials, 
+        // OR just the clean URL if backend has Managed Identity. 
+        // Based on the example payload, it expects the URL with SAS token)
+        return uploadUrl;
+    },
+
+    // Upload Document: 1. Upload to Azure, 2. Call Ingest API
+    uploadDocument: async (file: File, metadata: any): Promise<any> => {
+        try {
+            // 1. Upload to Azure Blob
+            console.log("Starting Azure Upload...");
+            const blobUrl = await apiService.uploadToAzure(file);
+            console.log("Azure Upload Success. Blob URL:", blobUrl);
+
+            // 2. Prepare Ingest Payload
+            const payload = {
+                blob_url: blobUrl,
+                metadata: {
+                    category: metadata.category || "Policy",
+                    Root_Folder: metadata.Root_Folder || "PIL",
+                    Linked_App: metadata.Linked_App || "cbgknowledgehub",
+                    is_financial: "false",
+                    target_index: "cbgknowledgehub",
+                    generate_flow: metadata.generate_flow ? "true" : "false",
+                    ...metadata // Overrides if provided
+                }
+            };
+
+            // 3. Call Ingest API
+            console.log("Calling Ingest API with payload:", payload);
+            return handleResponse(await fetch(`${API_BASE_URL}/ingest`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload),
+            }));
+
+        } catch (error) {
+            console.error("Full Upload Process Failed:", error);
+            throw error;
+        }
     },
 
     // Delete a document
@@ -78,30 +127,13 @@ export const apiService = {
         }));
     },
 
-    // Trigger Flow Generation (Explicitly)
-    // Note: The backend usually requires a blob_url, but if we just uploaded, 
-    // we might not have the direct blob URL handy in the list unless returned.
-    // For MVP, we assume ingestion with 'generate_flow': true prepares it, 
-    // or we use this endpoint if we have the URL.
-    generateProcess: async (fileUrl: string, metadata: any): Promise<any> => {
-        const formData = new FormData();
-        formData.append('file_url', fileUrl);
-        formData.append('metadata', JSON.stringify(metadata));
-        
-        return handleResponse(await fetch(`${API_BASE_URL}/generate-process`, {
-            method: 'POST',
-            body: formData,
-        }));
-    },
-
     // Retrieve the generated Process Flow JSON
+    // Updated to use the direct ID endpoint as requested: /api/process-flow/:id
     getProcessFlow: async (linkedApp: string, productId: string): Promise<SopResponse> => {
-        const params = new URLSearchParams({
-            linked_app: linkedApp,
-            product_id: productId
-        });
-        
-        const data = await handleResponse(await fetch(`${API_BASE_URL}/process-flow?${params.toString()}`));
+        // We use productId directly as the ID path parameter
+        const url = `${API_BASE_URL}/process-flow/${productId}`;
+        console.log("Fetching Flow from:", url);
+        const data = await handleResponse(await fetch(url));
         return data as SopResponse;
     }
 };
