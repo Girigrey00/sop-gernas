@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import CanvasPage from './pages/CanvasPage';
 import LibraryPage from './pages/LibraryPage';
-import { View, HistoryItem, SopResponse } from './types';
+import { View, HistoryItem, SopResponse, Product } from './types';
 import { apiService } from './services/apiService';
 import { 
     FileText,
@@ -16,13 +16,10 @@ import {
     Search,
     ShieldAlert, 
     Briefcase,
-    Menu
+    Menu,
+    Plus,
+    Loader2
 } from 'lucide-react';
-
-// --- Constants ---
-const ALL_SOP_TEMPLATES = [
-    { icon: Briefcase, title: "PIL CONVENTIONAL", desc: "Conventional personal income loan flow", category: "Loans", productId: "ccaf1e1e-1fb4-4403-aad3-a70019dfb1ee" },
-];
 
 // --- Login Page Component ---
 const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) => {
@@ -136,39 +133,85 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
 };
 
 // --- Home Page (CBG Knowledge Hub) ---
-const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => void, onRedirectToUpload: () => void }) => {
+const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => void, onRedirectToUpload: (product?: Product) => void }) => {
+    const [products, setProducts] = useState<Product[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    
+    // Create Product State
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [newProductName, setNewProductName] = useState('');
+    const [newProductDesc, setNewProductDesc] = useState('');
+    const [isCreating, setIsCreating] = useState(false);
 
-    const filteredSops = ALL_SOP_TEMPLATES.filter(item => {
-        return item.title.toLowerCase().includes(searchQuery.toLowerCase()) || item.desc.toLowerCase().includes(searchQuery.toLowerCase());
-    });
+    useEffect(() => {
+        fetchProducts();
+    }, []);
 
-    const handleCardClick = async (item: typeof ALL_SOP_TEMPLATES[0]) => {
+    const fetchProducts = async () => {
         setIsLoading(true);
         try {
-            // Attempt to fetch the process flow
-            // Note: The getProcessFlow service now handles normalization of snake_case to camelCase
-            const flowData = await apiService.getProcessFlow('ProcessHub', item.productId);
-            
-            if (flowData) {
-                // If flow exists, open it directly in Canvas
-                onStart(flowData);
-            } else {
-                console.warn("API returned no data for flow");
-                alert("The flow data for this product could not be retrieved. Please check the backend.");
-            }
+            const data = await apiService.getProducts();
+            setProducts(data);
         } catch (error) {
-            console.error("Flow fetch error:", error);
-            // We do NOT redirect to library anymore. We stay here and show error.
-            alert("Failed to load the process flow. Please try again or check your connection.");
+            console.error("Failed to fetch products", error);
         } finally {
             setIsLoading(false);
         }
     };
 
+    const handleCreateProduct = async () => {
+        if(!newProductName) return;
+        setIsCreating(true);
+        try {
+            await apiService.createProduct({
+                product_name: newProductName,
+                folder_name: newProductName.toLowerCase().replace(/\s+/g, '_') + '_folder',
+                product_description: newProductDesc || 'No description'
+            });
+            await fetchProducts();
+            setIsCreateOpen(false);
+            setNewProductName('');
+            setNewProductDesc('');
+        } catch (error) {
+            alert("Failed to create product");
+            console.error(error);
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
+    const handleCardClick = async (product: Product) => {
+        // LOGIC: Check metadata flags
+        if (product.has_flow === 'Yes' && product.has_index === 'Yes') {
+            setIsLoading(true);
+            try {
+                // Call API with product_name
+                const flowData = await apiService.getProcessFlow('ProcessHub', product.product_name);
+                if (flowData) {
+                    onStart(flowData);
+                } else {
+                    alert("Flow data is empty.");
+                }
+            } catch (error) {
+                console.error("Flow fetch error:", error);
+                alert("Failed to load the process flow.");
+            } finally {
+                setIsLoading(false);
+            }
+        } else {
+            // Redirect to library upload if flow/index is missing
+            onRedirectToUpload(product);
+        }
+    };
+
+    const filteredProducts = products.filter(item => {
+        return item.product_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+               (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+    });
+
     return (
-        <div className="h-full flex flex-col bg-slate-50">
+        <div className="h-full flex flex-col bg-slate-50 relative">
             {/* Header & Controls */}
             <div className="px-8 pt-8 pb-6 flex flex-col gap-6 bg-white border-b border-slate-200">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -178,6 +221,12 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
                     </div>
                     
                     <div className="flex items-center gap-3 w-full md:w-auto">
+                        <button 
+                            onClick={() => setIsCreateOpen(true)}
+                            className="px-4 py-2 bg-fab-royal text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-fab-blue transition-colors"
+                        >
+                            <Plus size={16} /> New Product
+                        </button>
                         <div className="relative w-full md:w-64">
                             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                             <input 
@@ -197,11 +246,16 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
                 {isLoading ? (
                      <div className="flex flex-col items-center justify-center h-64 text-slate-500">
                         <div className="w-10 h-10 border-4 border-fab-royal/20 border-t-fab-royal rounded-full animate-spin mb-4"></div>
-                        <p>Loading Workflow Data...</p>
+                        <p>Loading Data...</p>
                      </div>
+                ) : filteredProducts.length === 0 ? (
+                    <div className="text-center py-20 text-slate-400">
+                        <Briefcase size={48} className="mx-auto mb-4 opacity-20" />
+                        <p>No products found. Create one to get started.</p>
+                    </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                        {filteredSops.map((item, i) => (
+                        {filteredProducts.map((item, i) => (
                             <button 
                                 key={i}
                                 onClick={() => handleCardClick(item)}
@@ -209,20 +263,22 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
                             >
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="p-2.5 bg-fab-sky/10 group-hover:bg-fab-royal/10 text-fab-light group-hover:text-fab-royal rounded-xl transition-colors border border-fab-sky/20">
-                                        <item.icon size={24} strokeWidth={1.5} />
+                                        <Briefcase size={24} strokeWidth={1.5} />
                                     </div>
-                                    <span className="text-[9px] font-bold uppercase text-slate-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100 group-hover:border-fab-sky/30 group-hover:text-fab-royal transition-colors">
-                                        {item.category}
-                                    </span>
+                                    <div className="flex gap-1">
+                                        <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded-full border ${item.has_flow === 'Yes' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                                            {item.has_flow === 'Yes' ? 'Flow Ready' : 'Draft'}
+                                        </span>
+                                    </div>
                                 </div>
                                 
-                                <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-2">{item.title}</h3>
-                                <p className="text-xs text-slate-500 leading-relaxed mb-4 flex-1">{item.desc}</p>
+                                <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-2">{item.product_name}</h3>
+                                <p className="text-xs text-slate-500 leading-relaxed mb-4 flex-1">{item.description || 'No description available'}</p>
 
                                 <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-auto">
-                                    <span className="text-[10px] font-medium text-slate-400 truncate max-w-[100px]">ID: {item.productId.substring(0,8)}...</span>
+                                    <span className="text-[10px] font-medium text-slate-400 truncate max-w-[100px]">Docs: {item.document_count}</span>
                                     <div className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
-                                        Open <ArrowRight size={14} />
+                                        {item.has_flow === 'Yes' ? 'View Flow' : 'Upload Docs'} <ArrowRight size={14} />
                                     </div>
                                 </div>
                             </button>
@@ -230,6 +286,52 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
                     </div>
                 )}
             </div>
+
+            {/* Create Product Modal */}
+            {isCreateOpen && (
+                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                        <h3 className="text-lg font-bold text-fab-navy mb-4">Create New Product</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Product Name</label>
+                                <input 
+                                    type="text" 
+                                    value={newProductName}
+                                    onChange={e => setNewProductName(e.target.value)}
+                                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-fab-royal/20 outline-none"
+                                    placeholder="e.g. Personal Loan"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Description</label>
+                                <textarea 
+                                    value={newProductDesc}
+                                    onChange={e => setNewProductDesc(e.target.value)}
+                                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-fab-royal/20 outline-none h-24 resize-none"
+                                    placeholder="Brief description..."
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 mt-6">
+                            <button 
+                                onClick={() => setIsCreateOpen(false)}
+                                className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-bold text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={handleCreateProduct}
+                                disabled={isCreating || !newProductName}
+                                className="px-4 py-2 bg-fab-royal text-white rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-fab-blue disabled:opacity-50"
+                            >
+                                {isCreating && <Loader2 size={14} className="animate-spin" />}
+                                Create
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -308,6 +410,8 @@ const App: React.FC = () => {
   
   // State to trigger upload modal automatically when entering library
   const [autoOpenUpload, setAutoOpenUpload] = useState(false);
+  // NEW: State to pass selected product to library for context-aware upload
+  const [selectedProductForUpload, setSelectedProductForUpload] = useState<Product | null>(null);
 
   // Authentication Logic
   const handleLogin = (u: string, p: string) => {
@@ -332,8 +436,9 @@ const App: React.FC = () => {
       setIsSidebarOpen(false);
   };
 
-  const handleRedirectToUpload = () => {
+  const handleRedirectToUpload = (product?: Product) => {
       setAutoOpenUpload(true);
+      if (product) setSelectedProductForUpload(product);
       setCurrentView('LIBRARY');
   };
 
@@ -376,7 +481,11 @@ const App: React.FC = () => {
             <LibraryPage 
                 onOpenSop={handleOpenSopFromLibrary} 
                 initialUploadOpen={autoOpenUpload}
-                onCloseInitialUpload={() => setAutoOpenUpload(false)}
+                onCloseInitialUpload={() => {
+                    setAutoOpenUpload(false);
+                    setSelectedProductForUpload(null); // Clear selection on close
+                }}
+                preselectedProduct={selectedProductForUpload}
             />
         );
       case 'CANVAS':

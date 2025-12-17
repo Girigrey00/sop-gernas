@@ -1,5 +1,5 @@
 
-import { LibraryDocument, SopResponse } from '../types';
+import { LibraryDocument, SopResponse, Product } from '../types';
 
 // CHANGED: Use relative path to leverage Vite Proxy configured in vite.config.ts
 // This resolves CORS issues by routing requests through the local dev server
@@ -28,6 +28,23 @@ export const apiService = {
             return false;
         }
     },
+
+    // --- Product Endpoints ---
+
+    getProducts: async (): Promise<Product[]> => {
+        const data = await handleResponse(await fetch(`${API_BASE_URL}/products`));
+        return data.products || [];
+    },
+
+    createProduct: async (product: { product_name: string, folder_name: string, product_description: string }): Promise<any> => {
+        return handleResponse(await fetch(`${API_BASE_URL}/products`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(product)
+        }));
+    },
+
+    // --- Document Endpoints ---
 
     // List all documents
     getDocuments: async (): Promise<LibraryDocument[]> => {
@@ -136,8 +153,9 @@ export const apiService = {
 
     // Retrieve the generated Process Flow JSON
     // Updated to handle deeply nested JSON structure from backend
-    getProcessFlow: async (linkedApp: string, productId: string): Promise<SopResponse> => {
-        const url = `${API_BASE_URL}/process-flow/${productId}`;
+    // Accepts productName as productId per instructions
+    getProcessFlow: async (linkedApp: string, productName: string): Promise<SopResponse> => {
+        const url = `${API_BASE_URL}/process-flow/${productName}`;
         console.log("Fetching Flow from:", url);
         
         const json = await handleResponse(await fetch(url));

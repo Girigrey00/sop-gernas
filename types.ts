@@ -1,4 +1,5 @@
 
+
 // Enums for clarity
 export enum StepType {
   Start = 'Start',
@@ -108,6 +109,25 @@ export interface LibraryDocument {
       productId?: string;
       [key: string]: any;
   };
+}
+
+// --- Product Interface ---
+export interface Product {
+    _id: string;
+    id: string;
+    product_name: string;
+    index_name: string;
+    process_flow_id?: string;
+    has_index: "Yes" | "No";
+    has_flow: "Yes" | "No";
+    document_count: number;
+    description?: string;
+    flow_status?: string;
+    flow_source_file?: string;
+    flow_blob_url?: string;
+    created_at?: string;
+    last_updated?: string;
+    metadata?: any;
 }
 
 // Layout types

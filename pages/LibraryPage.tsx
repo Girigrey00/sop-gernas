@@ -5,16 +5,22 @@ import {
     CheckSquare, Square, X, Save, RefreshCw, PlayCircle,
     Bot, GitMerge, FileStack, Plus, Loader2, AlertCircle
 } from 'lucide-react';
-import { LibraryDocument, SopResponse } from '../types';
+import { LibraryDocument, SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
 
 interface LibraryPageProps {
     onOpenSop?: (data: SopResponse) => void;
     initialUploadOpen?: boolean;
     onCloseInitialUpload?: () => void;
+    preselectedProduct?: Product | null;
 }
 
-const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen = false, onCloseInitialUpload }) => {
+const LibraryPage: React.FC<LibraryPageProps> = ({ 
+    onOpenSop, 
+    initialUploadOpen = false, 
+    onCloseInitialUpload,
+    preselectedProduct 
+}) => {
     const [documents, setDocuments] = useState<LibraryDocument[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -29,7 +35,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
     const [isUploading, setIsUploading] = useState(false);
     
     // Metadata State
-    const [productId, setProductId] = useState('PIL-CONV-001'); // Default/Example
+    const [productName, setProductName] = useState('');
     const [category, setCategory] = useState('Policy');
 
     const sopInputRef = useRef<HTMLInputElement>(null);
@@ -41,6 +47,15 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
             setIsUploadModalOpen(true);
         }
     }, [initialUploadOpen]);
+
+    // Handle Preselected Product
+    useEffect(() => {
+        if (preselectedProduct) {
+            setProductName(preselectedProduct.product_name);
+        } else {
+            setProductName('PIL-CONV-001'); // Default
+        }
+    }, [preselectedProduct]);
 
     // Fetch documents on load
     const fetchDocuments = async () => {
@@ -81,7 +96,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
     const resetForm = () => {
         setSopFile(null);
         setLlmFiles([]);
-        setProductId('PIL-CONV-001');
+        if (!preselectedProduct) setProductName('PIL-CONV-001');
         setIsUploadModalOpen(false);
         if (onCloseInitialUpload) onCloseInitialUpload();
     };
@@ -91,16 +106,18 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
 
         setIsUploading(true);
         try {
+            const rootFolder = preselectedProduct ? preselectedProduct.product_name : (productName || "PIL");
+            const targetIndex = preselectedProduct ? preselectedProduct.index_name : "cbgknowledgehub";
+
             // 1. Upload SOP File (for Flow Generation)
             if (sopFile) {
                 const metadata = {
                     category: category,
-                    Root_Folder: "PIL", 
+                    Root_Folder: rootFolder, 
                     Linked_App: "cbgknowledgehub",
-                    target_index: "cbgknowledgehub",
+                    target_index: targetIndex,
                     generate_flow: true,
-                    // Pass specific ID if needed, or let backend handle
-                    productId: productId, 
+                    productId: productName, // Keeping this for tracking
                     sopName: sopFile.name.replace(/\.[^/.]+$/, "")
                 };
                 await apiService.uploadDocument(sopFile, metadata);
@@ -111,9 +128,9 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
                 for (const file of llmFiles) {
                     const metadata = {
                         category: "KnowledgeBase",
-                        Root_Folder: "PIL",
+                        Root_Folder: rootFolder,
                         Linked_App: "cbgknowledgehub",
-                        target_index: "cbgknowledgehub",
+                        target_index: targetIndex,
                         generate_flow: false,
                         description: 'Supporting Knowledge Base Document'
                     };
@@ -313,7 +330,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
                         <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                             <h3 className="font-bold text-lg text-fab-navy flex items-center gap-2">
                                 <Upload size={20} className="text-fab-royal" />
-                                Upload Documents
+                                Upload Documents {preselectedProduct && <span className="text-slate-400 text-sm font-normal">for {preselectedProduct.product_name}</span>}
                             </h3>
                             <button onClick={resetForm} className="text-slate-400 hover:text-slate-600">
                                 <X size={20} />
@@ -341,9 +358,10 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
                                             <label className="text-xs font-bold text-slate-500 uppercase">Product ID / Name</label>
                                             <input 
                                                 type="text" 
-                                                value={productId}
-                                                onChange={(e) => setProductId(e.target.value)}
-                                                className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-sm focus:border-fab-royal/50 outline-none"
+                                                value={productName}
+                                                onChange={(e) => setProductName(e.target.value)}
+                                                className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-sm focus:border-fab-royal/50 outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                                                disabled={!!preselectedProduct}
                                             />
                                         </div>
                                          <div className="space-y-1">
@@ -401,6 +419,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenSop, initialUploadOpen 
                                     <div>
                                         <h4 className="text-sm font-bold text-slate-800">Knowledge Base Files (RAG)</h4>
                                         <p className="text-xs text-slate-500">Additional documents for the AI Chatbot context.</p>
+                                        <p className="text-[10px] text-emerald-600 mt-1">* Recommended: Upload both SOP and KB files for best results.</p>
                                     </div>
                                 </div>
 
