@@ -106,6 +106,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
 
         setIsUploading(true);
         try {
+            // Priority: Preselected Product -> Input State -> Default
             const rootFolder = preselectedProduct ? preselectedProduct.product_name : (productName || "PIL");
             const targetIndex = preselectedProduct ? preselectedProduct.index_name : "cbgknowledgehub";
 
@@ -115,9 +116,10 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                     category: category,
                     Root_Folder: rootFolder, 
                     Linked_App: "cbgknowledgehub",
+                    is_financial: "false", // Explicitly "false" string per requirement
                     target_index: targetIndex,
-                    generate_flow: true,
-                    productId: productName, // Keeping this for tracking
+                    generate_flow: true, // Boolean
+                    productId: productName, // Frontend tracking
                     sopName: sopFile.name.replace(/\.[^/.]+$/, "")
                 };
                 await apiService.uploadDocument(sopFile, metadata);
@@ -130,8 +132,9 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                         category: "KnowledgeBase",
                         Root_Folder: rootFolder,
                         Linked_App: "cbgknowledgehub",
+                        is_financial: "false", // Explicitly "false" string per requirement
                         target_index: targetIndex,
-                        generate_flow: false,
+                        generate_flow: false, // Boolean
                         description: 'Supporting Knowledge Base Document'
                     };
                     await apiService.uploadDocument(file, metadata);
@@ -420,6 +423,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                         <h4 className="text-sm font-bold text-slate-800">Knowledge Base Files (RAG)</h4>
                                         <p className="text-xs text-slate-500">Additional documents for the AI Chatbot context.</p>
                                         <p className="text-[10px] text-emerald-600 mt-1">* Recommended: Upload both SOP and KB files for best results.</p>
+                                        <p className="text-[10px] text-slate-400 italic">Note: At least one document is required for processing.</p>
                                     </div>
                                 </div>
 

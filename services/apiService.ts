@@ -121,10 +121,10 @@ export const apiService = {
                     category: metadata.category || "Policy",
                     Root_Folder: metadata.Root_Folder || "PIL",
                     Linked_App: metadata.Linked_App || "cbgknowledgehub",
-                    is_financial: "false",
-                    target_index: "cbgknowledgehub",
-                    generate_flow: metadata.generate_flow ? "true" : "false",
-                    ...metadata // Overrides if provided
+                    is_financial: "false", // Must be string "false" per API spec
+                    target_index: "cbgknowledgehub", // Default, but overridden by metadata below
+                    generate_flow: metadata.generate_flow === true, // Boolean per API spec
+                    ...metadata // Overrides provided by caller (LibraryPage)
                 }
             };
 
