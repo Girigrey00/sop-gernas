@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import CanvasPage from './pages/CanvasPage';
 import LibraryPage from './pages/LibraryPage';
@@ -18,7 +18,8 @@ import {
     Briefcase,
     Menu,
     Plus,
-    Loader2
+    Loader2,
+    RefreshCw
 } from 'lucide-react';
 
 // --- Login Page Component ---
@@ -138,27 +139,42 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     
+    // Polling Logic
+    const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    
     // Create Product State
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [newProductName, setNewProductName] = useState('');
     const [newProductDesc, setNewProductDesc] = useState('');
     const [isCreating, setIsCreating] = useState(false);
 
-    useEffect(() => {
-        fetchProducts();
-    }, []);
-
-    const fetchProducts = async () => {
-        setIsLoading(true);
+    const fetchProducts = useCallback(async (isPolling = false) => {
+        if (!isPolling) setIsLoading(true);
         try {
             const data = await apiService.getProducts();
             setProducts(data);
+
+            // Poll logic: Continuously poll every 5s to check for status updates
+            if (!pollingRef.current) {
+               pollingRef.current = setInterval(() => fetchProducts(true), 5000);
+            }
         } catch (error) {
             console.error("Failed to fetch products", error);
+            if (pollingRef.current) {
+                clearInterval(pollingRef.current);
+                pollingRef.current = null;
+            }
         } finally {
-            setIsLoading(false);
+            if (!isPolling) setIsLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchProducts();
+        return () => {
+            if (pollingRef.current) clearInterval(pollingRef.current);
+        };
+    }, [fetchProducts]);
 
     const handleCreateProduct = async () => {
         if(!newProductName) return;
@@ -169,7 +185,7 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
                 folder_name: newProductName.toLowerCase().replace(/\s+/g, '_') + '_folder',
                 product_description: newProductDesc || 'No description'
             });
-            await fetchProducts();
+            await fetchProducts(); // Refresh list immediately
             setIsCreateOpen(false);
             setNewProductName('');
             setNewProductDesc('');
@@ -182,8 +198,12 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
     };
 
     const handleCardClick = async (product: Product) => {
-        // LOGIC: Check metadata flags
-        if (product.has_flow === 'Yes' && product.has_index === 'Yes') {
+        // Strict Logic:
+        // 1. If flow_status === 'Completed' -> Open Canvas
+        // 2. If flow_status is missing/null -> Redirect to Upload (Library)
+        // 3. If flow_status is anything else (Processing, Failed) -> Show Alert/Wait
+
+        if (product.flow_status === 'Completed') {
             setIsLoading(true);
             try {
                 // Call API with product_name
@@ -191,7 +211,7 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
                 if (flowData) {
                     onStart(flowData);
                 } else {
-                    alert("Flow data is empty.");
+                    alert("Flow data returned is empty.");
                 }
             } catch (error) {
                 console.error("Flow fetch error:", error);
@@ -199,9 +219,12 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
             } finally {
                 setIsLoading(false);
             }
-        } else {
-            // Redirect to library upload if flow/index is missing
+        } else if (!product.flow_status) {
+            // Redirect to library upload if flow is missing
             onRedirectToUpload(product);
+        } else {
+            // Processing or other state
+            alert(`Flow is currently: ${product.flow_status}. Please wait until completion.`);
         }
     };
 
@@ -255,34 +278,48 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                        {filteredProducts.map((item, i) => (
-                            <button 
-                                key={i}
-                                onClick={() => handleCardClick(item)}
-                                className="p-5 rounded-xl border border-slate-200 bg-white hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all text-left group flex flex-col h-full relative overflow-hidden"
-                            >
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="p-2.5 bg-fab-sky/10 group-hover:bg-fab-royal/10 text-fab-light group-hover:text-fab-royal rounded-xl transition-colors border border-fab-sky/20">
-                                        <Briefcase size={24} strokeWidth={1.5} />
-                                    </div>
-                                    <div className="flex gap-1">
-                                        <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded-full border ${item.has_flow === 'Yes' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                                            {item.has_flow === 'Yes' ? 'Flow Ready' : 'Draft'}
-                                        </span>
-                                    </div>
-                                </div>
-                                
-                                <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-2">{item.product_name}</h3>
-                                <p className="text-xs text-slate-500 leading-relaxed mb-4 flex-1">{item.description || 'No description available'}</p>
+                        {filteredProducts.map((item, i) => {
+                            const isCompleted = item.flow_status === 'Completed';
+                            const isProcessing = item.flow_status && item.flow_status !== 'Completed';
+                            const isEmpty = !item.flow_status;
 
-                                <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-auto">
-                                    <span className="text-[10px] font-medium text-slate-400 truncate max-w-[100px]">Docs: {item.document_count}</span>
-                                    <div className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
-                                        {item.has_flow === 'Yes' ? 'View Flow' : 'Upload Docs'} <ArrowRight size={14} />
+                            return (
+                                <button 
+                                    key={i}
+                                    onClick={() => handleCardClick(item)}
+                                    className="p-5 rounded-xl border border-slate-200 bg-white hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all text-left group flex flex-col h-full relative overflow-hidden"
+                                >
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className={`p-2.5 rounded-xl transition-colors border ${
+                                            isCompleted ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                            isProcessing ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                            'bg-slate-50 text-slate-400 border-slate-100'
+                                        }`}>
+                                            {isProcessing ? <Loader2 size={24} className="animate-spin" /> : <Briefcase size={24} strokeWidth={1.5} />}
+                                        </div>
+                                        <div className="flex gap-1">
+                                            <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded-full border ${
+                                                isCompleted ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                isProcessing ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                                'bg-slate-50 text-slate-400 border-slate-100'
+                                            }`}>
+                                                {isCompleted ? 'Completed' : isProcessing ? 'Processing' : 'Draft'}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                            </button>
-                        ))}
+                                    
+                                    <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-2">{item.product_name}</h3>
+                                    <p className="text-xs text-slate-500 leading-relaxed mb-4 flex-1">{item.description || 'No description available'}</p>
+
+                                    <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-auto">
+                                        <span className="text-[10px] font-medium text-slate-400 truncate max-w-[100px]">Docs: {item.document_count}</span>
+                                        <div className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+                                            {isCompleted ? 'View Flow' : isEmpty ? 'Upload Docs' : 'Wait...'} <ArrowRight size={14} />
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
             </div>

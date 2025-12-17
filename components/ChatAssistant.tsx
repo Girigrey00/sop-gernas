@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Sparkles, Loader2, X } from 'lucide-react';
 import { SopResponse } from '../types';
-import { generateChatResponse } from '../services/geminiService';
+import { apiService } from '../services/apiService';
 
 interface ChatAssistantProps {
   sopData: SopResponse;
@@ -29,6 +29,12 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Initialize Session ID
+  const [sessionId] = useState(() => {
+    // Generate a simple session ID
+    return `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  });
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -52,12 +58,32 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
     setIsLoading(true);
 
     try {
-      const responseText = await generateChatResponse(sopData, [...messages, userMsg]);
+      // Determine Index Name (default to cbgknowledgehub if not present in metadata)
+      const meta = sopData.metadata as any;
+      const indexName = meta?.index_name || meta?.target_index || "cbgknowledgehub";
+
+      // Call Inference API
+      const response = await apiService.chatInference({
+        query: userMsg.content,
+        index_name: indexName,
+        session_id: sessionId,
+        qna_id: "" // Empty as per requirements
+      });
       
+      // Extract answer from response
+      // Assuming response structure: { answer: "..." } or { response: "..." } or direct text
+      let answerText = "I received a response, but it was empty.";
+      
+      if (typeof response === 'string') {
+          answerText = response;
+      } else if (response && typeof response === 'object') {
+          answerText = response.answer || response.response || response.result || response.text || JSON.stringify(response);
+      }
+
       const botMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: responseText,
+        content: answerText,
         timestamp: new Date()
       };
       
@@ -67,7 +93,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "I'm having trouble connecting right now. Please check your API key or try again later.",
+        content: "I'm having trouble connecting to the knowledge base right now. Please try again later.",
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMsg]);
@@ -78,6 +104,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
 
   // Helper to render bold text
   const renderMessage = (content: string) => {
+    // Simple markdown parser for bold text
     const parts = content.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, index) => {
         if (part.startsWith('**') && part.endsWith('**')) {

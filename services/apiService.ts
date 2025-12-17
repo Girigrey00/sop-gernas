@@ -29,6 +29,21 @@ export const apiService = {
         }
     },
 
+    // --- Chat Endpoint ---
+    chatInference: async (payload: { query: string, index_name: string, session_id: string, qna_id?: string }): Promise<any> => {
+        return handleResponse(await fetch(`${API_BASE_URL}/inference`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                query: payload.query,
+                index_name: payload.index_name,
+                session_id: payload.session_id,
+                qna_id: payload.qna_id || "",
+                // JWT optional
+            })
+        }));
+    },
+
     // --- Product Endpoints ---
 
     getProducts: async (): Promise<Product[]> => {
@@ -51,25 +66,48 @@ export const apiService = {
         const data = await handleResponse(await fetch(`${API_BASE_URL}/documents?limit=100`));
         
         // Map backend response to frontend LibraryDocument interface
-        return data.map((doc: any) => ({
-            id: doc._id || doc.id,
-            sopName: doc.product_id || doc.file_name, // Fallback if product_id not in list view
-            documentName: doc.file_name,
-            description: doc.summary || 'No description available',
-            pageCount: doc.page_count || 0,
-            uploadedBy: doc.uploaded_by || 'Unknown',
-            uploadedDate: doc.start_time ? new Date(doc.start_time).toLocaleDateString() : new Date().toLocaleDateString(),
-            indexName: doc.index_name,
-            status: doc.status,
-            version: '1.0',
-            // Store metadata needed for flow retrieval
-            metadata: {
-                linkedApp: 'ProcessHub', // Default/Assumed for now if missing
-                productId: doc.product_id,
-                category: doc.category,
-                generate_flow: doc.generate_flow // Ensure we keep track if it generates a flow
-            }
-        }));
+        return data.map((doc: any) => {
+            // 1. Map Category: "KnowledgeBase" -> "Process Definition", else keep original
+            const rawCategory = doc.category || 'General';
+            const categoryDisplay = rawCategory === 'KnowledgeBase' ? 'Process Definition' : rawCategory;
+            
+            // 2. Extract latest log message for continuous status display
+            const latestLog = doc.logs && Array.isArray(doc.logs) && doc.logs.length > 0 
+                ? doc.logs[doc.logs.length - 1].message 
+                : null;
+
+            return {
+                id: doc._id || doc.id,
+                sopName: doc.product_id || doc.file_name, // Fallback
+                documentName: doc.file_name,
+                description: doc.summary || 'No description available',
+                // Map total_pages from backend
+                pageCount: doc.total_pages || doc.page_count || 0,
+                totalPages: doc.total_pages || 0,
+                
+                uploadedBy: doc.uploaded_by || 'Unknown',
+                uploadedDate: doc.start_time ? new Date(doc.start_time).toLocaleDateString() + ' ' + new Date(doc.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleDateString(),
+                indexName: doc.index_name,
+                status: doc.status,
+                version: '1.0',
+                
+                // Enhanced Mappings
+                rootFolder: doc.root_folder, // Mapped to Product Name column
+                progressPercentage: doc.progress_percentage || 0,
+                logs: doc.logs || [],
+                latestLog: latestLog,
+                categoryDisplay: categoryDisplay,
+
+                // Store metadata needed for flow retrieval
+                metadata: {
+                    linkedApp: 'ProcessHub', 
+                    productId: doc.product_id,
+                    category: doc.category,
+                    generate_flow: doc.generate_flow,
+                    index_name: doc.index_name // Ensure index_name is carried over
+                }
+            };
+        });
     },
 
     // Upload to Azure Blob Storage using SAS Token
@@ -81,15 +119,20 @@ export const apiService = {
         // Format: https://host/container/filename?sas
         const realBlobUrl = `${sasUrl.origin}${sasUrl.pathname}/${fileName}${sasUrl.search}`;
 
-        // 2. Construct the Proxy URL (this is what the browser uses to upload to bypass CORS)
-        // Format: /azure-blob/container/filename?sas
-        // We strip the origin and replace it with our proxy prefix defined in vite.config.ts
-        const proxyUploadUrl = `/azure-blob${sasUrl.pathname}/${fileName}${sasUrl.search}`;
+        // 2. Determine Upload URL
+        // In Development: Use proxy (/azure-blob) to avoid local CORS issues.
+        // In Production: Use direct URL (realBlobUrl) because the dev server proxy doesn't exist.
+        // Note: Azure CORS must be configured to allow PUT from the production domain.
+        const isDev = import.meta.env.MODE === 'development';
         
-        console.log("Uploading to Proxy URL:", proxyUploadUrl);
+        const uploadUrl = isDev 
+            ? `/azure-blob${sasUrl.pathname}/${fileName}${sasUrl.search}` 
+            : realBlobUrl;
+        
+        console.log(`Uploading to ${isDev ? 'Proxy' : 'Direct'} URL:`, uploadUrl);
 
-        // We PUT the file to the PROXY URL
-        const response = await fetch(proxyUploadUrl, {
+        // We PUT the file
+        const response = await fetch(uploadUrl, {
             method: 'PUT',
             headers: {
                 'x-ms-blob-type': 'BlockBlob',

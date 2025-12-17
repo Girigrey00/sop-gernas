@@ -93,20 +93,37 @@ export interface HistoryItem {
 }
 
 // --- New Library Document Interface ---
+export interface LogEntry {
+    timestamp: string;
+    message: string;
+    status: string;
+}
+
 export interface LibraryDocument {
   id: string;
-  sopName: string;
+  sopName: string; // Often serves as Product ID context
   documentName: string;
   description: string;
   pageCount: number;
   uploadedBy: string;
   uploadedDate: string;
   indexName: string;
-  status: 'Active' | 'Draft' | 'Archived' | 'Processing' | 'Completed' | 'Failed';
+  status: 'Active' | 'Draft' | 'Archived' | 'Processing' | 'Completed' | 'Failed' | 'Uploading';
   version: string;
+  
+  // Enhanced Fields for GERNAS
+  rootFolder?: string; // Mapped to Product Name
+  progressPercentage?: number;
+  logs?: LogEntry[];
+  latestLog?: string;
+  totalPages?: number;
+  categoryDisplay?: string; // "SOP" or "Process Definition"
+
   metadata?: {
       linkedApp?: string;
       productId?: string;
+      category?: string;
+      generate_flow?: boolean;
       [key: string]: any;
   };
 }
@@ -122,9 +139,14 @@ export interface Product {
     has_flow: "Yes" | "No";
     document_count: number;
     description?: string;
-    flow_status?: string;
+    
+    // Enhanced Flow Status Fields
+    flow_status?: string; // e.g., "Completed", "Processing", "Failed", or null
     flow_source_file?: string;
     flow_blob_url?: string;
+    flow_error_message?: string | null;
+    flow_last_generated?: string;
+    
     created_at?: string;
     last_updated?: string;
     metadata?: any;

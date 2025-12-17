@@ -1,9 +1,9 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
-    Upload, FileText, Search, Eye, Trash2, 
-    CheckSquare, Square, X, Save, RefreshCw, PlayCircle,
-    Bot, GitMerge, FileStack, Plus, Loader2, AlertCircle
+    Upload, FileText, Search, Edit3, Trash2, 
+    Square, X, RefreshCw, FileStack, Plus, Loader2,
+    Activity, GitMerge, Bot
 } from 'lucide-react';
 import { LibraryDocument, SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -23,7 +23,6 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
 }) => {
     const [documents, setDocuments] = useState<LibraryDocument[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(false);
     
     // Modal States
@@ -41,6 +40,9 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     const sopInputRef = useRef<HTMLInputElement>(null);
     const llmInputRef = useRef<HTMLInputElement>(null);
 
+    // Polling Ref
+    const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
     // Handle Initial Open Prop
     useEffect(() => {
         if (initialUploadOpen) {
@@ -53,26 +55,52 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
         if (preselectedProduct) {
             setProductName(preselectedProduct.product_name);
         } else {
-            setProductName('PIL-CONV-001'); // Default
+            if(!isUploadModalOpen) setProductName(''); // Only reset if modal closed
         }
-    }, [preselectedProduct]);
+    }, [preselectedProduct, isUploadModalOpen]);
 
     // Fetch documents on load
-    const fetchDocuments = async () => {
-        setIsLoading(true);
+    const fetchDocuments = useCallback(async (isPolling = false) => {
+        if (!isPolling) setIsLoading(true);
         try {
             const docs = await apiService.getDocuments();
             setDocuments(docs);
+            
+            // Check if any documents are active/processing/uploading to decide on polling
+            const activeDocs = docs.filter(d => 
+                d.status === 'Processing' || d.status === 'Uploading' || d.status === 'Draft'
+            );
+            
+            if (activeDocs.length > 0) {
+                if (!pollingRef.current) {
+                    // Start polling every 3 seconds
+                    pollingRef.current = setInterval(() => fetchDocuments(true), 3000);
+                }
+            } else {
+                // Stop polling if done
+                if (pollingRef.current) {
+                    clearInterval(pollingRef.current);
+                    pollingRef.current = null;
+                }
+            }
         } catch (error) {
             console.error("Failed to fetch documents", error);
+            // Stop polling on error
+            if (pollingRef.current) {
+                clearInterval(pollingRef.current);
+                pollingRef.current = null;
+            }
         } finally {
-            setIsLoading(false);
+            if (!isPolling) setIsLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchDocuments();
-    }, []);
+        return () => {
+            if (pollingRef.current) clearInterval(pollingRef.current);
+        };
+    }, [fetchDocuments]);
 
     // --- Actions ---
 
@@ -96,9 +124,17 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     const resetForm = () => {
         setSopFile(null);
         setLlmFiles([]);
-        if (!preselectedProduct) setProductName('PIL-CONV-001');
+        if (!preselectedProduct) setProductName(''); // Reset unless passed
         setIsUploadModalOpen(false);
         if (onCloseInitialUpload) onCloseInitialUpload();
+    };
+
+    const handleEdit = (doc: LibraryDocument) => {
+        // "Edit" effectively acts as a re-upload or update
+        // We pre-fill the product name based on rootFolder
+        setProductName(doc.rootFolder || '');
+        setCategory(doc.metadata?.category || 'Policy');
+        setIsUploadModalOpen(true);
     };
 
     const handleUploadAll = async () => {
@@ -141,7 +177,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                 }
             }
             
-            // Refresh list
+            // Refresh list immediately
             await fetchDocuments();
             resetForm();
         } catch (error) {
@@ -164,36 +200,11 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
         }
     };
 
-    const handleVisualize = async (doc: LibraryDocument) => {
-        // The productId is crucial for fetching the flow
-        // Fallback to sopName if productId is missing in metadata
-        const targetId = doc.metadata?.productId || doc.sopName;
-
-        if (!targetId) {
-            alert("Cannot visualize: Missing Product ID (SOP Name) in document metadata.");
-            return;
-        }
-
-        if (onOpenSop) {
-            setIsLoading(true);
-            try {
-                // Try to fetch flow
-                const flowData = await apiService.getProcessFlow('ProcessHub', targetId);
-                onOpenSop(flowData);
-            } catch (e) {
-                console.error("Error fetching flow", e);
-                alert(`Could not load Process Flow for ID: ${targetId}. It might still be processing.`);
-            } finally {
-                setIsLoading(false);
-            }
-        }
-    };
-
     // --- Render ---
 
     const filteredDocuments = documents.filter(doc => 
         doc.documentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.sopName.toLowerCase().includes(searchTerm.toLowerCase())
+        (doc.rootFolder && doc.rootFolder.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     return (
@@ -203,18 +214,21 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
             <div className="px-8 py-6 bg-white border-b border-slate-200 flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold text-fab-navy mb-1">Document Library</h2>
-                    <p className="text-slate-500 text-sm">Manage source documents and knowledge base assets.</p>
+                    <p className="text-slate-500 text-sm">Manage source documents, monitor uploads, and re-process files.</p>
                 </div>
                 <div className="flex gap-3">
                     <button 
-                        onClick={fetchDocuments} 
+                        onClick={() => fetchDocuments()} 
                         className="p-2 text-slate-400 hover:text-fab-royal hover:bg-slate-50 rounded-lg transition-colors"
                         title="Refresh List"
                     >
                         <RefreshCw size={20} className={isLoading ? "animate-spin" : ""} />
                     </button>
                     <button 
-                        onClick={() => setIsUploadModalOpen(true)}
+                        onClick={() => {
+                             setProductName('PIL-CONV-001'); // Default if not editing
+                             setIsUploadModalOpen(true);
+                        }}
                         className="px-4 py-2 bg-fab-royal text-white rounded-lg text-sm font-bold shadow-lg shadow-fab-royal/20 hover:bg-fab-blue transition-all flex items-center gap-2"
                     >
                         <Upload size={16} />
@@ -229,7 +243,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input 
                         type="text" 
-                        placeholder="Search documents by name or ID..." 
+                        placeholder="Search by Document Name or Product (Root Folder)..." 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-fab-royal/30 text-sm"
@@ -246,17 +260,19 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                 <th className="p-4 w-10 text-center">
                                     <Square size={16} className="text-slate-300 mx-auto" />
                                 </th>
-                                <th className="p-4">Document Name</th>
+                                <th className="p-4">Product Name</th>
                                 <th className="p-4">Category</th>
-                                <th className="p-4">Upload Date</th>
-                                <th className="p-4">Status</th>
+                                <th className="p-4">Document</th>
+                                <th className="p-4 text-center">Pages</th>
+                                <th className="p-4">Upload Info</th>
+                                <th className="p-4 min-w-[240px]">Status & Progress</th>
                                 <th className="p-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {filteredDocuments.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="p-10 text-center text-slate-400 text-sm">
+                                    <td colSpan={8} className="p-10 text-center text-slate-400 text-sm">
                                         No documents found. Upload a file to get started.
                                     </td>
                                 </tr>
@@ -264,50 +280,89 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                 filteredDocuments.map((doc) => (
                                     <tr key={doc.id} className="hover:bg-slate-50 transition-colors group">
                                         <td className="p-4 text-center">
-                                            {/* Selection Logic Placeholder */}
                                             <Square size={16} className="text-slate-300 mx-auto group-hover:text-slate-400 cursor-pointer" />
                                         </td>
                                         <td className="p-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                                                    <FileText size={18} />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-bold text-slate-700">{doc.documentName}</p>
-                                                    <p className="text-xs text-slate-400">{doc.sopName || 'No Product ID'}</p>
-                                                </div>
+                                            {/* Root Folder as Product Name */}
+                                            <p className="text-sm font-bold text-fab-navy">{doc.rootFolder || 'Unassigned'}</p>
+                                        </td>
+                                        <td className="p-4">
+                                            {/* Category: KnowledgeBase renamed to Process Definition */}
+                                            <span className={`px-2 py-1 text-[10px] font-bold uppercase rounded-full border ${
+                                                doc.categoryDisplay === 'SOP' 
+                                                ? 'bg-purple-50 text-purple-600 border-purple-100'
+                                                : 'bg-indigo-50 text-indigo-600 border-indigo-100'
+                                            }`}>
+                                                {doc.categoryDisplay || 'General'}
+                                            </span>
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-2">
+                                                <FileText size={16} className="text-slate-400" />
+                                                <span className="text-sm text-slate-700 truncate max-w-[180px]" title={doc.documentName}>
+                                                    {doc.documentName}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="p-4 text-center text-sm font-mono text-slate-600">
+                                            {doc.totalPages || doc.pageCount || 0}
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex flex-col">
+                                                <span className="text-xs text-slate-600 font-medium">{doc.uploadedBy}</span>
+                                                <span className="text-[10px] text-slate-400">{doc.uploadedDate}</span>
                                             </div>
                                         </td>
                                         <td className="p-4">
-                                            <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase rounded-full border border-slate-200">
-                                                {doc.metadata?.category || 'General'}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-sm text-slate-500">
-                                            {doc.uploadedDate}
-                                        </td>
-                                        <td className="p-4">
-                                             <span className={`px-2 py-1 text-[10px] font-bold uppercase rounded-full border flex items-center gap-1 w-fit ${
-                                                doc.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                                doc.status === 'Processing' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                                                doc.status === 'Failed' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                                'bg-slate-100 text-slate-500 border-slate-200'
-                                             }`}>
-                                                {doc.status === 'Processing' && <RefreshCw size={10} className="animate-spin" />}
-                                                {doc.status || 'Unknown'}
-                                             </span>
+                                             <div className="flex flex-col gap-2">
+                                                {/* Status Badge */}
+                                                <div className="flex items-center justify-between">
+                                                    <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full border flex items-center gap-1 w-fit ${
+                                                        doc.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                        (doc.status === 'Processing' || doc.status === 'Uploading') ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                                        doc.status === 'Failed' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                                        'bg-slate-100 text-slate-500 border-slate-200'
+                                                    }`}>
+                                                        {(doc.status === 'Processing' || doc.status === 'Uploading') && <RefreshCw size={10} className="animate-spin" />}
+                                                        {doc.status || 'Unknown'}
+                                                    </span>
+                                                    {(doc.status === 'Processing' || doc.status === 'Uploading') && (
+                                                        <span className="text-[10px] font-mono text-blue-600 font-bold">{doc.progressPercentage}%</span>
+                                                    )}
+                                                </div>
+
+                                                {/* Progress Bar (Only if active) */}
+                                                {(doc.status === 'Processing' || doc.status === 'Uploading') && (
+                                                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+                                                        <div 
+                                                            className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                                                            style={{ width: `${doc.progressPercentage || 5}%` }}
+                                                        ></div>
+                                                    </div>
+                                                )}
+
+                                                {/* Latest Log Message - Continuous Updates */}
+                                                <div className="h-5 overflow-hidden">
+                                                    {doc.latestLog ? (
+                                                        <p className="text-[10px] text-slate-500 italic truncate animate-pulse" title={doc.latestLog}>
+                                                            <Activity size={10} className="inline mr-1 text-slate-400" />
+                                                            {doc.latestLog}
+                                                        </p>
+                                                    ) : (
+                                                        <span className="text-[10px] text-slate-300">-</span>
+                                                    )}
+                                                </div>
+                                             </div>
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                {doc.metadata?.generate_flow !== false && (
-                                                    <button 
-                                                        onClick={() => handleVisualize(doc)}
-                                                        className="p-1.5 text-slate-400 hover:text-fab-royal hover:bg-fab-royal/10 rounded transition-colors"
-                                                        title="Visualize Flow"
-                                                    >
-                                                        <GitMerge size={16} />
-                                                    </button>
-                                                )}
+                                                <button 
+                                                    onClick={() => handleEdit(doc)}
+                                                    className="p-1.5 text-slate-400 hover:text-fab-royal hover:bg-fab-royal/10 rounded transition-colors"
+                                                    title="Re-Upload / Edit"
+                                                >
+                                                    <Edit3 size={16} />
+                                                </button>
                                                 <button 
                                                     onClick={() => handleDelete(doc.id)}
                                                     className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
@@ -333,7 +388,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                         <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                             <h3 className="font-bold text-lg text-fab-navy flex items-center gap-2">
                                 <Upload size={20} className="text-fab-royal" />
-                                Upload Documents {preselectedProduct && <span className="text-slate-400 text-sm font-normal">for {preselectedProduct.product_name}</span>}
+                                {productName ? `Edit / Update ${productName}` : 'Upload New Documents'}
                             </h3>
                             <button onClick={resetForm} className="text-slate-400 hover:text-slate-600">
                                 <X size={20} />
@@ -358,13 +413,14 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                 <div className="pl-12 space-y-3">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1">
-                                            <label className="text-xs font-bold text-slate-500 uppercase">Product ID / Name</label>
+                                            <label className="text-xs font-bold text-slate-500 uppercase">Product ID / Root Folder</label>
                                             <input 
                                                 type="text" 
                                                 value={productName}
                                                 onChange={(e) => setProductName(e.target.value)}
                                                 className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-sm focus:border-fab-royal/50 outline-none disabled:bg-slate-100 disabled:text-slate-500"
                                                 disabled={!!preselectedProduct}
+                                                placeholder="e.g. PIL-CONV-001"
                                             />
                                         </div>
                                          <div className="space-y-1">
@@ -423,7 +479,6 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                         <h4 className="text-sm font-bold text-slate-800">Knowledge Base Files (RAG)</h4>
                                         <p className="text-xs text-slate-500">Additional documents for the AI Chatbot context.</p>
                                         <p className="text-[10px] text-emerald-600 mt-1">* Recommended: Upload both SOP and KB files for best results.</p>
-                                        <p className="text-[10px] text-slate-400 italic">Note: At least one document is required for processing.</p>
                                     </div>
                                 </div>
 
@@ -485,7 +540,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                 ) : (
                                     <>
                                         <Upload size={16} />
-                                        Start Ingestion
+                                        {productName && documents.some(d => d.rootFolder === productName) ? 'Re-Process / Update' : 'Start Ingestion'}
                                     </>
                                 )}
                             </button>
