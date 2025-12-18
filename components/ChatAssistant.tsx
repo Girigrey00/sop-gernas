@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Loader2, X, BookOpen, ExternalLink, Quote } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -8,6 +8,8 @@ interface ChatAssistantProps {
   sopData: SopResponse;
   onClose: () => void;
   productContext?: Product | null;
+  onToggleMaximize?: () => void;
+  isMaximized?: boolean;
 }
 
 interface Message {
@@ -16,10 +18,58 @@ interface Message {
   content: string;
   timestamp: Date;
   citations?: Record<string, string>;
-  isTyping?: boolean; // New property to control effect
+  isTyping?: boolean;
 }
 
-const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, productContext }) => {
+// Internal Component for Collapsible Citations
+const CitationBlock = ({ citations }: { citations: Record<string, string> }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="mt-3 w-full animate-in fade-in slide-in-from-top-2 duration-500">
+      <div className={`bg-blue-50/50 border border-blue-100 rounded-xl transition-all duration-300 ${isOpen ? 'p-3' : 'p-2'}`}>
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-between group"
+        >
+            <div className="flex items-center gap-1.5">
+                <BookOpen size={12} className="text-blue-500" />
+                <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">
+                   Verified Sources ({Object.keys(citations).length})
+                </p>
+            </div>
+            {isOpen ? (
+                <ChevronUp size={14} className="text-blue-400 group-hover:text-blue-600" />
+            ) : (
+                <ChevronDown size={14} className="text-blue-400 group-hover:text-blue-600" />
+            )}
+        </button>
+
+        {isOpen && (
+             <div className="grid gap-2 mt-3 animate-in fade-in slide-in-from-top-1">
+                {Object.entries(citations).map(([key, value]) => (
+                    <div key={key} className="group flex items-start gap-3 bg-white p-2.5 rounded-lg border border-blue-100/50 shadow-sm hover:border-blue-200 hover:shadow-md transition-all">
+                        <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-mono text-[10px] font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                          <Quote size={10} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1 mb-0.5">
+                              <span className="text-[10px] font-bold text-slate-500 uppercase">{key}</span>
+                              <div className="h-px bg-slate-200 flex-1"></div>
+                          </div>
+                          <p className="text-xs text-slate-700 leading-snug line-clamp-3 italic">"{value}"</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
+const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, productContext, onToggleMaximize, isMaximized }) => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -63,13 +113,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
       // Determine Index Name & Product Context
       const meta = sopData.metadata as any;
       
-      // Robust Index Resolution:
-      // 1. Check productContext 'index_name' (Highest Priority - from Product API)
-      // 2. Check direct 'index_name' in SOP metadata
-      // 3. Check 'target_index' (often used in upload metadata)
-      // 4. Fallback to 'cbgknowledgehub' if purely generic.
       const indexName = productContext?.index_name || meta?.index_name || meta?.target_index || "cbgknowledgehub";
-      
       const productName = productContext?.product_name || meta?.productId || sopData.processDefinition.title || "";
       const questionId = globalThis.crypto?.randomUUID() || `qn-${Date.now()}`;
 
@@ -172,9 +216,21 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
             </p>
           </div>
         </div>
-        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
-          <X size={20} />
-        </button>
+        
+        <div className="flex items-center gap-2">
+            {onToggleMaximize && (
+                <button 
+                    onClick={onToggleMaximize} 
+                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                    title={isMaximized ? "Minimize" : "Maximize"}
+                >
+                    {isMaximized ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                </button>
+            )}
+            <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-md transition-colors">
+                <X size={20} />
+            </button>
+        </div>
       </div>
 
       {/* Messages */}
@@ -201,31 +257,9 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
                 )}
               </div>
 
-              {/* Citations Section - Attractive Card UI */}
+              {/* Citations Section - Collapsible */}
               {msg.citations && Object.keys(msg.citations).length > 0 && !msg.isTyping && (
-                  <div className="mt-3 w-full animate-in fade-in slide-in-from-top-2 duration-500">
-                      <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3 shadow-sm">
-                          <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                             <BookOpen size={12} /> Verified Sources
-                          </p>
-                          <div className="grid gap-2">
-                              {Object.entries(msg.citations).map(([key, value]) => (
-                                  <div key={key} className="group flex items-start gap-3 bg-white p-2.5 rounded-lg border border-blue-100/50 shadow-sm hover:border-blue-200 hover:shadow-md transition-all">
-                                      <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-mono text-[10px] font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                        <Quote size={10} />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-1 mb-0.5">
-                                            <span className="text-[10px] font-bold text-slate-500 uppercase">{key}</span>
-                                            <div className="h-px bg-slate-200 flex-1"></div>
-                                        </div>
-                                        <p className="text-xs text-slate-700 leading-snug line-clamp-3 italic">"{value}"</p>
-                                      </div>
-                                  </div>
-                              ))}
-                          </div>
-                      </div>
-                  </div>
+                  <CitationBlock citations={msg.citations} />
               )}
 
               <span className="text-[10px] text-slate-400 mt-1 px-1">

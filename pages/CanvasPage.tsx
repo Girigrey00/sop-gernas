@@ -54,6 +54,9 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
     const [isLoading, setIsLoading] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [isLegendOpen, setIsLegendOpen] = useState(false);
+    
+    // Maximized Sidebar State
+    const [isSidebarMaximized, setIsSidebarMaximized] = useState(false);
 
     const { fitView, setCenter, getNodes } = useReactFlow();
 
@@ -225,6 +228,8 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
             setSelectedStep(node.data.details);
             setIsSidebarOpen(true);
             setActivePanel('GUIDE'); // Force switch to Guide when a node is clicked
+            // If user clicked a node, we probably want to see context, so standard width is good.
+            // But if it was maximized, we keep it maximized.
             setCenter(node.position.x + 150, node.position.y + 75, { zoom: 1, duration: 800 });
         }
     };
@@ -444,8 +449,10 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
 
             {/* Right Sidebar - Process Guide / Chat */}
             <div 
-                className={`bg-white border-l border-slate-200 shadow-2xl z-30 transition-all duration-300 flex flex-col absolute right-0 top-0 h-full w-full md:w-[420px] ${
+                className={`bg-white border-l border-slate-200 shadow-2xl z-30 transition-all duration-300 flex flex-col absolute right-0 top-0 h-full ${
                     isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+                } ${
+                    isSidebarMaximized ? 'w-full md:w-[95%]' : 'w-full md:w-[420px]'
                 }`}
             >
                 {/* Sidebar Toggle Tabs */}
@@ -496,6 +503,8 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
                                 sopData={sopData}
                                 onClose={() => setIsSidebarOpen(false)}
                                 productContext={productContext}
+                                onToggleMaximize={() => setIsSidebarMaximized(!isSidebarMaximized)}
+                                isMaximized={isSidebarMaximized}
                             />
                         )}
                     </>
