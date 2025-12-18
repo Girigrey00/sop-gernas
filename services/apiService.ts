@@ -92,15 +92,15 @@ export const apiService = {
 
             // Check if it's an SOP flow source
             if (doc.generate_flow === true || (doc.metadata && doc.metadata.generate_flow === true)) {
-                categoryDisplay = 'SOP FLOW';
+                categoryDisplay = 'Process Definition';
             } 
             // Check if it's a Knowledge Base file
             else if (rawCategory === 'KnowledgeBase' || (doc.metadata && doc.metadata.category === 'KnowledgeBase')) {
-                categoryDisplay = 'Process Definition';
+                categoryDisplay = 'Policy Documents';
             }
             // Fallback for previous uploads
             else if (['Policy', 'Procedure', 'Manual'].includes(rawCategory)) {
-                categoryDisplay = 'SOP FLOW';
+                categoryDisplay = 'Process Definition';
             }
             
             const latestLog = doc.logs && Array.isArray(doc.logs) && doc.logs.length > 0 

@@ -6,27 +6,26 @@ import LibraryPage from './pages/LibraryPage';
 import { View, HistoryItem, SopResponse, Product } from './types';
 import { apiService } from './services/apiService';
 import { 
-    FileText,
-    Clock,
-    ChevronRight,
-    Hexagon,
-    Lock,
-    User,
-    ArrowRight,
-    Search,
-    ShieldAlert, 
-    Briefcase,
-    Menu,
-    Plus,
-    Loader2,
-    RefreshCw,
-    CreditCard, Landmark, ShieldCheck, Wallet, Banknote, Coins, FileSpreadsheet,
-    Zap
+    FileText, Clock, ChevronRight, Hexagon, Lock, User, ArrowRight, Search, ShieldAlert, 
+    Briefcase, Menu, Plus, Loader2, RefreshCw, CreditCard, Landmark, ShieldCheck, Wallet, 
+    Banknote, Coins, FileSpreadsheet, Zap,
+    // New Icons for Variety
+    PieChart, TrendingUp, Globe, Building2, Scale, FileSignature, Calculator, PiggyBank, 
+    Receipt, Gem, Key, Database, Smartphone, Award, Target, BarChart, Stamp, BadgeDollarSign, 
+    Vault, ScrollText, Truck, ShoppingCart, Anchor, Gavel, FileCheck, Layers
 } from 'lucide-react';
 
 // --- Icon Helper ---
 const PRODUCT_ICONS = [
-    Briefcase, CreditCard, Landmark, ShieldCheck, Wallet, Banknote, Coins, FileSpreadsheet, Zap
+    // Finance & Banking
+    Briefcase, CreditCard, Landmark, ShieldCheck, Wallet, Banknote, Coins, PiggyBank, 
+    Receipt, Gem, BadgeDollarSign, Vault, Calculator,
+    // Business & Enterprise
+    Building2, PieChart, TrendingUp, Target, BarChart, Globe, ShoppingCart, Truck, 
+    // Process & Compliance
+    FileSpreadsheet, FileSignature, Scale, Gavel, Stamp, FileCheck, ScrollText, 
+    // Tech & General
+    Zap, Key, Database, Smartphone, Award, Layers, Anchor, FileText
 ];
 
 const getProductIcon = (name: string) => {
@@ -455,6 +454,7 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentView, setCurrentView] = useState<View>('HOME');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false); // New state for desktop collapse
   const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedSop, setSelectedSop] = useState<SopResponse | null>(null);
@@ -563,15 +563,18 @@ const App: React.FC = () => {
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
       <div className={`fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)}></div>
       
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 transform lg:relative lg:translate-x-0 transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      {/* Sidebar Container with Dynamic Width */}
+      <div className={`fixed inset-y-0 left-0 z-50 ${isCollapsed ? 'w-20' : 'w-64'} transform lg:relative lg:translate-x-0 transition-all duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <Sidebar 
             currentView={currentView === 'SOPS' ? 'HOME' : currentView} 
             onNavigate={(view) => { setCurrentView(view); setIsSidebarOpen(false); }} 
             onLogout={handleLogout}
+            isCollapsed={isCollapsed}
+            onToggle={() => setIsCollapsed(!isCollapsed)}
           />
       </div>
 
-      <main className="flex-1 h-full overflow-hidden relative bg-white flex flex-col">
+      <main className="flex-1 h-full overflow-hidden relative bg-white flex flex-col transition-all duration-300">
         <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 bg-white z-30">
             <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-fab-royal rounded-lg flex items-center justify-center text-white">

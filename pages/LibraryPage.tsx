@@ -246,9 +246,9 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-xs font-bold text-fab-navy truncate" title={doc.rootFolder}>{doc.rootFolder || 'Unassigned'}</span>
                                                 <span className={`px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-md border w-fit ${
-                                                    doc.categoryDisplay === 'SOP FLOW' 
+                                                    doc.categoryDisplay === 'Process Definition' 
                                                     ? 'bg-purple-50 text-purple-600 border-purple-100'
-                                                    : doc.categoryDisplay === 'Process Definition'
+                                                    : doc.categoryDisplay === 'Policy Documents'
                                                     ? 'bg-indigo-50 text-indigo-600 border-indigo-100'
                                                     : 'bg-slate-100 text-slate-500 border-slate-200'
                                                 }`}>
