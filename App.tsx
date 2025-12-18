@@ -151,7 +151,7 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
 };
 
 // --- Home Page (CBG Knowledge Hub) ---
-const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => void, onRedirectToUpload: (product?: Product) => void }) => {
+const HomePage = ({ onStart, onSelectProduct }: { onStart: (data: any) => void, onSelectProduct: (product: Product, redirect: boolean) => void }) => {
     const [products, setProducts] = useState<Product[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -215,6 +215,9 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
     };
 
     const handleCardClick = async (product: Product) => {
+        // Update context to show library link
+        onSelectProduct(product, false);
+
         // Strict Logic:
         // 1. If flow_status === 'Completed' -> Open Canvas
         // 2. If flow_status is missing/null -> Redirect to Upload (Library)
@@ -238,17 +241,24 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
             }
         } else if (!product.flow_status) {
             // Redirect to library upload if flow is missing
-            onRedirectToUpload(product);
+            onSelectProduct(product, true); // Force redirect
         } else {
             // Processing or other state
             alert(`Flow is currently: ${product.flow_status}. Please wait until completion.`);
         }
     };
 
-    const filteredProducts = products.filter(item => {
-        return item.product_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-               (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
-    });
+    const filteredProducts = products
+        .filter(item => {
+            return item.product_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                   (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+        })
+        // Sort Newest to Oldest based on created_at or fallback
+        .sort((a, b) => {
+             const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+             const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+             return dateB - dateA;
+        });
 
     return (
         <div className="h-full flex flex-col bg-slate-50 relative">
@@ -308,11 +318,7 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
                                     className="p-5 rounded-xl border border-slate-200 bg-white hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all text-left group flex flex-col h-full relative overflow-hidden"
                                 >
                                     <div className="flex justify-between items-start mb-4">
-                                        <div className={`p-2.5 rounded-xl transition-colors border ${
-                                            isCompleted ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                            isProcessing ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                                            'bg-slate-50 text-slate-400 border-slate-100'
-                                        }`}>
+                                        <div className="p-2.5 rounded-xl transition-colors border bg-fab-royal/5 text-fab-royal border-fab-royal/10">
                                             {isProcessing ? <Loader2 size={24} className="animate-spin" /> : <DynamicIcon size={24} strokeWidth={1.5} />}
                                         </div>
                                         <div className="flex gap-1">
@@ -466,8 +472,8 @@ const App: React.FC = () => {
   
   // State to trigger upload modal automatically when entering library
   const [autoOpenUpload, setAutoOpenUpload] = useState(false);
-  // NEW: State to pass selected product to library for context-aware upload
-  const [selectedProductForUpload, setSelectedProductForUpload] = useState<Product | null>(null);
+  // NEW: State to pass selected product to library for context-aware upload and filtering
+  const [selectedContextProduct, setSelectedContextProduct] = useState<Product | null>(null);
 
   // Authentication Logic
   const handleLogin = (u: string, p: string) => {
@@ -483,6 +489,7 @@ const App: React.FC = () => {
       setCurrentView('HOME');
       setInitialPrompt('');
       setSelectedSop(null);
+      setSelectedContextProduct(null);
   };
 
   const handleStartWithData = (data: SopResponse) => {
@@ -492,10 +499,12 @@ const App: React.FC = () => {
       setIsSidebarOpen(false);
   };
 
-  const handleRedirectToUpload = (product?: Product) => {
-      setAutoOpenUpload(true);
-      if (product) setSelectedProductForUpload(product);
-      setCurrentView('LIBRARY');
+  const handleProductSelect = (product: Product, redirect: boolean) => {
+      setSelectedContextProduct(product);
+      if (redirect) {
+          setAutoOpenUpload(true);
+          setCurrentView('LIBRARY');
+      }
   };
 
   const handleFlowGenerated = (data: SopResponse, prompt: string) => {
@@ -529,9 +538,9 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (currentView) {
       case 'HOME':
-        return <HomePage onStart={handleStartWithData} onRedirectToUpload={handleRedirectToUpload} />;
+        return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} />;
       case 'SOPS':
-        return <HomePage onStart={handleStartWithData} onRedirectToUpload={handleRedirectToUpload} />;
+        return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} />;
       case 'LIBRARY':
         return (
             <LibraryPage 
@@ -539,9 +548,9 @@ const App: React.FC = () => {
                 initialUploadOpen={autoOpenUpload}
                 onCloseInitialUpload={() => {
                     setAutoOpenUpload(false);
-                    setSelectedProductForUpload(null); // Clear selection on close
+                    // Do not clear context here to keep library filtered
                 }}
-                preselectedProduct={selectedProductForUpload}
+                preselectedProduct={selectedContextProduct}
             />
         );
       case 'CANVAS':
@@ -556,7 +565,7 @@ const App: React.FC = () => {
       case 'HISTORY':
         return <HistoryPage history={history} onOpenItem={handleOpenHistoryItem} />;
       default:
-        return <HomePage onStart={handleStartWithData} onRedirectToUpload={handleRedirectToUpload} />;
+        return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} />;
     }
   };
 
@@ -576,6 +585,7 @@ const App: React.FC = () => {
             onLogout={handleLogout}
             isCollapsed={isCollapsed}
             onToggle={() => setIsCollapsed(!isCollapsed)}
+            showLibrary={!!selectedContextProduct}
           />
       </div>
 

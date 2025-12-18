@@ -9,14 +9,17 @@ interface SidebarProps {
   onLogout: () => void;
   isCollapsed: boolean;
   onToggle: () => void;
+  showLibrary: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, isCollapsed, onToggle }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, isCollapsed, onToggle, showLibrary }) => {
   
   const navItems = [
     { id: 'HOME', label: 'CBG KNOWLEDGE HUB', icon: Compass },
-    { id: 'LIBRARY', label: 'Library', icon: BookOpen },
-    { id: 'HISTORY', label: 'History', icon: FileClock },
+    // Only show Library if a product context is selected
+    ...(showLibrary ? [{ id: 'LIBRARY', label: 'Library', icon: BookOpen }] : []),
+    // History is intentionally removed as requested
+    // { id: 'HISTORY', label: 'History', icon: FileClock },
   ];
 
   return (

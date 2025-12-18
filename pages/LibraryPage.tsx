@@ -166,10 +166,19 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
 
     // --- Render ---
 
-    const filteredDocuments = documents.filter(doc => 
-        doc.documentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (doc.rootFolder && doc.rootFolder.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const filteredDocuments = documents.filter(doc => {
+        // Search Filter
+        const matchesSearch = doc.documentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              (doc.rootFolder && doc.rootFolder.toLowerCase().includes(searchTerm.toLowerCase()));
+        
+        // Product Context Filter
+        // If a product is selected, ensure the document belongs to it (by rootFolder or sopName match)
+        const matchesProduct = preselectedProduct 
+            ? doc.rootFolder === preselectedProduct.product_name || doc.sopName === preselectedProduct.product_name
+            : true;
+
+        return matchesSearch && matchesProduct;
+    });
 
     return (
         <div className="h-full flex flex-col bg-slate-50 relative overflow-hidden">
@@ -178,7 +187,11 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
             <div className="px-6 py-4 bg-white border-b border-slate-200 flex justify-between items-center shrink-0">
                 <div>
                     <h2 className="text-xl font-bold text-fab-navy mb-0.5">Document Library</h2>
-                    <p className="text-slate-500 text-xs">Manage documents and monitor ingestion status.</p>
+                    <p className="text-slate-500 text-xs">
+                        {preselectedProduct 
+                            ? `Managing documents for: ${preselectedProduct.product_name}` 
+                            : 'Manage documents and monitor ingestion status.'}
+                    </p>
                 </div>
                 <div className="flex gap-2">
                     <button 
@@ -190,7 +203,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                     </button>
                     <button 
                         onClick={() => {
-                             setProductName('PIL-CONV-001');
+                             if(!preselectedProduct) setProductName('PIL-CONV-001');
                              setIsUploadModalOpen(true);
                         }}
                         className="px-3 py-2 bg-fab-royal text-white rounded-lg text-xs font-bold shadow-lg shadow-fab-royal/20 hover:bg-fab-blue transition-all flex items-center gap-1.5"
@@ -207,7 +220,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input 
                         type="text" 
-                        placeholder="Search by Document Name or Product..." 
+                        placeholder="Search by Document Name..." 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-fab-royal/30 text-xs"
@@ -233,7 +246,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                             {filteredDocuments.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="p-8 text-center text-slate-400 text-sm">
-                                        No documents found.
+                                        No documents found{preselectedProduct ? ` for ${preselectedProduct.product_name}` : ''}.
                                     </td>
                                 </tr>
                             ) : (
