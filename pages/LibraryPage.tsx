@@ -2,8 +2,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
     Upload, FileText, Search, Edit3, Trash2, 
-    Square, X, RefreshCw, FileStack, Plus, Loader2,
-    Activity, GitMerge, Bot, Calendar, User
+    Square, X, FileStack, Plus, Loader2,
+    Activity, GitMerge, Bot, Calendar, User, BookOpen, RefreshCw
 } from 'lucide-react';
 import { LibraryDocument, SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -195,13 +195,6 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                 </div>
                 <div className="flex gap-2">
                     <button 
-                        onClick={() => fetchDocuments()} 
-                        className="p-2 text-slate-400 hover:text-fab-royal hover:bg-slate-50 rounded-lg transition-colors"
-                        title="Refresh List"
-                    >
-                        <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
-                    </button>
-                    <button 
                         onClick={() => {
                              if(!preselectedProduct) setProductName('PIL-CONV-001');
                              setIsUploadModalOpen(true);
@@ -230,14 +223,15 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
 
             {/* Compact Table */}
             <div className="flex-1 overflow-auto px-6 py-4">
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden min-w-[800px]">
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden min-w-[900px]">
                     <table className="w-full text-left border-collapse table-fixed">
                         <thead className="bg-slate-50 border-b border-slate-200">
                             <tr className="text-[10px] uppercase text-slate-500 font-bold tracking-wider">
                                 <th className="p-3 w-10 text-center"><Square size={12} className="mx-auto" /></th>
                                 <th className="p-3 w-40">Product / Category</th>
                                 <th className="p-3">Document Name</th>
-                                <th className="p-3 w-20 text-center">Pages</th>
+                                <th className="p-3 w-32">Uploaded By</th>
+                                <th className="p-3 w-32">Date</th>
                                 <th className="p-3 w-48">Status & Progress</th>
                                 <th className="p-3 w-20 text-right">Actions</th>
                             </tr>
@@ -245,7 +239,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                         <tbody className="divide-y divide-slate-100">
                             {filteredDocuments.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="p-8 text-center text-slate-400 text-sm">
+                                    <td colSpan={7} className="p-8 text-center text-slate-400 text-sm">
                                         No documents found{preselectedProduct ? ` for ${preselectedProduct.product_name}` : ''}.
                                     </td>
                                 </tr>
@@ -270,19 +264,29 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                             </div>
                                         </td>
                                         <td className="p-3">
-                                            <div className="flex items-center gap-2">
-                                                <FileText size={14} className="text-slate-400 shrink-0" />
-                                                <span className="text-xs text-slate-700 truncate font-medium" title={doc.documentName}>
-                                                    {doc.documentName}
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2">
+                                                    <FileText size={14} className="text-slate-400 shrink-0" />
+                                                    <span className="text-xs text-slate-700 truncate font-medium" title={doc.documentName}>
+                                                        {doc.documentName}
+                                                    </span>
+                                                </div>
+                                                <span className="text-[10px] text-slate-400 flex items-center gap-1 pl-6">
+                                                    Pages: {doc.totalPages || doc.pageCount || 0}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center gap-2 mt-1 pl-6">
-                                                <span className="text-[9px] text-slate-400 flex items-center gap-1"><User size={8}/> {doc.uploadedBy}</span>
-                                                <span className="text-[9px] text-slate-400 flex items-center gap-1"><Calendar size={8}/> {doc.uploadedDate.split(' ')[0]}</span>
+                                        </td>
+                                        <td className="p-3">
+                                            <div className="flex items-center gap-2 text-slate-600">
+                                                <User size={12} className="text-slate-400" />
+                                                <span className="text-[11px] truncate">{doc.uploadedBy}</span>
                                             </div>
                                         </td>
-                                        <td className="p-3 text-center text-xs font-mono text-slate-600">
-                                            {doc.totalPages || doc.pageCount || 0}
+                                        <td className="p-3">
+                                             <div className="flex items-center gap-2 text-slate-600">
+                                                <Calendar size={12} className="text-slate-400" />
+                                                <span className="text-[11px]">{doc.uploadedDate.split(' ')[0]}</span>
+                                            </div>
                                         </td>
                                         <td className="p-3">
                                              <div className="flex flex-col gap-1.5">
@@ -295,24 +299,26 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                                         {(doc.status === 'Processing' || doc.status === 'Uploading') && <RefreshCw size={10} className="animate-spin" />}
                                                         {doc.status || 'Unknown'}
                                                     </span>
-                                                    {(doc.status === 'Processing' || doc.status === 'Uploading') && (
-                                                        <span className="text-[9px] font-mono text-blue-600 font-bold">{doc.progressPercentage}%</span>
-                                                    )}
+                                                    <span className="text-[9px] font-mono text-slate-500 font-bold">
+                                                        {doc.progressPercentage !== undefined ? doc.progressPercentage : 0}%
+                                                    </span>
                                                 </div>
 
-                                                {(doc.status === 'Processing' || doc.status === 'Uploading') ? (
-                                                    <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                                                        <div 
-                                                            className="h-full bg-blue-500 rounded-full transition-all duration-500"
-                                                            style={{ width: `${doc.progressPercentage || 5}%` }}
-                                                        ></div>
-                                                    </div>
-                                                ) : doc.latestLog ? (
+                                                <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className={`h-full rounded-full transition-all duration-500 ${
+                                                             doc.status === 'Completed' ? 'bg-emerald-500' :
+                                                             doc.status === 'Failed' ? 'bg-rose-500' :
+                                                             'bg-blue-500'
+                                                        }`}
+                                                        style={{ width: `${doc.progressPercentage || (doc.status === 'Completed' ? 100 : 5)}%` }}
+                                                    ></div>
+                                                </div>
+                                                
+                                                {doc.latestLog && (doc.status === 'Processing' || doc.status === 'Uploading') && (
                                                      <p className="text-[9px] text-slate-400 italic truncate" title={doc.latestLog}>
                                                         {doc.latestLog}
                                                     </p>
-                                                ) : (
-                                                    <div className="h-1"></div>
                                                 )}
                                              </div>
                                         </td>

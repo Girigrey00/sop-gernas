@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Loader2, X, BookOpen, ExternalLink } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Loader2, X, BookOpen, ExternalLink, Quote } from 'lucide-react';
 import { SopResponse } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -155,7 +155,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
             <Bot size={18} />
           </div>
           <div>
-            <h3 className="font-bold text-slate-900 text-sm">Process AI</h3>
+            <h3 className="font-bold text-slate-900 text-sm">CBG KNOWLEDGE HUB AI</h3>
             <p className="text-[10px] text-slate-500 font-medium flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               Knowledge Base Active
@@ -191,18 +191,26 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
                 )}
               </div>
 
-              {/* Citations Section */}
+              {/* Citations Section - Attractive Card UI */}
               {msg.citations && Object.keys(msg.citations).length > 0 && !msg.isTyping && (
-                  <div className="mt-2 w-full animate-in fade-in slide-in-from-top-2 duration-500">
-                      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                             <BookOpen size={12} /> Sources & Citations
+                  <div className="mt-3 w-full animate-in fade-in slide-in-from-top-2 duration-500">
+                      <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3 shadow-sm">
+                          <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                             <BookOpen size={12} /> Verified Sources
                           </p>
-                          <div className="space-y-2">
+                          <div className="grid gap-2">
                               {Object.entries(msg.citations).map(([key, value]) => (
-                                  <div key={key} className="flex gap-2 text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-100">
-                                      <span className="font-mono text-blue-600 font-bold shrink-0">{key}</span>
-                                      <span className="leading-snug">{value}</span>
+                                  <div key={key} className="group flex items-start gap-3 bg-white p-2.5 rounded-lg border border-blue-100/50 shadow-sm hover:border-blue-200 hover:shadow-md transition-all">
+                                      <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-mono text-[10px] font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                        <Quote size={10} />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1 mb-0.5">
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase">{key}</span>
+                                            <div className="h-px bg-slate-200 flex-1"></div>
+                                        </div>
+                                        <p className="text-xs text-slate-700 leading-snug line-clamp-3 italic">"{value}"</p>
+                                      </div>
                                   </div>
                               ))}
                           </div>
