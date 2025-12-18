@@ -15,6 +15,7 @@ interface Message {
   content: string;
   timestamp: Date;
   citations?: Record<string, string>;
+  isTyping?: boolean; // New property to control effect
 }
 
 const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
@@ -32,7 +33,6 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
 
   // Initialize Session ID (Unique per instance of chat)
   const [sessionId] = useState(() => {
-    // Generate a UUID or robust random string
     return globalThis.crypto?.randomUUID() || `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   });
 
@@ -59,14 +59,10 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
     setIsLoading(true);
 
     try {
-      // Determine Index Name (default to cbgknowledgehub if not present in metadata)
+      // Determine Index Name
       const meta = sopData.metadata as any;
       const indexName = meta?.index_name || meta?.target_index || "cbgknowledgehub";
-      
-      // Determine Product Name for context
       const productName = meta?.productId || sopData.processDefinition.title || "";
-
-      // Generate Question ID
       const questionId = globalThis.crypto?.randomUUID() || `qn-${Date.now()}`;
 
       // Call Inference API
@@ -78,28 +74,53 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
         product: productName
       });
       
-      // Handle standardized response format: { answer: "...", citations: { ... }, ... }
-      let answerText = "";
+      // Standardize Response
+      let fullAnswerText = "";
       let citations: Record<string, string> | undefined = undefined;
 
       if (typeof response === 'string') {
-          answerText = response;
+          fullAnswerText = response;
       } else if (response && typeof response === 'object') {
-          answerText = response.answer || response.response || response.result || response.text || JSON.stringify(response);
+          fullAnswerText = response.answer || response.response || response.result || response.text || JSON.stringify(response);
           citations = response.citations;
       } else {
-          answerText = "I received an empty response.";
+          fullAnswerText = "I received an empty response.";
       }
 
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: answerText,
-        timestamp: new Date(),
-        citations: citations
-      };
+      // Start Typewriter Effect
+      const botMsgId = (Date.now() + 1).toString();
       
-      setMessages(prev => [...prev, botMsg]);
+      // Add empty message initially
+      setMessages(prev => [...prev, {
+        id: botMsgId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+        citations: citations,
+        isTyping: true
+      }]);
+
+      let currentText = '';
+      const words = fullAnswerText.split(' '); // Split by word for smoother flow than char
+      let i = 0;
+
+      // Typewriter Interval
+      const typeInterval = setInterval(() => {
+         if (i < words.length) {
+             currentText += (i === 0 ? '' : ' ') + words[i];
+             setMessages(prev => prev.map(msg => 
+                 msg.id === botMsgId ? { ...msg, content: currentText } : msg
+             ));
+             i++;
+             scrollToBottom();
+         } else {
+             clearInterval(typeInterval);
+             setMessages(prev => prev.map(msg => 
+                 msg.id === botMsgId ? { ...msg, isTyping: false } : msg
+             ));
+         }
+      }, 50); // Speed: 50ms per word roughly matches fast reading
+
     } catch (error) {
       console.error("Chat error", error);
       const errorMsg: Message = {
@@ -116,7 +137,6 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
 
   // Helper to render bold text
   const renderMessageContent = (content: string) => {
-    // Simple markdown parser for bold text
     const parts = content.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, index) => {
         if (part.startsWith('**') && part.endsWith('**')) {
@@ -166,11 +186,14 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
                   : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none'
               }`}>
                 {renderMessageContent(msg.content)}
+                {msg.isTyping && (
+                   <span className="inline-block w-1.5 h-3.5 bg-blue-500 ml-1 animate-pulse align-middle"></span>
+                )}
               </div>
 
               {/* Citations Section */}
-              {msg.citations && Object.keys(msg.citations).length > 0 && (
-                  <div className="mt-2 w-full">
+              {msg.citations && Object.keys(msg.citations).length > 0 && !msg.isTyping && (
+                  <div className="mt-2 w-full animate-in fade-in slide-in-from-top-2 duration-500">
                       <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                              <BookOpen size={12} /> Sources & Citations

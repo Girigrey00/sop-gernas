@@ -19,8 +19,21 @@ import {
     Menu,
     Plus,
     Loader2,
-    RefreshCw
+    RefreshCw,
+    CreditCard, Landmark, ShieldCheck, Wallet, Banknote, Coins, FileSpreadsheet,
+    Zap
 } from 'lucide-react';
+
+// --- Icon Helper ---
+const PRODUCT_ICONS = [
+    Briefcase, CreditCard, Landmark, ShieldCheck, Wallet, Banknote, Coins, FileSpreadsheet, Zap
+];
+
+const getProductIcon = (name: string) => {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return PRODUCT_ICONS[Math.abs(hash) % PRODUCT_ICONS.length];
+};
 
 // --- Login Page Component ---
 const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) => {
@@ -282,6 +295,7 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
                             const isCompleted = item.flow_status === 'Completed';
                             const isProcessing = item.flow_status && item.flow_status !== 'Completed';
                             const isEmpty = !item.flow_status;
+                            const DynamicIcon = getProductIcon(item.product_name);
 
                             return (
                                 <button 
@@ -295,7 +309,7 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
                                             isProcessing ? 'bg-blue-50 text-blue-600 border-blue-100' :
                                             'bg-slate-50 text-slate-400 border-slate-100'
                                         }`}>
-                                            {isProcessing ? <Loader2 size={24} className="animate-spin" /> : <Briefcase size={24} strokeWidth={1.5} />}
+                                            {isProcessing ? <Loader2 size={24} className="animate-spin" /> : <DynamicIcon size={24} strokeWidth={1.5} />}
                                         </div>
                                         <div className="flex gap-1">
                                             <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded-full border ${
@@ -309,7 +323,7 @@ const HomePage = ({ onStart, onRedirectToUpload }: { onStart: (data: any) => voi
                                     </div>
                                     
                                     <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-2">{item.product_name}</h3>
-                                    <p className="text-xs text-slate-500 leading-relaxed mb-4 flex-1">{item.description || 'No description available'}</p>
+                                    <p className="text-xs text-slate-500 leading-relaxed mb-4 flex-1 line-clamp-3" title={item.description}>{item.description || 'No description available'}</p>
 
                                     <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-auto">
                                         <span className="text-[10px] font-medium text-slate-400 truncate max-w-[100px]">Docs: {item.document_count}</span>
