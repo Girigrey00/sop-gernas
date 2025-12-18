@@ -30,16 +30,17 @@ import ChatAssistant from '../components/ChatAssistant';
 import { generateSopFlow } from '../services/geminiService';
 import { convertSopToFlowData, getActorTheme } from '../utils/layoutUtils';
 import { MOCK_SOP_DATA } from '../constants';
-import { SopResponse, ProcessStep, LayoutType } from '../types';
+import { SopResponse, ProcessStep, LayoutType, Product } from '../types';
 
 interface CanvasPageProps {
     initialPrompt?: string;
     initialData?: SopResponse | null;
     onFlowGenerated?: (data: SopResponse, prompt: string) => void;
     onBack: () => void;
+    productContext?: Product | null;
 }
 
-const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, onFlowGenerated, onBack }) => {
+const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, onFlowGenerated, onBack, productContext }) => {
     // Flow State
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -495,6 +496,7 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
                             <ChatAssistant 
                                 sopData={sopData}
                                 onClose={() => setIsSidebarOpen(false)}
+                                productContext={productContext}
                             />
                         )}
                     </>
@@ -504,11 +506,12 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
     );
 };
 
-const CanvasPage = ({ initialPrompt, initialData, onFlowGenerated, onBack }: { 
+const CanvasPage = ({ initialPrompt, initialData, onFlowGenerated, onBack, productContext }: { 
     initialPrompt?: string, 
     initialData?: SopResponse | null,
     onFlowGenerated?: (data: SopResponse, prompt: string) => void,
-    onBack: () => void
+    onBack: () => void,
+    productContext?: Product | null
 }) => {
     return (
         <ReactFlowProvider>
@@ -517,6 +520,7 @@ const CanvasPage = ({ initialPrompt, initialData, onFlowGenerated, onBack }: {
                 initialData={initialData} 
                 onFlowGenerated={onFlowGenerated} 
                 onBack={onBack}
+                productContext={productContext}
              />
         </ReactFlowProvider>
     );

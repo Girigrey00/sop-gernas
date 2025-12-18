@@ -560,6 +560,7 @@ const App: React.FC = () => {
                 initialData={selectedSop}
                 onFlowGenerated={handleFlowGenerated}
                 onBack={() => setCurrentView('HOME')}
+                productContext={selectedContextProduct}
             />
         );
       case 'HISTORY':

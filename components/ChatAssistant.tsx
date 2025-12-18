@@ -1,12 +1,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Sparkles, Loader2, X, BookOpen, ExternalLink, Quote } from 'lucide-react';
-import { SopResponse } from '../types';
+import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
 
 interface ChatAssistantProps {
   sopData: SopResponse;
   onClose: () => void;
+  productContext?: Product | null;
 }
 
 interface Message {
@@ -18,7 +19,7 @@ interface Message {
   isTyping?: boolean; // New property to control effect
 }
 
-const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
+const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, productContext }) => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -63,12 +64,13 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
       const meta = sopData.metadata as any;
       
       // Robust Index Resolution:
-      // 1. Check direct 'index_name'
-      // 2. Check 'target_index' (often used in upload metadata)
-      // 3. Fallback to 'cbgknowledgehub' if purely generic, but try to use product-specific info if possible.
-      const indexName = meta?.index_name || meta?.target_index || "cbgknowledgehub";
+      // 1. Check productContext 'index_name' (Highest Priority - from Product API)
+      // 2. Check direct 'index_name' in SOP metadata
+      // 3. Check 'target_index' (often used in upload metadata)
+      // 4. Fallback to 'cbgknowledgehub' if purely generic.
+      const indexName = productContext?.index_name || meta?.index_name || meta?.target_index || "cbgknowledgehub";
       
-      const productName = meta?.productId || sopData.processDefinition.title || "";
+      const productName = productContext?.product_name || meta?.productId || sopData.processDefinition.title || "";
       const questionId = globalThis.crypto?.randomUUID() || `qn-${Date.now()}`;
 
       console.log("ChatInference Context:", { indexName, productName, sessionId });
