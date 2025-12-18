@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Loader2, X } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Loader2, X, BookOpen, ExternalLink } from 'lucide-react';
 import { SopResponse } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -14,6 +14,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  citations?: Record<string, string>;
 }
 
 const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
@@ -29,10 +30,10 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Initialize Session ID
+  // Initialize Session ID (Unique per instance of chat)
   const [sessionId] = useState(() => {
-    // Generate a simple session ID
-    return `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    // Generate a UUID or robust random string
+    return globalThis.crypto?.randomUUID() || `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   });
 
   const scrollToBottom = () => {
@@ -61,30 +62,41 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
       // Determine Index Name (default to cbgknowledgehub if not present in metadata)
       const meta = sopData.metadata as any;
       const indexName = meta?.index_name || meta?.target_index || "cbgknowledgehub";
+      
+      // Determine Product Name for context
+      const productName = meta?.productId || sopData.processDefinition.title || "";
+
+      // Generate Question ID
+      const questionId = globalThis.crypto?.randomUUID() || `qn-${Date.now()}`;
 
       // Call Inference API
       const response = await apiService.chatInference({
-        query: userMsg.content,
+        question: userMsg.content,
         index_name: indexName,
         session_id: sessionId,
-        qna_id: "" // Empty as per requirements
+        question_id: questionId,
+        product: productName
       });
       
-      // Extract answer from response
-      // Assuming response structure: { answer: "..." } or { response: "..." } or direct text
-      let answerText = "I received a response, but it was empty.";
-      
+      // Handle standardized response format: { answer: "...", citations: { ... }, ... }
+      let answerText = "";
+      let citations: Record<string, string> | undefined = undefined;
+
       if (typeof response === 'string') {
           answerText = response;
       } else if (response && typeof response === 'object') {
           answerText = response.answer || response.response || response.result || response.text || JSON.stringify(response);
+          citations = response.citations;
+      } else {
+          answerText = "I received an empty response.";
       }
 
       const botMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: answerText,
-        timestamp: new Date()
+        timestamp: new Date(),
+        citations: citations
       };
       
       setMessages(prev => [...prev, botMsg]);
@@ -103,7 +115,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
   };
 
   // Helper to render bold text
-  const renderMessage = (content: string) => {
+  const renderMessageContent = (content: string) => {
     // Simple markdown parser for bold text
     const parts = content.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, index) => {
@@ -145,14 +157,36 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
               {msg.role === 'user' ? <User size={14} /> : <Sparkles size={14} />}
             </div>
             
-            <div className={`flex flex-col max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+            <div className={`flex flex-col max-w-[90%] md:max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+              
+              {/* Message Bubble */}
               <div className={`p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap ${
                 msg.role === 'user' 
                   ? 'bg-slate-800 text-white rounded-tr-none' 
                   : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none'
               }`}>
-                {renderMessage(msg.content)}
+                {renderMessageContent(msg.content)}
               </div>
+
+              {/* Citations Section */}
+              {msg.citations && Object.keys(msg.citations).length > 0 && (
+                  <div className="mt-2 w-full">
+                      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                             <BookOpen size={12} /> Sources & Citations
+                          </p>
+                          <div className="space-y-2">
+                              {Object.entries(msg.citations).map(([key, value]) => (
+                                  <div key={key} className="flex gap-2 text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-100">
+                                      <span className="font-mono text-blue-600 font-bold shrink-0">{key}</span>
+                                      <span className="leading-snug">{value}</span>
+                                  </div>
+                              ))}
+                          </div>
+                      </div>
+                  </div>
+              )}
+
               <span className="text-[10px] text-slate-400 mt-1 px-1">
                 {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
@@ -187,7 +221,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask about risks, actors, or next steps..."
             className="flex-1 pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all"
-          />
+          /> 
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}

@@ -30,16 +30,22 @@ export const apiService = {
     },
 
     // --- Chat Endpoint ---
-    chatInference: async (payload: { query: string, index_name: string, session_id: string, qna_id?: string }): Promise<any> => {
-        return handleResponse(await fetch(`${API_BASE_URL}/inference`, {
+    chatInference: async (payload: { 
+        question: string, 
+        index_name?: string, 
+        session_id?: string, 
+        question_id?: string,
+        product?: string 
+    }): Promise<any> => {
+        return handleResponse(await fetch(`${API_BASE_URL}/inference/stream`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                query: payload.query,
+                question: payload.question,
                 index_name: payload.index_name,
                 session_id: payload.session_id,
-                qna_id: payload.qna_id || "",
-                // JWT optional
+                question_id: payload.question_id,
+                product: payload.product
             })
         }));
     },
@@ -67,9 +73,25 @@ export const apiService = {
         
         // Map backend response to frontend LibraryDocument interface
         return data.map((doc: any) => {
-            // 1. Map Category: "KnowledgeBase" -> "Process Definition", else keep original
+            // Mapping Logic requested:
+            // 1. SOP Source File (generate_flow=true) -> "SOP FLOW"
+            // 2. Knowledge Base (category=KnowledgeBase) -> "Process Definition"
+            
             const rawCategory = doc.category || 'General';
-            const categoryDisplay = rawCategory === 'KnowledgeBase' ? 'Process Definition' : rawCategory;
+            let categoryDisplay = rawCategory;
+
+            // Check if it's an SOP flow source
+            if (doc.generate_flow === true || (doc.metadata && doc.metadata.generate_flow === true)) {
+                categoryDisplay = 'SOP FLOW';
+            } 
+            // Check if it's a Knowledge Base file
+            else if (rawCategory === 'KnowledgeBase' || (doc.metadata && doc.metadata.category === 'KnowledgeBase')) {
+                categoryDisplay = 'Process Definition';
+            }
+            // Fallback for previous uploads that might use 'Policy' etc without the generate_flow flag explicitly synced
+            else if (['Policy', 'Procedure', 'Manual'].includes(rawCategory)) {
+                categoryDisplay = 'SOP FLOW';
+            }
             
             // 2. Extract latest log message for continuous status display
             const latestLog = doc.logs && Array.isArray(doc.logs) && doc.logs.length > 0 

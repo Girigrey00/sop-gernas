@@ -40,9 +40,6 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     const sopInputRef = useRef<HTMLInputElement>(null);
     const llmInputRef = useRef<HTMLInputElement>(null);
 
-    // Polling Ref
-    const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
     // Handle Initial Open Prop
     useEffect(() => {
         if (initialUploadOpen) {
@@ -59,48 +56,40 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
         }
     }, [preselectedProduct, isUploadModalOpen]);
 
-    // Fetch documents on load
+    // Fetch documents function
     const fetchDocuments = useCallback(async (isPolling = false) => {
         if (!isPolling) setIsLoading(true);
         try {
             const docs = await apiService.getDocuments();
             setDocuments(docs);
-            
-            // Check if any documents are active/processing/uploading to decide on polling
-            const activeDocs = docs.filter(d => 
-                d.status === 'Processing' || d.status === 'Uploading' || d.status === 'Draft'
-            );
-            
-            if (activeDocs.length > 0) {
-                if (!pollingRef.current) {
-                    // Start polling every 3 seconds
-                    pollingRef.current = setInterval(() => fetchDocuments(true), 3000);
-                }
-            } else {
-                // Stop polling if done
-                if (pollingRef.current) {
-                    clearInterval(pollingRef.current);
-                    pollingRef.current = null;
-                }
-            }
         } catch (error) {
             console.error("Failed to fetch documents", error);
-            // Stop polling on error
-            if (pollingRef.current) {
-                clearInterval(pollingRef.current);
-                pollingRef.current = null;
-            }
         } finally {
             if (!isPolling) setIsLoading(false);
         }
     }, []);
 
+    // Initial Load
     useEffect(() => {
         fetchDocuments();
-        return () => {
-            if (pollingRef.current) clearInterval(pollingRef.current);
-        };
     }, [fetchDocuments]);
+
+    // Automatic Polling System
+    // Checks status every 3s if active, or 10s if idle to keep list updated
+    useEffect(() => {
+        // Determine if we have any active tasks requiring fast updates
+        const hasActiveDocs = documents.some(d => 
+            d.status === 'Processing' || d.status === 'Uploading' || d.status === 'Draft'
+        );
+
+        const intervalDelay = hasActiveDocs ? 3000 : 10000;
+
+        const timer = setInterval(() => {
+            fetchDocuments(true);
+        }, intervalDelay);
+
+        return () => clearInterval(timer);
+    }, [documents, fetchDocuments]);
 
     // --- Actions ---
 
@@ -130,11 +119,8 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     };
 
     const handleEdit = (doc: LibraryDocument) => {
-        // "Edit" effectively acts as a re-upload or update
-        // We pre-fill the product name based on rootFolder
-        setProductName(doc.rootFolder || '');
-        setCategory(doc.metadata?.category || 'Policy');
-        setIsUploadModalOpen(true);
+        // Dummy action as requested
+        console.log("Edit action (Dummy) triggered for:", doc.documentName);
     };
 
     const handleUploadAll = async () => {
@@ -177,7 +163,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                 }
             }
             
-            // Refresh list immediately
+            // Refresh list immediately - this will trigger the useEffect to see 'Processing' status and start fast polling
             await fetchDocuments();
             resetForm();
         } catch (error) {
@@ -189,15 +175,8 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     };
 
     const handleDelete = async (id: string) => {
-        if (window.confirm('Are you sure you want to delete this document?')) {
-            try {
-                await apiService.deleteDocument(id);
-                setDocuments(docs => docs.filter(d => d.id !== id));
-            } catch (error) {
-                console.error("Delete failed", error);
-                alert("Failed to delete document.");
-            }
-        }
+        // Dummy action as requested
+        console.log("Delete action (Dummy) triggered for:", id);
     };
 
     // --- Render ---
@@ -287,11 +266,13 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                             <p className="text-sm font-bold text-fab-navy">{doc.rootFolder || 'Unassigned'}</p>
                                         </td>
                                         <td className="p-4">
-                                            {/* Category: KnowledgeBase renamed to Process Definition */}
+                                            {/* Category Display */}
                                             <span className={`px-2 py-1 text-[10px] font-bold uppercase rounded-full border ${
-                                                doc.categoryDisplay === 'SOP' 
+                                                doc.categoryDisplay === 'SOP FLOW' 
                                                 ? 'bg-purple-50 text-purple-600 border-purple-100'
-                                                : 'bg-indigo-50 text-indigo-600 border-indigo-100'
+                                                : doc.categoryDisplay === 'Process Definition'
+                                                ? 'bg-indigo-50 text-indigo-600 border-indigo-100'
+                                                : 'bg-slate-100 text-slate-500 border-slate-200'
                                             }`}>
                                                 {doc.categoryDisplay || 'General'}
                                             </span>
@@ -359,14 +340,14 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                                 <button 
                                                     onClick={() => handleEdit(doc)}
                                                     className="p-1.5 text-slate-400 hover:text-fab-royal hover:bg-fab-royal/10 rounded transition-colors"
-                                                    title="Re-Upload / Edit"
+                                                    title="Re-Upload / Edit (Dummy)"
                                                 >
                                                     <Edit3 size={16} />
                                                 </button>
                                                 <button 
                                                     onClick={() => handleDelete(doc.id)}
                                                     className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                                                    title="Delete"
+                                                    title="Delete (Dummy)"
                                                 >
                                                     <Trash2 size={16} />
                                                 </button>
