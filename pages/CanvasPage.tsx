@@ -29,7 +29,6 @@ import FlowDetails from '../components/FlowDetails';
 import ChatAssistant from '../components/ChatAssistant';
 import { generateSopFlow } from '../services/geminiService';
 import { convertSopToFlowData, getActorTheme } from '../utils/layoutUtils';
-import { MOCK_SOP_DATA } from '../constants';
 import { SopResponse, ProcessStep, LayoutType, Product } from '../types';
 
 interface CanvasPageProps {

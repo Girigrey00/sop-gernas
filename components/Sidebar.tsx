@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Compass, FileClock, LogOut, ChevronRight, BookOpen, ChevronLeft } from 'lucide-react';
+import { Compass, LogOut, ChevronRight, BookOpen, ChevronLeft } from 'lucide-react';
 import { View } from '../types';
 
 interface SidebarProps {
@@ -35,7 +35,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, is
         {!isCollapsed && (
             <div className="overflow-hidden whitespace-nowrap animate-in fade-in duration-300">
               <h1 className="text-white font-bold text-base tracking-tight leading-none">GERNAS</h1>
-              <p className="text-[9px] text-fab-sky font-bold uppercase tracking-widest mt-1">SOP FLOW</p>
             </div>
         )}
       </div>

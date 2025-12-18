@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
     Upload, FileText, Search, Edit3, Trash2, 
     Square, X, FileStack, Plus, Loader2,
-    Activity, GitMerge, Bot, Calendar, User, BookOpen, RefreshCw
+    GitMerge, Bot, Calendar, User, RefreshCw
 } from 'lucide-react';
 import { LibraryDocument, SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -16,14 +16,12 @@ interface LibraryPageProps {
 }
 
 const LibraryPage: React.FC<LibraryPageProps> = ({ 
-    onOpenSop, 
     initialUploadOpen = false, 
     onCloseInitialUpload,
     preselectedProduct 
 }) => {
     const [documents, setDocuments] = useState<LibraryDocument[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
     
     // Modal States
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -35,7 +33,6 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     
     // Metadata State
     const [productName, setProductName] = useState('');
-    const [category, setCategory] = useState('Policy');
 
     const sopInputRef = useRef<HTMLInputElement>(null);
     const llmInputRef = useRef<HTMLInputElement>(null);
@@ -57,15 +54,12 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     }, [preselectedProduct, isUploadModalOpen]);
 
     // Fetch documents function
-    const fetchDocuments = useCallback(async (isPolling = false) => {
-        if (!isPolling) setIsLoading(true);
+    const fetchDocuments = useCallback(async () => {
         try {
             const docs = await apiService.getDocuments();
             setDocuments(docs);
         } catch (error) {
             console.error("Failed to fetch documents", error);
-        } finally {
-            if (!isPolling) setIsLoading(false);
         }
     }, []);
 
@@ -81,7 +75,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
         );
         const intervalDelay = hasActiveDocs ? 3000 : 10000;
         const timer = setInterval(() => {
-            fetchDocuments(true);
+            fetchDocuments();
         }, intervalDelay);
         return () => clearInterval(timer);
     }, [documents, fetchDocuments]);
@@ -124,7 +118,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
 
             if (sopFile) {
                 const metadata = {
-                    category: category,
+                    category: "Policy", // Default category hidden from UI
                     Root_Folder: rootFolder, 
                     Linked_App: "cbgknowledgehub",
                     is_financial: "false",
@@ -179,6 +173,12 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
 
         return matchesSearch && matchesProduct;
     });
+
+    // Determine Upload Validation Mode (Initial vs Update)
+    const hasExistingDocs = documents.some(d => d.rootFolder === productName);
+    // If no existing docs for this product, strictly require both. Otherwise allow updates (partial upload).
+    const isStrictUpload = !hasExistingDocs; 
+    const isUploadDisabled = isUploading || (isStrictUpload ? (!sopFile || llmFiles.length === 0) : (!sopFile && llmFiles.length === 0));
 
     return (
         <div className="h-full flex flex-col bg-slate-50 relative overflow-hidden">
@@ -346,7 +346,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                 </div>
             </div>
 
-            {/* Upload Modal (Unchanged Content but kept here for complete file) */}
+            {/* Upload Modal */}
             {isUploadModalOpen && (
                 <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -363,19 +363,18 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                             <div className="space-y-4">
                                 <div className="flex items-start gap-3">
                                     <div className="p-2 bg-fab-royal/10 text-fab-royal rounded-lg mt-1"><GitMerge size={20} /></div>
-                                    <div><h4 className="text-sm font-bold text-slate-800">SOP Source File (Process Flow)</h4><p className="text-xs text-slate-500">Upload the main policy/procedure document.</p></div>
+                                    <div><h4 className="text-sm font-bold text-slate-800">Process Definition</h4><p className="text-xs text-slate-500">Upload the main policy/procedure document.</p></div>
                                 </div>
                                 <div className="pl-12 space-y-3">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4">
                                         <div className="space-y-1"><label className="text-xs font-bold text-slate-500 uppercase">Product ID</label><input type="text" value={productName} onChange={(e) => setProductName(e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none" disabled={!!preselectedProduct} placeholder="e.g. PIL-CONV-001" /></div>
-                                         <div className="space-y-1"><label className="text-xs font-bold text-slate-500 uppercase">Category</label><select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none"><option value="Policy">Policy</option><option value="Procedure">Procedure</option><option value="Manual">Manual</option></select></div>
                                     </div>
-                                    {!sopFile ? (<div onClick={() => sopInputRef.current?.click()} className="border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:border-fab-royal/50 hover:bg-fab-royal/5 transition-all group"><Upload size={24} className="text-slate-300 group-hover:text-fab-royal mb-2" /><p className="text-sm font-medium text-slate-600 group-hover:text-fab-royal">Click to upload SOP document</p><input type="file" ref={sopInputRef} onChange={handleSopFileChange} accept=".pdf,.docx,.doc,.txt" className="hidden" /></div>) : (<div className="flex items-center justify-between p-3 bg-fab-royal/5 border border-fab-royal/20 rounded-lg"><div className="flex items-center gap-3"><FileText size={20} className="text-fab-royal" /><span className="text-sm font-medium text-fab-navy truncate max-w-[200px]">{sopFile.name}</span></div><button onClick={removeSopFile} className="text-slate-400 hover:text-rose-500"><X size={16} /></button></div>)}
+                                    {!sopFile ? (<div onClick={() => sopInputRef.current?.click()} className="border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:border-fab-royal/50 hover:bg-fab-royal/5 transition-all group"><Upload size={24} className="text-slate-300 group-hover:text-fab-royal mb-2" /><p className="text-sm font-medium text-slate-600 group-hover:text-fab-royal">Click to upload Process Definition</p><input type="file" ref={sopInputRef} onChange={handleSopFileChange} accept=".pdf,.docx,.doc,.txt" className="hidden" /></div>) : (<div className="flex items-center justify-between p-3 bg-fab-royal/5 border border-fab-royal/20 rounded-lg"><div className="flex items-center gap-3"><FileText size={20} className="text-fab-royal" /><span className="text-sm font-medium text-fab-navy truncate max-w-[200px]">{sopFile.name}</span></div><button onClick={removeSopFile} className="text-slate-400 hover:text-rose-500"><X size={16} /></button></div>)}
                                 </div>
                             </div>
                             <div className="border-t border-slate-100"></div>
                             <div className="space-y-4">
-                                 <div className="flex items-start gap-3"><div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg mt-1"><Bot size={20} /></div><div><h4 className="text-sm font-bold text-slate-800">Knowledge Base Files</h4><p className="text-xs text-slate-500">Additional context for AI Chatbot.</p></div></div>
+                                 <div className="flex items-start gap-3"><div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg mt-1"><Bot size={20} /></div><div><h4 className="text-sm font-bold text-slate-800">Policy Documents</h4><p className="text-xs text-slate-500">Additional context for AI Chatbot.</p></div></div>
                                 <div className="pl-12">
                                      <div onClick={() => llmInputRef.current?.click()} className="border border-slate-200 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all mb-3"><Plus size={18} className="text-emerald-500" /><span className="text-sm font-medium text-slate-600">Add Supporting Documents</span><input type="file" ref={llmInputRef} onChange={handleLlmFileChange} accept=".pdf,.docx,.doc,.txt" multiple className="hidden" /></div>
                                     {llmFiles.length > 0 && (<div className="space-y-2 max-h-32 overflow-y-auto">{llmFiles.map((file, idx) => (<div key={idx} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-100 rounded text-sm"><div className="flex items-center gap-2"><FileStack size={14} className="text-slate-400" /><span className="text-slate-700 truncate max-w-[200px]">{file.name}</span></div><button onClick={() => removeLlmFile(idx)} className="text-slate-400 hover:text-rose-500"><X size={14} /></button></div>))}</div>)}
@@ -384,7 +383,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                         </div>
                         <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
                             <button onClick={resetForm} className="px-4 py-2 text-slate-600 font-bold text-sm hover:bg-slate-200 rounded-lg transition-colors" disabled={isUploading}>Cancel</button>
-                            <button onClick={handleUploadAll} disabled={isUploading || (!sopFile && llmFiles.length === 0)} className="px-6 py-2 bg-fab-royal text-white rounded-lg font-bold text-sm shadow-lg shadow-fab-royal/20 hover:bg-fab-blue hover:scale-105 transition-all disabled:opacity-70 disabled:scale-100 flex items-center gap-2">{isUploading ? (<><Loader2 size={16} className="animate-spin" />Processing...</>) : (<><Upload size={16} />{productName && documents.some(d => d.rootFolder === productName) ? 'Re-Process' : 'Start Ingestion'}</>)}</button>
+                            <button onClick={handleUploadAll} disabled={isUploadDisabled} className="px-6 py-2 bg-fab-royal text-white rounded-lg font-bold text-sm shadow-lg shadow-fab-royal/20 hover:bg-fab-blue hover:scale-105 transition-all disabled:opacity-70 disabled:scale-100 flex items-center gap-2">{isUploading ? (<><Loader2 size={16} className="animate-spin" />Processing...</>) : (<><Upload size={16} />{productName && documents.some(d => d.rootFolder === productName) ? 'Re-Process' : 'Start Ingestion'}</>)}</button>
                         </div>
                     </div>
                 </div>

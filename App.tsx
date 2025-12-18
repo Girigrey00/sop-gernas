@@ -10,7 +10,7 @@ import {
     Briefcase, Menu, Plus, Loader2, RefreshCw, CreditCard, Landmark, ShieldCheck, Wallet, 
     Banknote, Coins, FileSpreadsheet, Zap,
     // New Icons for Variety
-    PieChart, TrendingUp, Globe, Building2, Scale, FileSignature, Calculator, PiggyBank, 
+    PieChart, TrendingUp, Globe, Building2, Scale, FileSignature, Calculator, 
     Receipt, Gem, Key, Database, Smartphone, Award, Target, BarChart, Stamp, BadgeDollarSign, 
     Vault, ScrollText, Truck, ShoppingCart, Anchor, Gavel, FileCheck, Layers
 } from 'lucide-react';
@@ -18,7 +18,7 @@ import {
 // --- Icon Helper ---
 const PRODUCT_ICONS = [
     // Finance & Banking
-    Briefcase, CreditCard, Landmark, ShieldCheck, Wallet, Banknote, Coins, PiggyBank, 
+    Briefcase, CreditCard, Landmark, ShieldCheck, Wallet, Banknote, Coins, 
     Receipt, Gem, BadgeDollarSign, Vault, Calculator,
     // Business & Enterprise
     Building2, PieChart, TrendingUp, Target, BarChart, Globe, ShoppingCart, Truck, 
@@ -78,11 +78,6 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
                         </div>
                         <div className="text-center">
                             <h1 className="text-3xl font-bold text-white tracking-tight">GERNAS</h1>
-                            <div className="flex items-center gap-2 justify-center mt-2">
-                                <span className="h-px w-4 bg-fab-sky/50"></span>
-                                <p className="text-[10px] font-bold text-fab-sky uppercase tracking-[0.25em]">SOP FLOW</p>
-                                <span className="h-px w-4 bg-fab-sky/50"></span>
-                            </div>
                         </div>
                     </div>
 
@@ -227,7 +222,7 @@ const HomePage = ({ onStart, onSelectProduct }: { onStart: (data: any) => void, 
             setIsLoading(true);
             try {
                 // Call API with product_name
-                const flowData = await apiService.getProcessFlow('ProcessHub', product.product_name);
+                const flowData = await apiService.getProcessFlow(product.product_name);
                 if (flowData) {
                     onStart(flowData);
                 } else {
@@ -465,7 +460,7 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentView, setCurrentView] = useState<View>('HOME');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false); // New state for desktop collapse
+  const [isCollapsed, setIsCollapsed] = useState(true); // Default collapsed
   const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedSop, setSelectedSop] = useState<SopResponse | null>(null);
@@ -544,7 +539,6 @@ const App: React.FC = () => {
       case 'LIBRARY':
         return (
             <LibraryPage 
-                onOpenSop={handleOpenSopFromLibrary} 
                 initialUploadOpen={autoOpenUpload}
                 onCloseInitialUpload={() => {
                     setAutoOpenUpload(false);

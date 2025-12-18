@@ -209,7 +209,7 @@ export const apiService = {
         }));
     },
 
-    getProcessFlow: async (linkedApp: string, productName: string): Promise<SopResponse> => {
+    getProcessFlow: async (productName: string): Promise<SopResponse> => {
         const url = `${API_BASE_URL}/process-flow/${productName}`;
         console.log("Fetching Flow from:", url);
         
