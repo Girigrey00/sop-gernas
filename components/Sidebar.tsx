@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Compass, FileClock, LogOut, Hexagon, ChevronRight, BookOpen, ChevronLeft } from 'lucide-react';
+import { Compass, FileClock, LogOut, ChevronRight, BookOpen, ChevronLeft } from 'lucide-react';
 import { View } from '../types';
 
 interface SidebarProps {
@@ -24,9 +24,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, is
       
       {/* Branding */}
       <div className={`p-6 flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} border-b border-fab-royal/50 flex-shrink-0 transition-all duration-300`}>
-        <div className="w-9 h-9 bg-gradient-to-tr from-fab-royal to-fab-light rounded-lg flex items-center justify-center text-white shadow-lg shadow-black/20 relative group shrink-0">
-           <Hexagon size={18} className="fill-white/10 text-white" strokeWidth={2.5} />
-           <span className="absolute inset-0 bg-white/20 blur-lg rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></span>
+        <div className="w-9 h-9 bg-gradient-to-br from-fab-navy via-fab-royal to-fab-blue rounded-lg flex items-center justify-center text-white shadow-lg shadow-black/20 relative group shrink-0 overflow-hidden">
+           {/* Inner Shine */}
+           <div className="absolute top-0 right-0 w-6 h-6 bg-white/10 blur-md rounded-full transform translate-x-2 -translate-y-2"></div>
+           <span className="text-xl font-black italic text-white tracking-tighter pr-0.5 relative z-10 font-sans">G</span>
         </div>
         {!isCollapsed && (
             <div className="overflow-hidden whitespace-nowrap animate-in fade-in duration-300">

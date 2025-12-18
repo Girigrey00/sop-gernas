@@ -6,7 +6,7 @@ import LibraryPage from './pages/LibraryPage';
 import { View, HistoryItem, SopResponse, Product } from './types';
 import { apiService } from './services/apiService';
 import { 
-    FileText, Clock, ChevronRight, Hexagon, Lock, User, ArrowRight, Search, ShieldAlert, 
+    FileText, Clock, ChevronRight, Lock, User, ArrowRight, Search, ShieldAlert, 
     Briefcase, Menu, Plus, Loader2, RefreshCw, CreditCard, Landmark, ShieldCheck, Wallet, 
     Banknote, Coins, FileSpreadsheet, Zap,
     // New Icons for Variety
@@ -68,8 +68,13 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
                     
                     {/* Logo / Brand */}
                     <div className="flex flex-col items-center gap-4 mb-10 relative z-10">
-                        <div className="w-20 h-20 bg-gradient-to-tr from-fab-royal to-fab-light rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-black/50 mb-2 ring-1 ring-white/20 transform hover:scale-105 transition-transform duration-500">
-                            <Hexagon size={40} strokeWidth={2} className="fill-white/10" />
+                        <div className="w-24 h-24 bg-gradient-to-br from-fab-navy via-fab-royal to-fab-blue rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-black/40 mb-2 ring-1 ring-white/10 transform hover:scale-105 transition-all duration-500 relative overflow-hidden group">
+                            {/* Inner Shine Effect */}
+                            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 blur-xl rounded-full transform translate-x-4 -translate-y-4"></div>
+                            <div className="absolute bottom-0 left-0 w-12 h-12 bg-fab-sky/20 blur-lg rounded-full transform -translate-x-2 translate-y-2"></div>
+                            
+                            {/* Stylized G */}
+                            <span className="text-6xl font-black italic tracking-tighter pr-1 drop-shadow-lg relative z-10 font-sans">G</span>
                         </div>
                         <div className="text-center">
                             <h1 className="text-3xl font-bold text-white tracking-tight">GERNAS</h1>
@@ -577,8 +582,8 @@ const App: React.FC = () => {
       <main className="flex-1 h-full overflow-hidden relative bg-white flex flex-col transition-all duration-300">
         <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 bg-white z-30">
             <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-fab-royal rounded-lg flex items-center justify-center text-white">
-                    <Hexagon size={18} />
+                <div className="w-8 h-8 bg-gradient-to-br from-fab-navy to-fab-blue rounded-lg flex items-center justify-center text-white">
+                    <span className="font-black italic text-sm">G</span>
                 </div>
                 <span className="font-bold text-fab-navy">GERNAS</span>
             </div>
