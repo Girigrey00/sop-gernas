@@ -59,11 +59,19 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose }) => {
     setIsLoading(true);
 
     try {
-      // Determine Index Name
+      // Determine Index Name & Product Context
       const meta = sopData.metadata as any;
+      
+      // Robust Index Resolution:
+      // 1. Check direct 'index_name'
+      // 2. Check 'target_index' (often used in upload metadata)
+      // 3. Fallback to 'cbgknowledgehub' if purely generic, but try to use product-specific info if possible.
       const indexName = meta?.index_name || meta?.target_index || "cbgknowledgehub";
+      
       const productName = meta?.productId || sopData.processDefinition.title || "";
       const questionId = globalThis.crypto?.randomUUID() || `qn-${Date.now()}`;
+
+      console.log("ChatInference Context:", { indexName, productName, sessionId });
 
       // Call Inference API
       const response = await apiService.chatInference({
