@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User } from 'lucide-react';
+import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -30,41 +30,44 @@ const GIcon = ({ className }: { className?: string }) => (
 
 // Internal Component for Collapsible Citations
 const CitationBlock = ({ citations }: { citations: Record<string, string> }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true); // Default open to show sources immediately
+  const count = Object.keys(citations).length;
+  
+  if (count === 0) return null;
 
   return (
-    <div className="mt-3 w-full animate-in fade-in slide-in-from-top-2 duration-500">
-      <div className={`bg-blue-50/50 border border-blue-100 rounded-xl transition-all duration-300 ${isOpen ? 'p-3' : 'p-2'}`}>
+    <div className="mt-4 w-full animate-in fade-in slide-in-from-top-2 duration-500">
+      <div className={`bg-slate-50 border border-slate-200 rounded-xl overflow-hidden transition-all duration-300`}>
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between group"
+          className="w-full flex items-center justify-between p-3 bg-slate-100/50 hover:bg-slate-100 transition-colors"
         >
-            <div className="flex items-center gap-1.5">
-                <BookOpen size={12} className="text-blue-500" />
-                <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">
-                   Verified Sources ({Object.keys(citations).length})
+            <div className="flex items-center gap-2">
+                <div className="p-1 bg-blue-100 text-blue-600 rounded">
+                    <BookOpen size={12} />
+                </div>
+                <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                   References & Sources ({count})
                 </p>
             </div>
             {isOpen ? (
-                <ChevronUp size={14} className="text-blue-400 group-hover:text-blue-600" />
+                <ChevronUp size={14} className="text-slate-400" />
             ) : (
-                <ChevronDown size={14} className="text-blue-400 group-hover:text-blue-600" />
+                <ChevronDown size={14} className="text-slate-400" />
             )}
         </button>
 
         {isOpen && (
-             <div className="grid gap-2 mt-3 animate-in fade-in slide-in-from-top-1">
+             <div className="p-3 grid gap-2.5 border-t border-slate-200/50">
                 {Object.entries(citations).map(([key, value]) => (
-                    <div key={key} className="group flex items-start gap-3 bg-white p-2.5 rounded-lg border border-blue-100/50 shadow-sm hover:border-blue-200 hover:shadow-md transition-all">
-                        <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-mono text-[10px] font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                          <Quote size={10} />
+                    <div key={key} className="group flex items-start gap-3 p-3 rounded-lg bg-white border border-slate-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all">
+                        <div className="w-5 h-5 rounded-md bg-slate-100 text-slate-500 flex items-center justify-center shrink-0 mt-0.5 font-mono text-[10px] font-bold group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
+                          {key.replace(/[\[\]]/g, '')}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1 mb-0.5">
-                              <span className="text-[10px] font-bold text-slate-500 uppercase">{key}</span>
-                              <div className="h-px bg-slate-200 flex-1"></div>
-                          </div>
-                          <p className="text-xs text-slate-700 leading-snug line-clamp-3 italic">"{value}"</p>
+                          <p className="text-xs text-slate-600 leading-relaxed group-hover:text-slate-900 transition-colors">
+                            {value}
+                          </p>
                         </div>
                     </div>
                 ))}
@@ -75,6 +78,118 @@ const CitationBlock = ({ citations }: { citations: Record<string, string> }) => 
   );
 };
 
+// Helper: Text Formatter (Bold + Citations)
+const formatText = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, index) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={index} className="font-bold text-slate-900">{part.slice(2, -2)}</strong>;
+        }
+        
+        // Inside normal text, look for [n] patterns
+        const citationParts = part.split(/(\[\d+\])/g);
+        return (
+            <span key={index}>
+                {citationParts.map((subPart, subIndex) => {
+                    if (/^\[\d+\]$/.test(subPart)) {
+                        return <sup key={subIndex} className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1 rounded ml-0.5 cursor-default">{subPart}</sup>;
+                    }
+                    return <span key={subIndex}>{subPart}</span>;
+                })}
+            </span>
+        );
+    });
+};
+
+// Component to Render Tables and Text
+const MessageRenderer = ({ content, isTyping }: { content: string, isTyping?: boolean }) => {
+    const lines = content.split('\n');
+    const blocks: Array<{ type: 'text' | 'table', data: string[] }> = [];
+    
+    let currentTableRows: string[] = [];
+    
+    lines.forEach((line) => {
+        if (line.trim().startsWith('|')) {
+            currentTableRows.push(line);
+        } else {
+            if (currentTableRows.length > 0) {
+                blocks.push({ type: 'table', data: currentTableRows });
+                currentTableRows = [];
+            }
+            blocks.push({ type: 'text', data: [line] });
+        }
+    });
+    
+    if (currentTableRows.length > 0) {
+        blocks.push({ type: 'table', data: currentTableRows });
+    }
+
+    return (
+        <div className="space-y-1 font-medium text-slate-700">
+            {blocks.map((block, i) => {
+                if (block.type === 'table') {
+                    // Render Table
+                    const rows = block.data;
+                    const headerRow = rows[0];
+                    // Find separator row (usually second)
+                    const separatorRow = rows.length > 1 && rows[1].includes('---') ? rows[1] : null;
+                    const bodyRows = separatorRow ? rows.slice(2) : rows.slice(1);
+                    
+                    const safeParseRow = (r: string) => {
+                        const cells = r.split('|');
+                        if (cells.length > 0 && cells[0].trim() === '') cells.shift();
+                        if (cells.length > 0 && cells[cells.length-1].trim() === '') cells.pop();
+                        return cells;
+                    };
+
+                    const headers = safeParseRow(headerRow);
+                    
+                    return (
+                        <div key={i} className="my-3 overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+                            <table className="min-w-full divide-y divide-slate-200">
+                                {separatorRow && (
+                                    <thead className="bg-slate-50">
+                                        <tr>
+                                            {headers.map((h, hIdx) => (
+                                                <th key={hIdx} className="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                                    {formatText(h)}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                )}
+                                <tbody className="bg-white divide-y divide-slate-100">
+                                    {(separatorRow ? bodyRows : rows).map((row, rIdx) => {
+                                        if (row.includes('---')) return null;
+                                        const cells = safeParseRow(row);
+                                        return (
+                                            <tr key={rIdx} className={rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                                                {cells.map((c, cIdx) => (
+                                                    <td key={cIdx} className="px-3 py-2 text-sm text-slate-700 whitespace-pre-wrap leading-snug border-r border-slate-100 last:border-0">
+                                                        {formatText(c)}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    );
+                } else {
+                    const text = block.data[0];
+                    // Don't render empty strings unless they are spacing (double newline)
+                    // If it's a typing cursor container and text is empty, we still render the container
+                    if (!text && !isTyping) return <div key={i} className="h-2"></div>;
+                    return <div key={i} className="leading-relaxed whitespace-pre-wrap">{formatText(text)}</div>;
+                }
+            })}
+             {isTyping && (
+                <span className="inline-block w-2 h-4 bg-blue-500 ml-1 animate-pulse align-sub shadow-sm rounded-sm"></span>
+            )}
+        </div>
+    );
+};
 
 const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, productContext, onToggleMaximize, isMaximized }) => {
   const [input, setInput] = useState('');
@@ -145,7 +260,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
         onToken: (token) => {
           setMessages(prev => prev.map(msg => 
             msg.id === botMsgId 
-              ? { ...msg, content: msg.content + token, isTyping: true } // Keep typing true while streaming
+              ? { ...msg, content: msg.content + token, isTyping: true } 
               : msg
           ));
         },
@@ -181,18 +296,6 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
       setMessages(prev => [...prev, errorMsg]);
       setIsLoading(false);
     }
-  };
-
-  // Helper to render bold text
-  const renderMessageContent = (content: string) => {
-    // Basic Markdown support for bolding
-    const parts = content.split(/(\*\*.*?\*\*)/g);
-    return parts.map((part, index) => {
-        if (part.startsWith('**') && part.endsWith('**')) {
-            return <strong key={index} className="font-bold text-slate-900">{part.slice(2, -2)}</strong>;
-        }
-        return <span key={index}>{part}</span>;
-    });
   };
 
   return (
@@ -234,39 +337,36 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
           <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
             
             {/* Avatar Column */}
-            <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-1">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm border ${
+            <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-1 min-w-[40px]">
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-sm border transition-all ${
                 msg.role === 'user' 
                     ? 'bg-slate-800 text-white border-slate-700' 
                     : 'bg-white border-blue-100 text-blue-600'
                 }`}>
                 {msg.role === 'user' ? (
-                    <User size={16} />
+                    <User size={18} />
                 ) : (
-                    <GIcon className="w-4 h-4" />
+                    <GIcon className="w-5 h-5" />
                 )}
                 </div>
-                {msg.role === 'user' && (
-                    <span className="text-[9px] font-bold text-slate-400 tracking-tight">Admin</span>
-                )}
+                <span className="text-[9px] font-bold text-slate-400 tracking-tight uppercase leading-none mt-0.5">
+                    {msg.role === 'user' ? 'Admin' : 'Gernas'}
+                </span>
             </div>
             
             <div className={`flex flex-col max-w-[90%] md:max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
               
               {/* Message Bubble */}
-              <div className={`p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap ${
+              <div className={`px-4 py-3.5 rounded-2xl text-sm leading-relaxed shadow-sm transition-all ${
                 msg.role === 'user' 
                   ? 'bg-slate-800 text-white rounded-tr-none' 
                   : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none'
               }`}>
-                {renderMessageContent(msg.content)}
-                {msg.isTyping && (
-                   <span className="inline-block w-1.5 h-3.5 bg-blue-500 ml-1 animate-pulse align-middle"></span>
-                )}
+                <MessageRenderer content={msg.content} isTyping={msg.isTyping && msg.role === 'assistant'} />
               </div>
 
               {/* Citations Section - Collapsible */}
-              {msg.citations && Object.keys(msg.citations).length > 0 && !msg.isTyping && (
+              {msg.citations && Object.keys(msg.citations).length > 0 && (
                   <CitationBlock citations={msg.citations} />
               )}
 
@@ -277,17 +377,21 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
           </div>
         ))}
         
-        {/* Loading Indicator */}
+        {/* Loading Indicator (Initial connection only) */}
         {isLoading && messages.length > 0 && messages[messages.length - 1].role === 'user' && (
           <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-white border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm mt-1">
-               <Loader2 size={14} className="animate-spin" />
+             {/* Ghost Avatar */}
+            <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-1 min-w-[40px]">
+                <div className="w-9 h-9 rounded-full bg-white border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm">
+                   <Sparkles size={16} className="animate-pulse" />
+                </div>
             </div>
-            <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm">
-              <div className="flex gap-1">
-                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+
+            <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm flex items-center">
+              <div className="flex gap-1.5">
+                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
               </div>
             </div>
           </div>
