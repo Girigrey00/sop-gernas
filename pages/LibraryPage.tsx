@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
     Upload, FileText, Search, Edit3, Trash2, 
     Square, X, FileStack, Plus, Loader2,
-    GitMerge, Bot, Calendar, User, RefreshCw
+    GitMerge, Bot, Calendar, User, RefreshCw, ArrowLeft, Activity
 } from 'lucide-react';
 import { LibraryDocument, SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -13,12 +13,16 @@ interface LibraryPageProps {
     initialUploadOpen?: boolean;
     onCloseInitialUpload?: () => void;
     preselectedProduct?: Product | null;
+    onBack?: () => void;
+    onViewFlow?: () => void;
 }
 
 const LibraryPage: React.FC<LibraryPageProps> = ({ 
     initialUploadOpen = false, 
     onCloseInitialUpload,
-    preselectedProduct 
+    preselectedProduct,
+    onBack,
+    onViewFlow
 }) => {
     const [documents, setDocuments] = useState<LibraryDocument[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -195,15 +199,39 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
             
             {/* Header */}
             <div className="px-6 py-4 bg-white border-b border-slate-200 flex justify-between items-center shrink-0">
-                <div>
-                    <h2 className="text-xl font-bold text-fab-navy mb-0.5">Document Library</h2>
-                    <p className="text-slate-500 text-xs">
-                        {preselectedProduct 
-                            ? `Managing documents for: ${preselectedProduct.product_name}` 
-                            : 'Manage documents and monitor ingestion status.'}
-                    </p>
+                <div className="flex items-center gap-4">
+                    {/* Back Button */}
+                    {onBack && (
+                        <button 
+                            onClick={onBack}
+                            className="p-2 -ml-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                            title="Back to Hub"
+                        >
+                            <ArrowLeft size={20} />
+                        </button>
+                    )}
+                    <div>
+                        <h2 className="text-xl font-bold text-fab-navy mb-0.5">Document Library</h2>
+                        <p className="text-slate-500 text-xs">
+                            {preselectedProduct 
+                                ? `Managing documents for: ${preselectedProduct.product_name}` 
+                                : 'Manage documents and monitor ingestion status.'}
+                        </p>
+                    </div>
                 </div>
                 <div className="flex gap-2">
+                    {/* View Flow Button */}
+                    {preselectedProduct && onViewFlow && (
+                        <button
+                            onClick={onViewFlow}
+                            className="px-3 py-2 bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+                            title="Go to Process Flow"
+                        >
+                            <Activity size={14} />
+                            View Flow
+                        </button>
+                    )}
+                    
                     <button 
                         onClick={() => {
                              if(!preselectedProduct) setProductName('PIL-CONV-001');

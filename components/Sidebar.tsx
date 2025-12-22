@@ -30,7 +30,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, is
         <div className="w-9 h-9 bg-gradient-to-br from-fab-navy via-fab-royal to-fab-blue rounded-lg flex items-center justify-center text-white shadow-lg shadow-black/20 relative group shrink-0 overflow-hidden">
            {/* Inner Shine */}
            <div className="absolute top-0 right-0 w-6 h-6 bg-white/10 blur-md rounded-full transform translate-x-2 -translate-y-2"></div>
-           <span className="text-xl font-black italic text-white tracking-tighter pr-0.5 relative z-10 font-sans">G</span>
+           {/* SVG Logo */}
+           <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 relative z-10">
+               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10H12v3h7.6C18.9 17.5 15.8 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8c2.04 0 3.89.78 5.31 2.05l2.25-2.25C17.2 1.9 14.76 0 12 0z" />
+           </svg>
         </div>
         {!isCollapsed && (
             <div className="overflow-hidden whitespace-nowrap animate-in fade-in duration-300">

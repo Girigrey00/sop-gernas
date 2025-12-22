@@ -73,8 +73,10 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
                             <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 blur-xl rounded-full transform translate-x-4 -translate-y-4"></div>
                             <div className="absolute bottom-0 left-0 w-12 h-12 bg-fab-sky/20 blur-lg rounded-full transform -translate-x-2 translate-y-2"></div>
                             
-                            {/* Stylized G */}
-                            <span className="text-6xl font-black italic tracking-tighter pr-1 drop-shadow-lg relative z-10 font-sans">G</span>
+                            {/* Stylized G SVG Logo */}
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-14 h-14 drop-shadow-md relative z-10">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10H12v3h7.6C18.9 17.5 15.8 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8c2.04 0 3.89.78 5.31 2.05l2.25-2.25C17.2 1.9 14.76 0 12 0z" />
+                            </svg>
                         </div>
                         <div className="text-center">
                             <h1 className="text-3xl font-bold text-white tracking-tight">GERNAS</h1>
@@ -571,6 +573,22 @@ const App: React.FC = () => {
                     // Do not clear context here to keep library filtered
                 }}
                 preselectedProduct={selectedContextProduct}
+                onBack={() => setCurrentView('HOME')}
+                onViewFlow={async () => {
+                     if (selectedContextProduct) {
+                         if(selectedContextProduct.flow_status === 'Completed') {
+                             try {
+                                 const flowData = await apiService.getProcessFlow(selectedContextProduct.product_name);
+                                 handleStartWithData(flowData);
+                             } catch(e) {
+                                 console.error(e);
+                                 alert("Error loading flow. Please check console.");
+                             }
+                         } else {
+                             alert(`Flow is ${selectedContextProduct.flow_status || 'not ready'}`);
+                         }
+                     }
+                }}
             />
         );
       case 'CANVAS':
@@ -614,7 +632,9 @@ const App: React.FC = () => {
         <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 bg-white z-30">
             <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-fab-navy to-fab-blue rounded-lg flex items-center justify-center text-white">
-                    <span className="font-black italic text-sm">G</span>
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10H12v3h7.6C18.9 17.5 15.8 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8c2.04 0 3.89.78 5.31 2.05l2.25-2.25C17.2 1.9 14.76 0 12 0z" />
+                    </svg>
                 </div>
                 <span className="font-bold text-fab-navy">GERNAS</span>
             </div>
