@@ -17,6 +17,130 @@ const handleResponse = async (response: Response) => {
     return response.json();
 };
 
+// Stream Parser Class
+class JsonStreamParser {
+    private buffer = '';
+    private isJson = false;
+    private hasCheckJson = false;
+    private inAnswer = false;
+    private isEscaped = false;
+    private answerDone = false;
+    private citationsBuffer = '';
+    
+    constructor(
+        private onToken: (text: string) => void,
+        private onCitations: (citations: any) => void
+    ) {}
+
+    process(chunk: string) {
+        // Initial Check: Is this a JSON stream?
+        if (!this.hasCheckJson) {
+            this.buffer += chunk;
+            const trimmed = this.buffer.trimStart();
+            if (trimmed.length === 0) return; 
+
+            if (trimmed.startsWith('{')) {
+                this.isJson = true;
+                this.hasCheckJson = true;
+                this.buffer = trimmed; // Keep trimmed buffer
+            } else if (trimmed.length > 10) {
+                // Not JSON, flush buffer as raw text
+                this.isJson = false;
+                this.hasCheckJson = true;
+                this.onToken(this.buffer);
+                this.buffer = '';
+            }
+            // If we detected JSON, we continue processing with the buffer
+        } 
+        
+        if (!this.isJson && this.hasCheckJson) {
+            this.onToken(chunk);
+            return;
+        }
+
+        // JSON Parsing State Machine
+        if (this.isJson) {
+            // Append new chunk to buffer if we are searching for keys
+            if (!this.inAnswer && !this.answerDone) {
+                this.buffer += chunk;
+                // Look for "answer": " pattern
+                const match = this.buffer.match(/"answer"\s*:\s*"/);
+                if (match) {
+                    this.inAnswer = true;
+                    const startIdx = (match.index || 0) + match[0].length;
+                    const remaining = this.buffer.substring(startIdx);
+                    this.buffer = ''; 
+                    this.processStringContent(remaining);
+                }
+            } else if (this.inAnswer) {
+                this.processStringContent(chunk);
+            } else if (this.answerDone) {
+                // Accumulate citations part
+                this.citationsBuffer += chunk;
+            }
+        }
+    }
+
+    private processStringContent(text: string) {
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            
+            if (this.isEscaped) {
+                // Unescape characters
+                if (char === 'n') this.onToken('\n');
+                else if (char === 't') this.onToken('\t');
+                else if (char === 'r') { /* ignore carriage return */ }
+                else if (char === '"') this.onToken('"');
+                else if (char === '\\') this.onToken('\\');
+                else this.onToken(char); 
+                this.isEscaped = false;
+            } else {
+                if (char === '\\') {
+                    this.isEscaped = true;
+                } else if (char === '"') {
+                    // End of answer string
+                    this.inAnswer = false;
+                    this.answerDone = true;
+                    // The rest belongs to citations buffer
+                    const remaining = text.substring(i + 1);
+                    this.citationsBuffer += remaining;
+                    return;
+                } else {
+                    this.onToken(char);
+                }
+            }
+        }
+    }
+
+    finish() {
+        if (this.citationsBuffer) {
+            try {
+                // Heuristic: Extract the content of "citations": { ... }
+                // We assume the buffer ends with "}" or "}}".
+                const startIdx = this.citationsBuffer.indexOf('{');
+                if (startIdx !== -1) {
+                    let attempt = this.citationsBuffer.substring(startIdx);
+                    // Try removing trailing braces until it parses
+                    // Limit attempts to avoid infinite loop
+                    let attempts = 0;
+                    while (attempt.length > 2 && attempts < 10) {
+                        try {
+                            const c = JSON.parse(attempt);
+                            this.onCitations(c);
+                            return;
+                        } catch (e) {
+                            attempt = attempt.substring(0, attempt.lastIndexOf('}'));
+                        }
+                        attempts++;
+                    }
+                }
+            } catch (e) {
+                console.warn("Failed to parse citations:", e);
+            }
+        }
+    }
+}
+
 export const apiService = {
     // Check backend health
     checkHealth: async (): Promise<boolean> => {
@@ -71,17 +195,22 @@ export const apiService = {
 
             console.log("--- Stream Started ---");
 
+            // Instantiate Parser
+            const parser = new JsonStreamParser(
+                payload.onToken,
+                (citations) => {
+                    if (payload.onComplete) payload.onComplete(citations);
+                }
+            );
+
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                // Decode the chunk and append to buffer
                 const chunk = decoder.decode(value, { stream: true });
                 buffer += chunk;
 
-                // Process complete lines (SSE format usually ends with double newline)
                 const lines = buffer.split('\n');
-                // Keep the last partial line in the buffer
                 buffer = lines.pop() || '';
 
                 for (const line of lines) {
@@ -90,29 +219,32 @@ export const apiService = {
 
                     if (trimmedLine.startsWith('data: ')) {
                         try {
-                            const jsonStr = trimmedLine.substring(6); // Remove 'data: ' prefix
+                            const jsonStr = trimmedLine.substring(6); 
                             const data = JSON.parse(jsonStr);
 
-                            // 1. Handle Token (The text content)
+                            // 1. Direct Token (Raw Stream)
+                            // If the backend streams the JSON structure as tokens, this logic handles it
                             if (data.token) {
-                                payload.onToken(data.token);
+                                parser.process(data.token);
                             }
                             
-                            // 2. Handle Citations (Usually comes at the end)
+                            // 2. Fallback: Citations Object sent separately
                             if (data.citations) {
-                                console.log("Citations received:", data.citations);
+                                // If backend sends citations as separate event, pass it
                                 if (payload.onComplete) payload.onComplete(data.citations);
                             }
 
-                            // 3. Handle 'Answer' legacy/fallback (If backend sends full block)
-                            // We ONLY use this if we haven't received tokens, to avoid duplication
-                            // or if the backend structure sends { answer: "full text", citations: ... } in one go
+                            // 3. Fallback: Full Answer Block
                             if (data.answer && !data.token) {
-                                // If it's a JSON object representing the final response, we DON'T want to print the JSON string.
-                                // We just want the answer text.
                                 if (typeof data.answer === 'string') {
-                                     // Check if the answer itself looks like a JSON string (double encoded)
+                                     // If answer starts with {, parser will catch it if passed as token
+                                     // But here it is a full string.
+                                     // Just emit it.
                                      if (!data.answer.trim().startsWith('{')) {
+                                         payload.onToken(data.answer);
+                                     } else {
+                                         // If it is JSON, parse it?
+                                         // Assuming standard text for legacy fallback
                                          payload.onToken(data.answer);
                                      }
                                 }
@@ -125,9 +257,10 @@ export const apiService = {
                 }
             }
             
-            console.log("--- Stream Completed ---");
+            // Finalize parser to catch any buffered citations
+            parser.finish();
             
-            // Ensure any final completion logic is called
+            console.log("--- Stream Completed ---");
             if (payload.onComplete) payload.onComplete();
 
         } catch (error: any) {
@@ -141,8 +274,6 @@ export const apiService = {
     getProducts: async (): Promise<Product[]> => {
         const data = await handleResponse(await fetch(`${API_BASE_URL}/products`));
         const productsRaw = data.products || [];
-        
-        // Map metadata description to top-level description
         return productsRaw.map((p: any) => ({
             ...p,
             description: p.metadata?.product_description || p.description || 'No description available'
@@ -165,25 +296,16 @@ export const apiService = {
 
     // --- Document Endpoints ---
 
-    // List all documents
     getDocuments: async (): Promise<LibraryDocument[]> => {
         const data = await handleResponse(await fetch(`${API_BASE_URL}/documents?limit=100`));
-        
-        // Map backend response to frontend LibraryDocument interface
         return data.map((doc: any) => {
             const rawCategory = doc.category || 'General';
             let categoryDisplay = rawCategory;
-
-            // Check if it's an SOP flow source
             if (doc.generate_flow === true || (doc.metadata && doc.metadata.generate_flow === true)) {
                 categoryDisplay = 'Process Definition';
-            } 
-            // Check if it's a Knowledge Base file
-            else if (rawCategory === 'KnowledgeBase' || (doc.metadata && doc.metadata.category === 'KnowledgeBase')) {
+            } else if (rawCategory === 'KnowledgeBase' || (doc.metadata && doc.metadata.category === 'KnowledgeBase')) {
                 categoryDisplay = 'Policy Documents';
-            }
-            // Fallback for previous uploads
-            else if (['Policy', 'Procedure', 'Manual'].includes(rawCategory)) {
+            } else if (['Policy', 'Procedure', 'Manual'].includes(rawCategory)) {
                 categoryDisplay = 'Process Definition';
             }
             
@@ -193,24 +315,21 @@ export const apiService = {
 
             return {
                 id: doc._id || doc.id,
-                sopName: doc.product_id || doc.file_name, // Fallback
+                sopName: doc.product_id || doc.file_name,
                 documentName: doc.file_name,
                 description: doc.summary || 'No description available',
                 pageCount: doc.total_pages || doc.page_count || 0,
                 totalPages: doc.total_pages || 0,
-                
                 uploadedBy: doc.uploaded_by || 'Unknown',
                 uploadedDate: doc.start_time ? new Date(doc.start_time).toLocaleDateString() + ' ' + new Date(doc.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleDateString(),
                 indexName: doc.index_name,
                 status: doc.status,
                 version: '1.0',
-                
                 rootFolder: doc.root_folder, 
                 progressPercentage: doc.progress_percentage || 0,
                 logs: doc.logs || [],
                 latestLog: latestLog,
                 categoryDisplay: categoryDisplay,
-
                 metadata: {
                     linkedApp: 'ProcessHub', 
                     productId: doc.product_id,
@@ -222,15 +341,10 @@ export const apiService = {
         });
     },
 
-    // Upload to Azure Blob Storage using SAS Token
     uploadToAzure: async (file: File): Promise<string> => {
         const sasUrl = new URL(AZURE_SAS_URL);
         const fileName = encodeURIComponent(file.name);
-        
-        // 1. Construct the Real URL (this is what the backend needs to know)
         const realBlobUrl = `${sasUrl.origin}${sasUrl.pathname}/${fileName}${sasUrl.search}`;
-
-        // 2. Determine Upload URL (Dev Proxy vs Prod Direct)
         const isDev = import.meta.env.MODE === 'development';
         const uploadUrl = isDev 
             ? `/azure-blob${sasUrl.pathname}/${fileName}${sasUrl.search}` 
@@ -250,11 +364,9 @@ export const apiService = {
         if (!response.ok) {
             throw new Error(`Azure Upload Failed: ${response.statusText}`);
         }
-
         return realBlobUrl;
     },
 
-    // Upload Document: 1. Upload to Azure, 2. Call Ingest API
     uploadDocument: async (file: File, metadata: any): Promise<any> => {
         try {
             console.log("Starting Azure Upload...");
@@ -273,14 +385,11 @@ export const apiService = {
                     ...metadata 
                 }
             };
-
-            console.log("Calling Ingest API with payload:", payload);
             return handleResponse(await fetch(`${API_BASE_URL}/ingest`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             }));
-
         } catch (error) {
             console.error("Full Upload Process Failed:", error);
             throw error;
@@ -289,9 +398,7 @@ export const apiService = {
 
     deleteDocument: async (docId: string, indexName: string): Promise<any> => {
         const url = `${API_BASE_URL}/documents/${docId}?index_name=${indexName || ''}`;
-        return handleResponse(await fetch(url, {
-            method: 'DELETE',
-        }));
+        return handleResponse(await fetch(url, { method: 'DELETE' }));
     },
 
     getProcessFlow: async (productName: string): Promise<SopResponse> => {
@@ -299,8 +406,6 @@ export const apiService = {
         console.log("Fetching Flow from:", url);
         
         const json = await handleResponse(await fetch(url));
-        console.log("Raw Process Flow Response:", json);
-
         const core = json.process_flow || json.processFlow || json;
 
         if (!core) {
@@ -338,15 +443,12 @@ export const apiService = {
             processDefinition: core.processDefinition || core.process_definition,
             processObjectives: core.processObjectives || core.process_objectives || [],
             inherentRisks: core.inherentRisks || core.inherent_risks || [],
-            processFlow: {
-                stages: stages
-            },
+            processFlow: { stages: stages },
             metricsAndMeasures: core.metricsAndMeasures || core.metrics_and_measures || [],
             policiesAndStandards: core.policiesAndStandards || core.policies_and_standards || [],
             qualityAssurance: core.qualityAssurance || core.quality_assurance || [],
             metadata: core.metadata || json.metadata
         };
-
         return normalizedData;
     }
 };

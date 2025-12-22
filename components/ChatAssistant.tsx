@@ -96,13 +96,13 @@ const formatText = (text: string, isUser: boolean) => {
                         return (
                             <sup 
                                 key={subIndex} 
-                                className={`text-[10px] font-bold px-1 rounded ml-0.5 cursor-default ${
+                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ml-0.5 cursor-default ${
                                     isUser 
                                     ? 'text-blue-200 bg-white/20' 
-                                    : 'text-blue-600 bg-blue-50'
+                                    : 'text-blue-600 bg-blue-50 border border-blue-100'
                                 }`}
                             >
-                                {subPart}
+                                {subPart.replace(/[\[\]]/g, '')}
                             </sup>
                         );
                     }
@@ -180,27 +180,27 @@ const MessageRenderer = ({ content, isTyping, role }: { content: string, isTypin
                     const headers = safeParseRow(headerRow);
                     
                     return (
-                        <div key={i} className="my-3 overflow-x-auto rounded-lg border border-slate-200 shadow-sm bg-white">
+                        <div key={i} className="my-4 overflow-x-auto rounded-xl border border-slate-200 shadow-sm bg-white">
                             <table className="min-w-full divide-y divide-slate-200">
                                 {separatorRow && (
-                                    <thead className="bg-slate-50">
+                                    <thead className="bg-slate-100/80">
                                         <tr>
                                             {headers.map((h, hIdx) => (
-                                                <th key={hIdx} className="px-3 py-2 text-left text-xs font-bold text-slate-600 uppercase tracking-wider border-r border-slate-100 last:border-0">
+                                                <th key={hIdx} className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider border-r border-slate-200/50 last:border-0">
                                                     {formatText(h.trim(), false)}
                                                 </th>
                                             ))}
                                         </tr>
                                     </thead>
                                 )}
-                                <tbody className="bg-white divide-y divide-slate-100">
+                                <tbody className="bg-white">
                                     {(separatorRow ? bodyRows : rows).map((row, rIdx) => {
                                         if (row.includes('---')) return null;
                                         const cells = safeParseRow(row);
                                         return (
-                                            <tr key={rIdx} className={rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                                            <tr key={rIdx} className={`transition-colors hover:bg-blue-50/30 ${rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                                                 {cells.map((c, cIdx) => (
-                                                    <td key={cIdx} className="px-3 py-2 text-sm text-slate-700 whitespace-pre-wrap leading-snug border-r border-slate-100 last:border-0">
+                                                    <td key={cIdx} className="px-4 py-3 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed border-r border-slate-100 last:border-0 border-b last:border-b-0">
                                                         {formatText(c.trim(), false)}
                                                     </td>
                                                 ))}
@@ -215,18 +215,18 @@ const MessageRenderer = ({ content, isTyping, role }: { content: string, isTypin
                 // --- RENDER LIST ---
                 else if (block.type === 'list') {
                      return (
-                        <div key={i} className="pl-2">
+                        <div key={i} className="pl-1 py-1 space-y-2">
                             {block.data.map((item, idx) => {
                                 // Detect list type
                                 const isOrdered = /^\d+\./.test(item.trim());
                                 const content = item.replace(/^(\*|-|\d+\.)\s/, '');
                                 return (
-                                    <div key={idx} className="flex items-start gap-2 mb-1">
+                                    <div key={idx} className="flex items-start gap-3">
                                         <span className={`mt-1.5 shrink-0 ${isUser ? 'text-blue-200' : 'text-blue-500'}`}>
                                             {isOrdered ? (
-                                                <span className="text-xs font-bold">{item.match(/^\d+\./)?.[0]}</span>
+                                                <span className="text-xs font-bold tabular-nums opacity-80">{item.match(/^\d+\./)?.[0]}</span>
                                             ) : (
-                                                <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                                                <div className="w-1.5 h-1.5 rounded-full bg-current mt-1" />
                                             )}
                                         </span>
                                         <span className="leading-relaxed">{formatText(content, isUser)}</span>
@@ -418,7 +418,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
               {/* Message Bubble */}
               <div className={`px-4 py-3.5 rounded-2xl text-sm leading-relaxed shadow-sm transition-all ${
                 msg.role === 'user' 
-                  ? 'bg-slate-800 text-white rounded-tr-none' 
+                  ? 'bg-slate-800 text-white rounded-tr-none shadow-md' 
                   : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none'
               }`}>
                 <MessageRenderer 
