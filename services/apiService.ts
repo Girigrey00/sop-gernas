@@ -29,33 +29,103 @@ export const apiService = {
         }
     },
 
-    // --- Chat Endpoint ---
+    // --- Chat Endpoint (Streaming) ---
     chatInference: async (payload: { 
         question: string, 
         index_name?: string, 
         session_id?: string, 
         question_id?: string,
-        product?: string 
-    }): Promise<any> => {
-        const response = await fetch(`${API_BASE_URL}/inference/stream`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                question: payload.question,
-                index_name: payload.index_name,
-                session_id: payload.session_id,
-                question_id: payload.question_id,
-                product: payload.product
-            })
-        });
+        product?: string,
+        onToken: (token: string) => void,
+        onComplete?: (citations?: any) => void,
+        onError?: (error: string) => void
+    }): Promise<void> => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/inference/stream`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'text/event-stream'
+                },
+                body: JSON.stringify({
+                    question: payload.question,
+                    index_name: payload.index_name,
+                    session_id: payload.session_id,
+                    question_id: payload.question_id,
+                    product: payload.product
+                })
+            });
 
-        if (!response.ok) {
-             const errorText = await response.text();
-             throw new Error(`API Error ${response.status}: ${errorText}`);
+            if (!response.ok) {
+                 const errorText = await response.text();
+                 throw new Error(`API Error ${response.status}: ${errorText}`);
+            }
+
+            if (!response.body) {
+                throw new Error("ReadableStream not supported in this browser.");
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let buffer = '';
+
+            console.log("--- Stream Started ---");
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                // Decode the chunk and append to buffer
+                const chunk = decoder.decode(value, { stream: true });
+                buffer += chunk;
+
+                // Process complete lines (SSE format usually ends with double newline)
+                const lines = buffer.split('\n');
+                // Keep the last partial line in the buffer
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine || trimmedLine === 'data: [DONE]') continue;
+
+                    if (trimmedLine.startsWith('data: ')) {
+                        try {
+                            const jsonStr = trimmedLine.substring(6); // Remove 'data: ' prefix
+                            const data = JSON.parse(jsonStr);
+
+                            // Log response as requested
+                            console.log("SSE Data Chunk:", data);
+
+                            // Handle specific payload structure from backend
+                            // Assuming data.answer or data.token holds the text fragment
+                            const textFragment = data.answer || data.token || data.text || '';
+                            
+                            if (textFragment) {
+                                payload.onToken(textFragment);
+                            }
+                            
+                            // Check for citations/completion data
+                            if (data.citations) {
+                                console.log("Citations received:", data.citations);
+                                if (payload.onComplete) payload.onComplete(data.citations);
+                            }
+                        } catch (e) {
+                            console.warn("Failed to parse SSE JSON:", trimmedLine);
+                        }
+                    }
+                }
+            }
+            
+            console.log("--- Stream Completed ---");
+            
+            // Ensure any final completion logic is called if citations weren't found in stream loop
+            // but usually they come in the last data packet.
+            if (payload.onComplete) payload.onComplete();
+
+        } catch (error: any) {
+            console.error("Streaming Error:", error);
+            if (payload.onError) payload.onError(error.message || "Stream failed");
         }
-
-        // Return full JSON. The visual streaming effect is handled in the UI component.
-        return response.json();
     },
 
     // --- Product Endpoints ---

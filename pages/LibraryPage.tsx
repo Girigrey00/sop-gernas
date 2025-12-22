@@ -3,7 +3,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
     Upload, FileText, Search, Edit3, Trash2, 
     Square, X, FileStack, Plus, Loader2,
-    GitMerge, Bot, Calendar, User, RefreshCw, ArrowLeft, Activity
+    GitMerge, Bot, Calendar, User, RefreshCw, ArrowLeft, Activity,
+    AlertTriangle // Added for Modal
 } from 'lucide-react';
 import { LibraryDocument, SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -15,6 +16,7 @@ interface LibraryPageProps {
     preselectedProduct?: Product | null;
     onBack?: () => void;
     onViewFlow?: () => void;
+    onNotification?: (msg: string, type: 'success' | 'error') => void;
 }
 
 const LibraryPage: React.FC<LibraryPageProps> = ({ 
@@ -22,7 +24,8 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     onCloseInitialUpload,
     preselectedProduct,
     onBack,
-    onViewFlow
+    onViewFlow,
+    onNotification
 }) => {
     const [documents, setDocuments] = useState<LibraryDocument[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -34,6 +37,10 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     const [sopFile, setSopFile] = useState<File | null>(null);
     const [llmFiles, setLlmFiles] = useState<File[]>([]);
     const [isUploading, setIsUploading] = useState(false);
+    
+    // Delete Confirmation State
+    const [docToDelete, setDocToDelete] = useState<LibraryDocument | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     
     // Metadata State
     const [productName, setProductName] = useState('');
@@ -149,26 +156,39 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                 }
             }
             await fetchDocuments();
+            if (onNotification) onNotification("Documents uploaded successfully", 'success');
             resetForm();
         } catch (error) {
             console.error("Upload failed", error);
-            alert("Failed to upload documents. See console for details.");
+            if (onNotification) onNotification("Failed to upload documents.", 'error');
+            else alert("Failed to upload documents. See console for details.");
         } finally {
             setIsUploading(false);
         }
     };
 
-    const handleDelete = async (doc: LibraryDocument) => {
-        if(!window.confirm(`Are you sure you want to delete ${doc.documentName}?`)) return;
+    const handleDeleteClick = (doc: LibraryDocument) => {
+        setDocToDelete(doc);
+    };
 
+    const confirmDeleteDoc = async () => {
+        if (!docToDelete) return;
+        setIsDeleting(true);
         try {
             // Use metadata index_name or fallback to default
-            const indexName = doc.indexName || doc.metadata?.index_name || 'cbgknowledgehub';
-            await apiService.deleteDocument(doc.id, indexName);
+            const indexName = docToDelete.indexName || docToDelete.metadata?.index_name || 'cbgknowledgehub';
+            const response = await apiService.deleteDocument(docToDelete.id, indexName);
+            
+            if (onNotification) {
+                onNotification(response.message || `Document '${docToDelete.documentName}' deleted`, 'success');
+            }
             await fetchDocuments();
+            setDocToDelete(null);
         } catch(e) {
             console.error(e);
-            alert("Failed to delete document");
+            if (onNotification) onNotification("Failed to delete document", 'error');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -369,7 +389,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                                     <Edit3 size={14} />
                                                 </button>
                                                 <button 
-                                                    onClick={() => handleDelete(doc)}
+                                                    onClick={() => handleDeleteClick(doc)}
                                                     className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
                                                 >
                                                     <Trash2 size={14} />
@@ -423,6 +443,43 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                             <button onClick={resetForm} className="px-4 py-2 text-slate-600 font-bold text-sm hover:bg-slate-200 rounded-lg transition-colors" disabled={isUploading}>Cancel</button>
                             <button onClick={handleUploadAll} disabled={isUploadDisabled} className="px-6 py-2 bg-fab-royal text-white rounded-lg font-bold text-sm shadow-lg shadow-fab-royal/20 hover:bg-fab-blue hover:scale-105 transition-all disabled:opacity-70 disabled:scale-100 flex items-center gap-2">{isUploading ? (<><Loader2 size={16} className="animate-spin" />Processing...</>) : (<><Upload size={16} />{productName && documents.some(d => d.rootFolder === productName) ? 'Re-Process' : 'Start Ingestion'}</>)}</button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Document Confirmation Modal */}
+            {docToDelete && (
+                <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 transform transition-all scale-100 opacity-100">
+                         <div className="flex flex-col items-center text-center gap-4">
+                             <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-2">
+                                <AlertTriangle size={24} />
+                             </div>
+                             <div>
+                                <h3 className="text-lg font-bold text-slate-800">Delete Document?</h3>
+                                <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+                                    Are you sure you want to delete <strong>{docToDelete.documentName}</strong>?
+                                    <br/><span className="text-rose-600 font-medium text-xs">This action cannot be undone.</span>
+                                </p>
+                             </div>
+                             <div className="flex gap-3 w-full mt-4">
+                                <button 
+                                    onClick={() => setDocToDelete(null)}
+                                    disabled={isDeleting}
+                                    className="flex-1 py-2.5 text-slate-600 font-bold text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={confirmDeleteDoc}
+                                    disabled={isDeleting}
+                                    className="flex-1 py-2.5 text-white font-bold text-sm bg-rose-600 hover:bg-rose-700 rounded-lg shadow-lg shadow-rose-200 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
+                                >
+                                    {isDeleting && <Loader2 size={14} className="animate-spin" />}
+                                    Delete
+                                </button>
+                             </div>
+                         </div>
                     </div>
                 </div>
             )}

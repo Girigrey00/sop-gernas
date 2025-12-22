@@ -12,7 +12,8 @@ import {
     // New Icons for Variety
     PieChart, TrendingUp, Globe, Building2, Scale, FileSignature, Calculator, 
     Receipt, Gem, Key, Database, Smartphone, Award, Target, BarChart, Stamp, BadgeDollarSign, 
-    Vault, ScrollText, Truck, ShoppingCart, Anchor, Gavel, FileCheck, Layers, Trash2
+    Vault, ScrollText, Truck, ShoppingCart, Anchor, Gavel, FileCheck, Layers, Trash2,
+    X, CheckCircle, AlertTriangle 
 } from 'lucide-react';
 
 // --- Icon Helper ---
@@ -148,7 +149,11 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
 };
 
 // --- Home Page (CBG Knowledge Hub) ---
-const HomePage = ({ onStart, onSelectProduct }: { onStart: (data: any) => void, onSelectProduct: (product: Product, redirect: boolean) => void }) => {
+const HomePage = ({ onStart, onSelectProduct, onNotification }: { 
+    onStart: (data: any) => void, 
+    onSelectProduct: (product: Product, redirect: boolean) => void,
+    onNotification: (msg: string, type: 'success' | 'error') => void
+}) => {
     const [products, setProducts] = useState<Product[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -161,6 +166,10 @@ const HomePage = ({ onStart, onSelectProduct }: { onStart: (data: any) => void, 
     const [newProductName, setNewProductName] = useState('');
     const [newProductDesc, setNewProductDesc] = useState('');
     const [isCreating, setIsCreating] = useState(false);
+
+    // Delete Confirmation State
+    const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchProducts = useCallback(async (isPolling = false) => {
         if (!isPolling) setIsLoading(true);
@@ -203,34 +212,42 @@ const HomePage = ({ onStart, onSelectProduct }: { onStart: (data: any) => void, 
             setIsCreateOpen(false);
             setNewProductName('');
             setNewProductDesc('');
+            onNotification(`Product '${newProductName}' created successfully`, 'success');
         } catch (error) {
-            alert("Failed to create product");
+            onNotification("Failed to create product", 'error');
             console.error(error);
         } finally {
             setIsCreating(false);
         }
     };
 
-    const handleDeleteProduct = async (product: Product) => {
-        if (!window.confirm(`Are you sure you want to delete product "${product.product_name}"? This will delete all associated documents and indexes.`)) return;
-        
+    const handleDeleteClick = (product: Product) => {
+        // Trigger Modal
+        setProductToDelete(product);
+    };
+
+    const confirmDeleteProduct = async () => {
+        if (!productToDelete) return;
+        setIsDeleting(true);
         try {
-            await apiService.deleteProduct(product.product_name);
+            const response = await apiService.deleteProduct(productToDelete.product_name);
+            onNotification(response.message || `Product '${productToDelete.product_name}' deleted`, 'success');
             await fetchProducts();
+            setProductToDelete(null);
         } catch (error) {
             console.error("Failed to delete product", error);
-            alert("Failed to delete product. Please try again.");
+            onNotification("Failed to delete product.", 'error');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
-    const handleCardClick = async (product: Product) => {
+    const handleCardClick = async (product: Product, e: React.MouseEvent) => {
+        // Prevent navigation if clicking on interactive elements (like delete)
+        if ((e.target as HTMLElement).closest('.delete-btn')) return;
+
         // Update context to show library link
         onSelectProduct(product, false);
-
-        // Strict Logic:
-        // 1. If flow_status === 'Completed' -> Open Canvas
-        // 2. If flow_status is missing/null -> Redirect to Upload (Library)
-        // 3. If flow_status is anything else (Processing, Failed) -> Show Alert/Wait
 
         if (product.flow_status === 'Completed') {
             setIsLoading(true);
@@ -240,11 +257,11 @@ const HomePage = ({ onStart, onSelectProduct }: { onStart: (data: any) => void, 
                 if (flowData) {
                     onStart(flowData);
                 } else {
-                    alert("Flow data returned is empty.");
+                    onNotification("Flow data returned is empty.", 'error');
                 }
             } catch (error) {
                 console.error("Flow fetch error:", error);
-                alert("Failed to load the process flow.");
+                onNotification("Failed to load the process flow.", 'error');
             } finally {
                 setIsLoading(false);
             }
@@ -253,7 +270,7 @@ const HomePage = ({ onStart, onSelectProduct }: { onStart: (data: any) => void, 
             onSelectProduct(product, true); // Force redirect
         } else {
             // Processing or other state
-            alert(`Flow is currently: ${product.flow_status}. Please wait until completion.`);
+            onNotification(`Flow is currently: ${product.flow_status}. Please wait.`, 'error');
         }
     };
 
@@ -323,17 +340,17 @@ const HomePage = ({ onStart, onSelectProduct }: { onStart: (data: any) => void, 
                             return (
                                 <button 
                                     key={i}
-                                    onClick={() => handleCardClick(item)}
+                                    onClick={(e) => handleCardClick(item, e)}
                                     className="p-5 rounded-xl border border-slate-200 bg-white hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all text-left group flex flex-col h-full relative overflow-hidden"
                                 >
-                                     {/* Delete Button */}
-                                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                     {/* Delete Button (Corner) */}
+                                    <div className="absolute top-3 right-3 z-20 delete-btn">
                                          <div 
                                             onClick={(e) => {
                                                 e.stopPropagation(); 
-                                                handleDeleteProduct(item);
+                                                handleDeleteClick(item);
                                             }}
-                                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors bg-white/50 backdrop-blur-sm"
+                                            className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors bg-white/50 backdrop-blur-sm"
                                             title="Delete Product"
                                          >
                                             <Trash2 size={16} />
@@ -344,19 +361,22 @@ const HomePage = ({ onStart, onSelectProduct }: { onStart: (data: any) => void, 
                                         <div className="p-2.5 rounded-xl transition-colors border bg-fab-royal/5 text-fab-royal border-fab-royal/10">
                                             {isProcessing ? <Loader2 size={24} className="animate-spin" /> : <DynamicIcon size={24} strokeWidth={1.5} />}
                                         </div>
-                                        <div className="flex gap-1">
-                                            <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded-full border ${
-                                                isCompleted ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                                isProcessing ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                                                'bg-slate-50 text-slate-400 border-slate-100'
-                                            }`}>
-                                                {isCompleted ? 'Completed' : isProcessing ? 'Processing' : 'Draft'}
-                                            </span>
-                                        </div>
                                     </div>
                                     
-                                    <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-2">{item.product_name}</h3>
-                                    <p className="text-xs text-slate-500 leading-relaxed mb-4 flex-1 line-clamp-3" title={item.description}>{item.description || 'No description available'}</p>
+                                    <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-2 pr-6">{item.product_name}</h3>
+                                    <p className="text-xs text-slate-500 leading-relaxed mb-3 flex-1 line-clamp-3" title={item.description}>{item.description || 'No description available'}</p>
+
+                                    {/* Status Section (Below Description) */}
+                                    <div className="mb-4">
+                                        <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded-full border inline-flex items-center gap-1 ${
+                                            isCompleted ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                            isProcessing ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                            'bg-slate-50 text-slate-400 border-slate-100'
+                                        }`}>
+                                            {isProcessing && <Loader2 size={8} className="animate-spin" />}
+                                            {isCompleted ? 'Ready' : isProcessing ? 'Processing' : 'Draft'}
+                                        </span>
+                                    </div>
 
                                     <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-auto">
                                         <span className="text-[10px] font-medium text-slate-400 truncate max-w-[100px]">Docs: {item.document_count}</span>
@@ -413,6 +433,43 @@ const HomePage = ({ onStart, onSelectProduct }: { onStart: (data: any) => void, 
                                 Create
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Product Confirmation Modal */}
+            {productToDelete && (
+                <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 transform transition-all scale-100 opacity-100">
+                         <div className="flex flex-col items-center text-center gap-4">
+                             <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-2">
+                                <AlertTriangle size={24} />
+                             </div>
+                             <div>
+                                <h3 className="text-lg font-bold text-slate-800">Delete Product?</h3>
+                                <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+                                    Are you sure you want to delete <strong>{productToDelete.product_name}</strong>?
+                                    <br/><span className="text-rose-600 font-medium text-xs">This action cannot be undone.</span>
+                                </p>
+                             </div>
+                             <div className="flex gap-3 w-full mt-4">
+                                <button 
+                                    onClick={() => setProductToDelete(null)}
+                                    disabled={isDeleting}
+                                    className="flex-1 py-2.5 text-slate-600 font-bold text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={confirmDeleteProduct}
+                                    disabled={isDeleting}
+                                    className="flex-1 py-2.5 text-white font-bold text-sm bg-rose-600 hover:bg-rose-700 rounded-lg shadow-lg shadow-rose-200 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
+                                >
+                                    {isDeleting && <Loader2 size={14} className="animate-spin" />}
+                                    Delete
+                                </button>
+                             </div>
+                         </div>
                     </div>
                 </div>
             )}
@@ -493,6 +550,9 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedSop, setSelectedSop] = useState<SopResponse | null>(null);
   
+  // Notification State
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+
   // State to trigger upload modal automatically when entering library
   const [autoOpenUpload, setAutoOpenUpload] = useState(false);
   // NEW: State to pass selected product to library for context-aware upload and filtering
@@ -513,6 +573,11 @@ const App: React.FC = () => {
       setInitialPrompt('');
       setSelectedSop(null);
       setSelectedContextProduct(null);
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+      setNotification({ message, type });
+      setTimeout(() => setNotification(null), 6000);
   };
 
   const handleStartWithData = (data: SopResponse) => {
@@ -561,9 +626,9 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (currentView) {
       case 'HOME':
-        return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} />;
+        return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} onNotification={showNotification} />;
       case 'SOPS':
-        return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} />;
+        return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} onNotification={showNotification} />;
       case 'LIBRARY':
         return (
             <LibraryPage 
@@ -574,6 +639,7 @@ const App: React.FC = () => {
                 }}
                 preselectedProduct={selectedContextProduct}
                 onBack={() => setCurrentView('HOME')}
+                onNotification={showNotification}
                 onViewFlow={async () => {
                      if (selectedContextProduct) {
                          if(selectedContextProduct.flow_status === 'Completed') {
@@ -582,10 +648,10 @@ const App: React.FC = () => {
                                  handleStartWithData(flowData);
                              } catch(e) {
                                  console.error(e);
-                                 alert("Error loading flow. Please check console.");
+                                 showNotification("Error loading flow. Please check console.", 'error');
                              }
                          } else {
-                             alert(`Flow is ${selectedContextProduct.flow_status || 'not ready'}`);
+                             showNotification(`Flow is ${selectedContextProduct.flow_status || 'not ready'}`, 'error');
                          }
                      }
                 }}
@@ -604,7 +670,7 @@ const App: React.FC = () => {
       case 'HISTORY':
         return <HistoryPage history={history} onOpenItem={handleOpenHistoryItem} />;
       default:
-        return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} />;
+        return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} onNotification={showNotification} />;
     }
   };
 
@@ -614,6 +680,16 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
+      
+      {/* Toast Notification Layer */}
+      {notification && (
+        <div className={`fixed bottom-6 right-6 px-6 py-4 rounded-xl shadow-2xl text-white font-medium z-[100] flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300 ${notification.type === 'error' ? 'bg-rose-600' : 'bg-emerald-600'}`}>
+            {notification.type === 'success' ? <CheckCircle size={20} /> : <ShieldAlert size={20} />}
+            <span className="text-sm">{notification.message}</span>
+            <button onClick={() => setNotification(null)} className="ml-2 opacity-80 hover:opacity-100 p-1 hover:bg-white/20 rounded"><X size={16}/></button>
+        </div>
+      )}
+
       <div className={`fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)}></div>
       
       {/* Sidebar Container with Dynamic Width */}

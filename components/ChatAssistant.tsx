@@ -109,88 +109,76 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
     setInput('');
     setIsLoading(true);
 
+    // Initial placeholder for Bot Message
+    const botMsgId = (Date.now() + 1).toString();
+    setMessages(prev => [...prev, {
+      id: botMsgId,
+      role: 'assistant',
+      content: '', // Start empty
+      timestamp: new Date(),
+      isTyping: true
+    }]);
+
     try {
       // Determine Index Name & Product Context
       const meta = sopData.metadata as any;
-      
       const indexName = productContext?.index_name || meta?.index_name || meta?.target_index || "cbgknowledgehub";
       const productName = productContext?.product_name || meta?.productId || sopData.processDefinition.title || "";
       const questionId = globalThis.crypto?.randomUUID() || `qn-${Date.now()}`;
 
-      console.log("ChatInference Context:", { indexName, productName, sessionId });
+      console.log("ChatInference Streaming Context:", { indexName, productName, sessionId });
 
-      // Call Inference API
-      const response = await apiService.chatInference({
+      // Call Streaming API
+      await apiService.chatInference({
         question: userMsg.content,
         index_name: indexName,
         session_id: sessionId,
         question_id: questionId,
-        product: productName
+        product: productName,
+        onToken: (token) => {
+          setMessages(prev => prev.map(msg => 
+            msg.id === botMsgId 
+              ? { ...msg, content: msg.content + token, isTyping: true } // Keep typing true while streaming
+              : msg
+          ));
+        },
+        onComplete: (citations) => {
+           setMessages(prev => prev.map(msg => 
+             msg.id === botMsgId 
+               ? { ...msg, isTyping: false, citations: citations } 
+               : msg
+           ));
+           setIsLoading(false);
+        },
+        onError: (errMsg) => {
+           setMessages(prev => prev.map(msg => 
+             msg.id === botMsgId 
+               ? { ...msg, isTyping: false, content: msg.content + `\n\n[Error: ${errMsg}]` } 
+               : msg
+           ));
+           setIsLoading(false);
+        }
       });
-      
-      // Standardize Response
-      let fullAnswerText = "";
-      let citations: Record<string, string> | undefined = undefined;
-
-      if (typeof response === 'string') {
-          fullAnswerText = response;
-      } else if (response && typeof response === 'object') {
-          fullAnswerText = response.answer || response.response || response.result || response.text || JSON.stringify(response);
-          citations = response.citations;
-      } else {
-          fullAnswerText = "I received an empty response.";
-      }
-
-      // Start Typewriter Effect
-      const botMsgId = (Date.now() + 1).toString();
-      
-      // Add empty message initially
-      setMessages(prev => [...prev, {
-        id: botMsgId,
-        role: 'assistant',
-        content: '',
-        timestamp: new Date(),
-        citations: citations,
-        isTyping: true
-      }]);
-
-      let currentText = '';
-      const words = fullAnswerText.split(' '); // Split by word for smoother flow than char
-      let i = 0;
-
-      // Typewriter Interval
-      const typeInterval = setInterval(() => {
-         if (i < words.length) {
-             currentText += (i === 0 ? '' : ' ') + words[i];
-             setMessages(prev => prev.map(msg => 
-                 msg.id === botMsgId ? { ...msg, content: currentText } : msg
-             ));
-             i++;
-             scrollToBottom();
-         } else {
-             clearInterval(typeInterval);
-             setMessages(prev => prev.map(msg => 
-                 msg.id === botMsgId ? { ...msg, isTyping: false } : msg
-             ));
-         }
-      }, 50); // Speed: 50ms per word roughly matches fast reading
 
     } catch (error) {
       console.error("Chat error", error);
+      // Remove the typing message and show error
+      setMessages(prev => prev.filter(m => m.id !== botMsgId));
+      
       const errorMsg: Message = {
-        id: (Date.now() + 1).toString(),
+        id: (Date.now() + 2).toString(),
         role: 'assistant',
         content: "I'm having trouble connecting to the knowledge base right now. Please try again later.",
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMsg]);
-    } finally {
       setIsLoading(false);
     }
   };
 
   // Helper to render bold text
   const renderMessageContent = (content: string) => {
+    // Basic Markdown support for bolding
     const parts = content.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, index) => {
         if (part.startsWith('**') && part.endsWith('**')) {
@@ -269,7 +257,8 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
           </div>
         ))}
         
-        {isLoading && (
+        {/* Loading Indicator (Only shown before first token arrives or if explicit loading state) */}
+        {isLoading && messages.length > 0 && messages[messages.length - 1].role === 'user' && (
           <div className="flex gap-3">
             <div className="w-8 h-8 rounded-full bg-white border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm mt-1">
                <Loader2 size={14} className="animate-spin" />
