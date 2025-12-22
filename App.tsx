@@ -12,7 +12,7 @@ import {
     // New Icons for Variety
     PieChart, TrendingUp, Globe, Building2, Scale, FileSignature, Calculator, 
     Receipt, Gem, Key, Database, Smartphone, Award, Target, BarChart, Stamp, BadgeDollarSign, 
-    Vault, ScrollText, Truck, ShoppingCart, Anchor, Gavel, FileCheck, Layers
+    Vault, ScrollText, Truck, ShoppingCart, Anchor, Gavel, FileCheck, Layers, Trash2
 } from 'lucide-react';
 
 // --- Icon Helper ---
@@ -209,6 +209,18 @@ const HomePage = ({ onStart, onSelectProduct }: { onStart: (data: any) => void, 
         }
     };
 
+    const handleDeleteProduct = async (product: Product) => {
+        if (!window.confirm(`Are you sure you want to delete product "${product.product_name}"? This will delete all associated documents and indexes.`)) return;
+        
+        try {
+            await apiService.deleteProduct(product.product_name);
+            await fetchProducts();
+        } catch (error) {
+            console.error("Failed to delete product", error);
+            alert("Failed to delete product. Please try again.");
+        }
+    };
+
     const handleCardClick = async (product: Product) => {
         // Update context to show library link
         onSelectProduct(product, false);
@@ -312,6 +324,20 @@ const HomePage = ({ onStart, onSelectProduct }: { onStart: (data: any) => void, 
                                     onClick={() => handleCardClick(item)}
                                     className="p-5 rounded-xl border border-slate-200 bg-white hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all text-left group flex flex-col h-full relative overflow-hidden"
                                 >
+                                     {/* Delete Button */}
+                                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                         <div 
+                                            onClick={(e) => {
+                                                e.stopPropagation(); 
+                                                handleDeleteProduct(item);
+                                            }}
+                                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors bg-white/50 backdrop-blur-sm"
+                                            title="Delete Product"
+                                         >
+                                            <Trash2 size={16} />
+                                         </div>
+                                    </div>
+
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="p-2.5 rounded-xl transition-colors border bg-fab-royal/5 text-fab-royal border-fab-royal/10">
                                             {isProcessing ? <Loader2 size={24} className="animate-spin" /> : <DynamicIcon size={24} strokeWidth={1.5} />}

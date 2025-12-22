@@ -79,6 +79,12 @@ export const apiService = {
         }));
     },
 
+    deleteProduct: async (productName: string): Promise<any> => {
+        return handleResponse(await fetch(`${API_BASE_URL}/products/${productName}`, {
+            method: 'DELETE',
+        }));
+    },
+
     // --- Document Endpoints ---
 
     // List all documents
@@ -203,8 +209,9 @@ export const apiService = {
         }
     },
 
-    deleteDocument: async (docId: string): Promise<any> => {
-        return handleResponse(await fetch(`${API_BASE_URL}/documents/${docId}`, {
+    deleteDocument: async (docId: string, indexName: string): Promise<any> => {
+        const url = `${API_BASE_URL}/documents/${docId}?index_name=${indexName || ''}`;
+        return handleResponse(await fetch(url, {
             method: 'DELETE',
         }));
     },

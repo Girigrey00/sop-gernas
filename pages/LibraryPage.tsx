@@ -154,8 +154,18 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
         }
     };
 
-    const handleDelete = async (id: string) => {
-        console.log("Delete action (Dummy) triggered for:", id);
+    const handleDelete = async (doc: LibraryDocument) => {
+        if(!window.confirm(`Are you sure you want to delete ${doc.documentName}?`)) return;
+
+        try {
+            // Use metadata index_name or fallback to default
+            const indexName = doc.indexName || doc.metadata?.index_name || 'cbgknowledgehub';
+            await apiService.deleteDocument(doc.id, indexName);
+            await fetchDocuments();
+        } catch(e) {
+            console.error(e);
+            alert("Failed to delete document");
+        }
     };
 
     // --- Render ---
@@ -331,7 +341,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                                     <Edit3 size={14} />
                                                 </button>
                                                 <button 
-                                                    onClick={() => handleDelete(doc.id)}
+                                                    onClick={() => handleDelete(doc)}
                                                     className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
                                                 >
                                                     <Trash2 size={14} />
