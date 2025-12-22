@@ -93,22 +93,31 @@ export const apiService = {
                             const jsonStr = trimmedLine.substring(6); // Remove 'data: ' prefix
                             const data = JSON.parse(jsonStr);
 
-                            // Log response as requested
-                            console.log("SSE Data Chunk:", data);
-
-                            // Handle specific payload structure from backend
-                            // Assuming data.answer or data.token holds the text fragment
-                            const textFragment = data.answer || data.token || data.text || '';
-                            
-                            if (textFragment) {
-                                payload.onToken(textFragment);
+                            // 1. Handle Token (The text content)
+                            if (data.token) {
+                                payload.onToken(data.token);
                             }
                             
-                            // Check for citations/completion data
+                            // 2. Handle Citations (Usually comes at the end)
                             if (data.citations) {
                                 console.log("Citations received:", data.citations);
                                 if (payload.onComplete) payload.onComplete(data.citations);
                             }
+
+                            // 3. Handle 'Answer' legacy/fallback (If backend sends full block)
+                            // We ONLY use this if we haven't received tokens, to avoid duplication
+                            // or if the backend structure sends { answer: "full text", citations: ... } in one go
+                            if (data.answer && !data.token) {
+                                // If it's a JSON object representing the final response, we DON'T want to print the JSON string.
+                                // We just want the answer text.
+                                if (typeof data.answer === 'string') {
+                                     // Check if the answer itself looks like a JSON string (double encoded)
+                                     if (!data.answer.trim().startsWith('{')) {
+                                         payload.onToken(data.answer);
+                                     }
+                                }
+                            }
+
                         } catch (e) {
                             console.warn("Failed to parse SSE JSON:", trimmedLine);
                         }
@@ -118,8 +127,7 @@ export const apiService = {
             
             console.log("--- Stream Completed ---");
             
-            // Ensure any final completion logic is called if citations weren't found in stream loop
-            // but usually they come in the last data packet.
+            // Ensure any final completion logic is called
             if (payload.onComplete) payload.onComplete();
 
         } catch (error: any) {

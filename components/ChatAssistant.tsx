@@ -79,11 +79,12 @@ const CitationBlock = ({ citations }: { citations: Record<string, string> }) => 
 };
 
 // Helper: Text Formatter (Bold + Citations)
-const formatText = (text: string) => {
+const formatText = (text: string, isUser: boolean) => {
+    // Basic split for bolding
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, index) => {
         if (part.startsWith('**') && part.endsWith('**')) {
-            return <strong key={index} className="font-bold text-slate-900">{part.slice(2, -2)}</strong>;
+            return <strong key={index} className={`font-bold ${isUser ? 'text-white' : 'text-slate-900'}`}>{part.slice(2, -2)}</strong>;
         }
         
         // Inside normal text, look for [n] patterns
@@ -92,7 +93,18 @@ const formatText = (text: string) => {
             <span key={index}>
                 {citationParts.map((subPart, subIndex) => {
                     if (/^\[\d+\]$/.test(subPart)) {
-                        return <sup key={subIndex} className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1 rounded ml-0.5 cursor-default">{subPart}</sup>;
+                        return (
+                            <sup 
+                                key={subIndex} 
+                                className={`text-[10px] font-bold px-1 rounded ml-0.5 cursor-default ${
+                                    isUser 
+                                    ? 'text-blue-200 bg-white/20' 
+                                    : 'text-blue-600 bg-blue-50'
+                                }`}
+                            >
+                                {subPart}
+                            </sup>
+                        );
                     }
                     return <span key={subIndex}>{subPart}</span>;
                 })}
@@ -101,37 +113,60 @@ const formatText = (text: string) => {
     });
 };
 
-// Component to Render Tables and Text
-const MessageRenderer = ({ content, isTyping }: { content: string, isTyping?: boolean }) => {
+// Component to Render Tables, Lists, and Text
+const MessageRenderer = ({ content, isTyping, role }: { content: string, isTyping?: boolean, role: 'user' | 'assistant' }) => {
+    const isUser = role === 'user';
     const lines = content.split('\n');
-    const blocks: Array<{ type: 'text' | 'table', data: string[] }> = [];
+    const blocks: Array<{ type: 'text' | 'table' | 'list', data: string[] }> = [];
     
     let currentTableRows: string[] = [];
+    let currentListItems: string[] = [];
     
     lines.forEach((line) => {
-        if (line.trim().startsWith('|')) {
+        const trimmedLine = line.trim();
+
+        // Check for Table
+        if (trimmedLine.startsWith('|')) {
+             if (currentListItems.length > 0) {
+                blocks.push({ type: 'list', data: currentListItems });
+                currentListItems = [];
+            }
             currentTableRows.push(line);
-        } else {
+        } 
+        // Check for Lists (Bullets or Numbers)
+        // Matches "- ", "* ", or "1. "
+        else if (/^(\*|-|\d+\.)\s/.test(trimmedLine)) {
             if (currentTableRows.length > 0) {
                 blocks.push({ type: 'table', data: currentTableRows });
                 currentTableRows = [];
+            }
+            currentListItems.push(line);
+        }
+        // Check for Text
+        else {
+            if (currentTableRows.length > 0) {
+                blocks.push({ type: 'table', data: currentTableRows });
+                currentTableRows = [];
+            }
+            if (currentListItems.length > 0) {
+                blocks.push({ type: 'list', data: currentListItems });
+                currentListItems = [];
             }
             blocks.push({ type: 'text', data: [line] });
         }
     });
     
-    if (currentTableRows.length > 0) {
-        blocks.push({ type: 'table', data: currentTableRows });
-    }
+    // Flush remaining buffers
+    if (currentTableRows.length > 0) blocks.push({ type: 'table', data: currentTableRows });
+    if (currentListItems.length > 0) blocks.push({ type: 'list', data: currentListItems });
 
     return (
-        <div className="space-y-1 font-medium text-slate-700">
+        <div className={`space-y-1 font-medium ${isUser ? 'text-white' : 'text-slate-700'}`}>
             {blocks.map((block, i) => {
+                // --- RENDER TABLE ---
                 if (block.type === 'table') {
-                    // Render Table
                     const rows = block.data;
                     const headerRow = rows[0];
-                    // Find separator row (usually second)
                     const separatorRow = rows.length > 1 && rows[1].includes('---') ? rows[1] : null;
                     const bodyRows = separatorRow ? rows.slice(2) : rows.slice(1);
                     
@@ -145,14 +180,14 @@ const MessageRenderer = ({ content, isTyping }: { content: string, isTyping?: bo
                     const headers = safeParseRow(headerRow);
                     
                     return (
-                        <div key={i} className="my-3 overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+                        <div key={i} className="my-3 overflow-x-auto rounded-lg border border-slate-200 shadow-sm bg-white">
                             <table className="min-w-full divide-y divide-slate-200">
                                 {separatorRow && (
                                     <thead className="bg-slate-50">
                                         <tr>
                                             {headers.map((h, hIdx) => (
-                                                <th key={hIdx} className="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                                    {formatText(h)}
+                                                <th key={hIdx} className="px-3 py-2 text-left text-xs font-bold text-slate-600 uppercase tracking-wider border-r border-slate-100 last:border-0">
+                                                    {formatText(h.trim(), false)}
                                                 </th>
                                             ))}
                                         </tr>
@@ -166,7 +201,7 @@ const MessageRenderer = ({ content, isTyping }: { content: string, isTyping?: bo
                                             <tr key={rIdx} className={rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
                                                 {cells.map((c, cIdx) => (
                                                     <td key={cIdx} className="px-3 py-2 text-sm text-slate-700 whitespace-pre-wrap leading-snug border-r border-slate-100 last:border-0">
-                                                        {formatText(c)}
+                                                        {formatText(c.trim(), false)}
                                                     </td>
                                                 ))}
                                             </tr>
@@ -176,12 +211,36 @@ const MessageRenderer = ({ content, isTyping }: { content: string, isTyping?: bo
                             </table>
                         </div>
                     );
-                } else {
+                } 
+                // --- RENDER LIST ---
+                else if (block.type === 'list') {
+                     return (
+                        <div key={i} className="pl-2">
+                            {block.data.map((item, idx) => {
+                                // Detect list type
+                                const isOrdered = /^\d+\./.test(item.trim());
+                                const content = item.replace(/^(\*|-|\d+\.)\s/, '');
+                                return (
+                                    <div key={idx} className="flex items-start gap-2 mb-1">
+                                        <span className={`mt-1.5 shrink-0 ${isUser ? 'text-blue-200' : 'text-blue-500'}`}>
+                                            {isOrdered ? (
+                                                <span className="text-xs font-bold">{item.match(/^\d+\./)?.[0]}</span>
+                                            ) : (
+                                                <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                                            )}
+                                        </span>
+                                        <span className="leading-relaxed">{formatText(content, isUser)}</span>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                     )
+                }
+                // --- RENDER TEXT ---
+                else {
                     const text = block.data[0];
-                    // Don't render empty strings unless they are spacing (double newline)
-                    // If it's a typing cursor container and text is empty, we still render the container
                     if (!text && !isTyping) return <div key={i} className="h-2"></div>;
-                    return <div key={i} className="leading-relaxed whitespace-pre-wrap">{formatText(text)}</div>;
+                    return <div key={i} className="leading-relaxed whitespace-pre-wrap">{formatText(text, isUser)}</div>;
                 }
             })}
              {isTyping && (
@@ -362,7 +421,11 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
                   ? 'bg-slate-800 text-white rounded-tr-none' 
                   : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none'
               }`}>
-                <MessageRenderer content={msg.content} isTyping={msg.isTyping && msg.role === 'assistant'} />
+                <MessageRenderer 
+                    content={msg.content} 
+                    isTyping={msg.isTyping && msg.role === 'assistant'} 
+                    role={msg.role} 
+                />
               </div>
 
               {/* Citations Section - Collapsible */}
