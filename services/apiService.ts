@@ -17,7 +17,7 @@ const handleResponse = async (response: Response) => {
     return response.json();
 };
 
-// Stream Parser Class
+// Stream Parser Class to handle "JSON inside Stream"
 class JsonStreamParser {
     private buffer = '';
     private isJson = false;
@@ -39,20 +39,23 @@ class JsonStreamParser {
             const trimmed = this.buffer.trimStart();
             if (trimmed.length === 0) return; 
 
-            if (trimmed.startsWith('{')) {
+            // If it starts with {, we assume the backend is streaming the raw JSON object
+            // Also check for "answer" key in case start brace was missed or in previous chunk
+            if (trimmed.startsWith('{') || trimmed.includes('"answer"')) {
                 this.isJson = true;
                 this.hasCheckJson = true;
-                this.buffer = trimmed; // Keep trimmed buffer
-            } else if (trimmed.length > 10) {
-                // Not JSON, flush buffer as raw text
+                this.buffer = trimmed; 
+            } else if (trimmed.length > 20) {
+                // Not JSON (regular text stream), flush buffer
                 this.isJson = false;
                 this.hasCheckJson = true;
                 this.onToken(this.buffer);
                 this.buffer = '';
             }
-            // If we detected JSON, we continue processing with the buffer
+            // Continue processing if we found JSON
         } 
         
+        // If it's NOT JSON, just pass through everything
         if (!this.isJson && this.hasCheckJson) {
             this.onToken(chunk);
             return;
@@ -60,10 +63,9 @@ class JsonStreamParser {
 
         // JSON Parsing State Machine
         if (this.isJson) {
-            // Append new chunk to buffer if we are searching for keys
+            // 1. Look for "answer": "
             if (!this.inAnswer && !this.answerDone) {
                 this.buffer += chunk;
-                // Look for "answer": " pattern
                 const match = this.buffer.match(/"answer"\s*:\s*"/);
                 if (match) {
                     this.inAnswer = true;
@@ -72,10 +74,13 @@ class JsonStreamParser {
                     this.buffer = ''; 
                     this.processStringContent(remaining);
                 }
-            } else if (this.inAnswer) {
+            } 
+            // 2. Stream the content of "answer"
+            else if (this.inAnswer) {
                 this.processStringContent(chunk);
-            } else if (this.answerDone) {
-                // Accumulate citations part
+            } 
+            // 3. Accumulate everything else (citations) after answer is done
+            else if (this.answerDone) {
                 this.citationsBuffer += chunk;
             }
         }
@@ -89,7 +94,6 @@ class JsonStreamParser {
                 // Unescape characters
                 if (char === 'n') this.onToken('\n');
                 else if (char === 't') this.onToken('\t');
-                else if (char === 'r') { /* ignore carriage return */ }
                 else if (char === '"') this.onToken('"');
                 else if (char === '\\') this.onToken('\\');
                 else this.onToken(char); 
@@ -115,24 +119,19 @@ class JsonStreamParser {
     finish() {
         if (this.citationsBuffer) {
             try {
-                // Heuristic: Extract the content of "citations": { ... }
-                // We assume the buffer ends with "}" or "}}".
-                const startIdx = this.citationsBuffer.indexOf('{');
-                if (startIdx !== -1) {
-                    let attempt = this.citationsBuffer.substring(startIdx);
-                    // Try removing trailing braces until it parses
-                    // Limit attempts to avoid infinite loop
-                    let attempts = 0;
-                    while (attempt.length > 2 && attempts < 10) {
-                        try {
-                            const c = JSON.parse(attempt);
-                            this.onCitations(c);
-                            return;
-                        } catch (e) {
-                            attempt = attempt.substring(0, attempt.lastIndexOf('}'));
-                        }
-                        attempts++;
-                    }
+                // Try to find the citations object in the remaining buffer
+                // We look for "citations": { ... }
+                const citMatch = this.citationsBuffer.match(/"citations"\s*:\s*(\{[\s\S]*\})/);
+                if (citMatch && citMatch[1]) {
+                     const citJson = citMatch[1];
+                     // Remove trailing brackets of the outer object if present (like } })
+                     const cleanJson = citJson.replace(/\}?\s*\}?$/, '}');
+                     try {
+                        const c = JSON.parse(cleanJson);
+                        this.onCitations(c);
+                     } catch(e) {
+                         // Fallback: try simpler parsing or ignore
+                     }
                 }
             } catch (e) {
                 console.warn("Failed to parse citations:", e);
@@ -222,29 +221,22 @@ export const apiService = {
                             const jsonStr = trimmedLine.substring(6); 
                             const data = JSON.parse(jsonStr);
 
-                            // 1. Direct Token (Raw Stream)
-                            // If the backend streams the JSON structure as tokens, this logic handles it
+                            // 1. Token Handling
                             if (data.token) {
+                                // Feed the token (which might be a raw JSON char) into the parser
                                 parser.process(data.token);
                             }
                             
-                            // 2. Fallback: Citations Object sent separately
+                            // 2. Direct Citations Handling (if sent separately)
                             if (data.citations) {
-                                // If backend sends citations as separate event, pass it
                                 if (payload.onComplete) payload.onComplete(data.citations);
                             }
 
-                            // 3. Fallback: Full Answer Block
+                            // 3. Fallback: Full Answer Block (Legacy non-stream)
                             if (data.answer && !data.token) {
                                 if (typeof data.answer === 'string') {
-                                     // If answer starts with {, parser will catch it if passed as token
-                                     // But here it is a full string.
-                                     // Just emit it.
+                                     // If it looks like JSON, ignore to avoid double print
                                      if (!data.answer.trim().startsWith('{')) {
-                                         payload.onToken(data.answer);
-                                     } else {
-                                         // If it is JSON, parse it?
-                                         // Assuming standard text for legacy fallback
                                          payload.onToken(data.answer);
                                      }
                                 }
@@ -257,9 +249,7 @@ export const apiService = {
                 }
             }
             
-            // Finalize parser to catch any buffered citations
             parser.finish();
-            
             console.log("--- Stream Completed ---");
             if (payload.onComplete) payload.onComplete();
 

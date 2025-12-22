@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles } from 'lucide-react';
+import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles, FileText } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -28,49 +28,69 @@ const GIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// Internal Component for Collapsible Citations
+// --- New Citation Component ---
 const CitationBlock = ({ citations }: { citations: Record<string, string> }) => {
-  const [isOpen, setIsOpen] = useState(true); // Default open to show sources immediately
+  const [isOpen, setIsOpen] = useState(false);
   const count = Object.keys(citations).length;
   
   if (count === 0) return null;
 
   return (
-    <div className="mt-4 w-full animate-in fade-in slide-in-from-top-2 duration-500">
-      <div className={`bg-slate-50 border border-slate-200 rounded-xl overflow-hidden transition-all duration-300`}>
+    <div className="mt-3 w-full animate-in fade-in slide-in-from-top-1 duration-300">
+      <div className={`transition-all duration-300 ${isOpen ? 'bg-slate-50/80 rounded-xl border border-slate-200/60' : ''}`}>
+        
+        {/* Toggle Button */}
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between p-3 bg-slate-100/50 hover:bg-slate-100 transition-colors"
+          className={`flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors group ${!isOpen ? '-ml-2' : 'w-full mb-1'}`}
         >
-            <div className="flex items-center gap-2">
-                <div className="p-1 bg-blue-100 text-blue-600 rounded">
-                    <BookOpen size={12} />
-                </div>
-                <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                   References & Sources ({count})
-                </p>
+            <div className={`p-1.5 rounded-md transition-colors ${isOpen ? 'bg-white text-blue-600 shadow-sm border border-slate-100' : 'bg-transparent text-slate-400 group-hover:text-slate-600'}`}>
+                <BookOpen size={14} />
             </div>
+            <span className="text-xs font-semibold text-slate-500 group-hover:text-slate-700">
+               {count} Citation{count > 1 ? 's' : ''}
+            </span>
+            {isOpen && <div className="flex-1 h-px bg-slate-200 mx-2" />}
             {isOpen ? (
                 <ChevronUp size={14} className="text-slate-400" />
             ) : (
-                <ChevronDown size={14} className="text-slate-400" />
+                <ChevronDown size={14} className="text-slate-400 opacity-50 group-hover:opacity-100" />
             )}
         </button>
 
+        {/* Content */}
         {isOpen && (
-             <div className="p-3 grid gap-2.5 border-t border-slate-200/50">
-                {Object.entries(citations).map(([key, value]) => (
-                    <div key={key} className="group flex items-start gap-3 p-3 rounded-lg bg-white border border-slate-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all">
-                        <div className="w-5 h-5 rounded-md bg-slate-100 text-slate-500 flex items-center justify-center shrink-0 mt-0.5 font-mono text-[10px] font-bold group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
-                          {key.replace(/[\[\]]/g, '')}
+             <div className="p-3 pt-1 grid gap-3">
+                {Object.entries(citations).map(([key, value]) => {
+                    // Smart Parse: "Filename.pdf - Page X: Content..."
+                    const separatorIndex = value.indexOf(':');
+                    let source = "Source Document";
+                    let text = value;
+                    
+                    if (separatorIndex > -1 && separatorIndex < 60) { 
+                        source = value.substring(0, separatorIndex).trim();
+                        text = value.substring(separatorIndex + 1).trim();
+                    }
+
+                    return (
+                        <div key={key} className="flex gap-3 items-start group/card">
+                            <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded bg-white border border-slate-200 text-[10px] font-bold text-slate-500 shadow-sm mt-0.5 group-hover/card:border-blue-300 group-hover/card:text-blue-600 transition-colors">
+                                {key.replace(/[\[\]]/g, '')}
+                            </span>
+                            <div className="min-w-0 flex-1 space-y-1">
+                                <div className="flex items-center gap-1.5">
+                                    <FileText size={10} className="text-slate-400" />
+                                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wide truncate" title={source}>
+                                        {source}
+                                    </p>
+                                </div>
+                                <div className="text-xs text-slate-700 leading-relaxed bg-white p-2.5 rounded-lg border border-slate-200/60 shadow-sm group-hover/card:border-blue-100 group-hover/card:shadow-md transition-all">
+                                    {text}
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-slate-600 leading-relaxed group-hover:text-slate-900 transition-colors">
-                            {value}
-                          </p>
-                        </div>
-                    </div>
-                ))}
+                    )
+                })}
             </div>
         )}
       </div>
@@ -96,11 +116,12 @@ const formatText = (text: string, isUser: boolean) => {
                         return (
                             <sup 
                                 key={subIndex} 
-                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ml-0.5 cursor-default ${
+                                className={`text-[9px] font-bold px-1.5 py-0 rounded ml-0.5 cursor-help transition-transform hover:scale-110 inline-block ${
                                     isUser 
                                     ? 'text-blue-200 bg-white/20' 
                                     : 'text-blue-600 bg-blue-50 border border-blue-100'
                                 }`}
+                                title="Citation available below"
                             >
                                 {subPart.replace(/[\[\]]/g, '')}
                             </sup>
@@ -134,8 +155,8 @@ const MessageRenderer = ({ content, isTyping, role }: { content: string, isTypin
             currentTableRows.push(line);
         } 
         // Check for Lists (Bullets or Numbers)
-        // Matches "- ", "* ", or "1. "
-        else if (/^(\*|-|\d+\.)\s/.test(trimmedLine)) {
+        // Matches "- ", "* ", "1. ", "• "
+        else if (/^(\*|-|•|\d+\.)\s/.test(trimmedLine)) {
             if (currentTableRows.length > 0) {
                 blocks.push({ type: 'table', data: currentTableRows });
                 currentTableRows = [];
@@ -161,7 +182,7 @@ const MessageRenderer = ({ content, isTyping, role }: { content: string, isTypin
     if (currentListItems.length > 0) blocks.push({ type: 'list', data: currentListItems });
 
     return (
-        <div className={`space-y-1 font-medium ${isUser ? 'text-white' : 'text-slate-700'}`}>
+        <div className={`space-y-2 font-medium ${isUser ? 'text-white' : 'text-slate-700'}`}>
             {blocks.map((block, i) => {
                 // --- RENDER TABLE ---
                 if (block.type === 'table') {
@@ -180,27 +201,27 @@ const MessageRenderer = ({ content, isTyping, role }: { content: string, isTypin
                     const headers = safeParseRow(headerRow);
                     
                     return (
-                        <div key={i} className="my-4 overflow-x-auto rounded-xl border border-slate-200 shadow-sm bg-white">
+                        <div key={i} className="my-4 overflow-x-auto rounded-lg border border-slate-200 shadow-sm bg-white ring-1 ring-slate-100">
                             <table className="min-w-full divide-y divide-slate-200">
                                 {separatorRow && (
-                                    <thead className="bg-slate-100/80">
+                                    <thead className="bg-slate-50">
                                         <tr>
                                             {headers.map((h, hIdx) => (
-                                                <th key={hIdx} className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider border-r border-slate-200/50 last:border-0">
+                                                <th key={hIdx} className="px-3 py-2 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider border-r border-slate-100 last:border-0">
                                                     {formatText(h.trim(), false)}
                                                 </th>
                                             ))}
                                         </tr>
                                     </thead>
                                 )}
-                                <tbody className="bg-white">
+                                <tbody className="bg-white divide-y divide-slate-50">
                                     {(separatorRow ? bodyRows : rows).map((row, rIdx) => {
                                         if (row.includes('---')) return null;
                                         const cells = safeParseRow(row);
                                         return (
-                                            <tr key={rIdx} className={`transition-colors hover:bg-blue-50/30 ${rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                                            <tr key={rIdx} className={`transition-colors hover:bg-slate-50/50`}>
                                                 {cells.map((c, cIdx) => (
-                                                    <td key={cIdx} className="px-4 py-3 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed border-r border-slate-100 last:border-0 border-b last:border-b-0">
+                                                    <td key={cIdx} className="px-3 py-2 text-xs text-slate-700 whitespace-pre-wrap leading-relaxed border-r border-slate-50 last:border-0 align-top">
                                                         {formatText(c.trim(), false)}
                                                     </td>
                                                 ))}
@@ -215,21 +236,21 @@ const MessageRenderer = ({ content, isTyping, role }: { content: string, isTypin
                 // --- RENDER LIST ---
                 else if (block.type === 'list') {
                      return (
-                        <div key={i} className="pl-1 py-1 space-y-2">
+                        <div key={i} className="pl-1 py-1 space-y-1.5">
                             {block.data.map((item, idx) => {
                                 // Detect list type
                                 const isOrdered = /^\d+\./.test(item.trim());
-                                const content = item.replace(/^(\*|-|\d+\.)\s/, '');
+                                const content = item.replace(/^(\*|-|•|\d+\.)\s/, '');
                                 return (
-                                    <div key={idx} className="flex items-start gap-3">
-                                        <span className={`mt-1.5 shrink-0 ${isUser ? 'text-blue-200' : 'text-blue-500'}`}>
+                                    <div key={idx} className="flex items-start gap-2.5">
+                                        <span className={`mt-1.5 shrink-0 select-none ${isUser ? 'text-blue-200' : 'text-blue-500'}`}>
                                             {isOrdered ? (
-                                                <span className="text-xs font-bold tabular-nums opacity-80">{item.match(/^\d+\./)?.[0]}</span>
+                                                <span className="text-[10px] font-bold tabular-nums opacity-80">{item.match(/^\d+\./)?.[0]}</span>
                                             ) : (
-                                                <div className="w-1.5 h-1.5 rounded-full bg-current mt-1" />
+                                                <div className="w-1.5 h-1.5 rounded-full bg-current mt-1 shadow-sm" />
                                             )}
                                         </span>
-                                        <span className="leading-relaxed">{formatText(content, isUser)}</span>
+                                        <span className="leading-relaxed text-sm">{formatText(content, isUser)}</span>
                                     </div>
                                 )
                             })}
@@ -239,12 +260,12 @@ const MessageRenderer = ({ content, isTyping, role }: { content: string, isTypin
                 // --- RENDER TEXT ---
                 else {
                     const text = block.data[0];
-                    if (!text && !isTyping) return <div key={i} className="h-2"></div>;
+                    if (!text && !isTyping) return <div key={i} className="h-3"></div>;
                     return <div key={i} className="leading-relaxed whitespace-pre-wrap">{formatText(text, isUser)}</div>;
                 }
             })}
              {isTyping && (
-                <span className="inline-block w-2 h-4 bg-blue-500 ml-1 animate-pulse align-sub shadow-sm rounded-sm"></span>
+                <span className="inline-block w-1.5 h-4 bg-blue-500 ml-1 animate-pulse align-middle rounded-sm"></span>
             )}
         </div>
     );
