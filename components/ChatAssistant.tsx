@@ -283,9 +283,6 @@ const MessageRenderer = ({ content, isTyping, role }: { content: string, isTypin
                     return <div key={i} className="leading-relaxed whitespace-pre-wrap">{formatText(text, isUser)}</div>;
                 }
             })}
-             {isTyping && (
-                <span className="inline-block w-1.5 h-4 bg-blue-500 ml-1 animate-pulse align-middle rounded-sm"></span>
-            )}
         </div>
     );
 };
