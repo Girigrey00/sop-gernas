@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles, FileText } from 'lucide-react';
+import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles, FileText, ArrowRight } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -28,7 +28,7 @@ const GIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// --- New Citation Component ---
+// --- Enhanced Citation Component ---
 const CitationBlock = ({ citations }: { citations: Record<string, string> }) => {
   const [isOpen, setIsOpen] = useState(false);
   const count = Object.keys(citations).length;
@@ -36,23 +36,23 @@ const CitationBlock = ({ citations }: { citations: Record<string, string> }) => 
   if (count === 0) return null;
 
   return (
-    <div className="mt-3 w-full animate-in fade-in slide-in-from-top-1 duration-300">
-      <div className={`transition-all duration-300 ${isOpen ? 'bg-slate-50/80 rounded-xl border border-slate-200/60' : ''}`}>
+    <div className="mt-3 w-full animate-in fade-in slide-in-from-top-1 duration-500">
+      <div className={`transition-all duration-300 overflow-hidden ${isOpen ? 'bg-slate-50/80 rounded-xl border border-slate-200/60 shadow-sm' : ''}`}>
         
         {/* Toggle Button */}
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className={`flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors group ${!isOpen ? '-ml-2' : 'w-full mb-1'}`}
+          className={`flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors group ${!isOpen ? '-ml-2' : 'w-full mb-1 border-b border-slate-100'}`}
         >
             <div className={`p-1.5 rounded-md transition-colors ${isOpen ? 'bg-white text-blue-600 shadow-sm border border-slate-100' : 'bg-transparent text-slate-400 group-hover:text-slate-600'}`}>
                 <BookOpen size={14} />
             </div>
             <span className="text-xs font-semibold text-slate-500 group-hover:text-slate-700">
-               {count} Citation{count > 1 ? 's' : ''}
+               {count} Reference{count > 1 ? 's' : ''} Found
             </span>
-            {isOpen && <div className="flex-1 h-px bg-slate-200 mx-2" />}
+            {isOpen && <div className="flex-1" />}
             {isOpen ? (
-                <ChevronUp size={14} className="text-slate-400" />
+                <ChevronUp size={14} className="text-slate-400 mr-2" />
             ) : (
                 <ChevronDown size={14} className="text-slate-400 opacity-50 group-hover:opacity-100" />
             )}
@@ -60,32 +60,51 @@ const CitationBlock = ({ citations }: { citations: Record<string, string> }) => 
 
         {/* Content */}
         {isOpen && (
-             <div className="p-3 pt-1 grid gap-3">
+             <div className="p-3 pt-2 grid gap-3">
                 {Object.entries(citations).map(([key, value]) => {
-                    // Smart Parse: "Filename.pdf - Page X: Content..."
-                    const separatorIndex = value.indexOf(':');
+                    // Smart Parse logic for "Filename - Page X: Content"
                     let source = "Source Document";
-                    let text = value;
-                    
-                    if (separatorIndex > -1 && separatorIndex < 60) { 
-                        source = value.substring(0, separatorIndex).trim();
-                        text = value.substring(separatorIndex + 1).trim();
+                    let page = "";
+                    let content = value;
+
+                    // Try to split by colon first to separate content
+                    const firstColon = value.indexOf(':');
+                    if (firstColon > -1 && firstColon < 100) {
+                        const meta = value.substring(0, firstColon);
+                        content = value.substring(firstColon + 1).trim();
+
+                        // Try to extract page number from meta
+                        // Matches " - Page 4" or " (Page 4)"
+                        const pageMatch = meta.match(/[-|(]\s*Page\s*(\d+)/i);
+                        if (pageMatch) {
+                            page = `Page ${pageMatch[1]}`;
+                            source = meta.replace(pageMatch[0], '').trim().replace(/[-|)]$/, '').trim();
+                        } else {
+                            source = meta.trim();
+                        }
                     }
 
                     return (
-                        <div key={key} className="flex gap-3 items-start group/card">
-                            <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded bg-white border border-slate-200 text-[10px] font-bold text-slate-500 shadow-sm mt-0.5 group-hover/card:border-blue-300 group-hover/card:text-blue-600 transition-colors">
+                        <div key={key} className="flex gap-3 items-start group/card relative bg-white p-3 rounded-lg border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all">
+                            <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-500 shadow-sm mt-0.5 group-hover/card:bg-blue-50 group-hover/card:text-blue-600 transition-colors">
                                 {key.replace(/[\[\]]/g, '')}
                             </span>
-                            <div className="min-w-0 flex-1 space-y-1">
-                                <div className="flex items-center gap-1.5">
-                                    <FileText size={10} className="text-slate-400" />
-                                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wide truncate" title={source}>
-                                        {source}
-                                    </p>
+                            <div className="min-w-0 flex-1 space-y-1.5">
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                        <FileText size={12} className="text-slate-400 shrink-0" />
+                                        <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wide truncate max-w-[180px]" title={source}>
+                                            {source}
+                                        </p>
+                                    </div>
+                                    {page && (
+                                        <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded border border-slate-200">
+                                            {page}
+                                        </span>
+                                    )}
                                 </div>
-                                <div className="text-xs text-slate-700 leading-relaxed bg-white p-2.5 rounded-lg border border-slate-200/60 shadow-sm group-hover/card:border-blue-100 group-hover/card:shadow-md transition-all">
-                                    {text}
+                                <div className="text-xs text-slate-600 leading-relaxed pl-1 border-l-2 border-slate-100 group-hover/card:border-blue-200 transition-colors">
+                                    "{content}"
                                 </div>
                             </div>
                         </div>
@@ -121,7 +140,7 @@ const formatText = (text: string, isUser: boolean) => {
                                     ? 'text-blue-200 bg-white/20' 
                                     : 'text-blue-600 bg-blue-50 border border-blue-100'
                                 }`}
-                                title="Citation available below"
+                                title="Scroll down for reference"
                             >
                                 {subPart.replace(/[\[\]]/g, '')}
                             </sup>
@@ -289,6 +308,51 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
     return globalThis.crypto?.randomUUID() || `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   });
 
+  // --- Smooth Streaming Buffer Logic ---
+  const streamQueue = useRef<string>('');
+  const activeMessageId = useRef<string | null>(null);
+  const streamInterval = useRef<any>(null);
+  const isGenerationComplete = useRef<boolean>(false);
+
+  // Typewriter Effect Loop
+  useEffect(() => {
+    streamInterval.current = setInterval(() => {
+        if (activeMessageId.current) {
+            const hasData = streamQueue.current.length > 0;
+            
+            if (hasData) {
+                // Adaptive speed: If buffer is large, consume chunks faster to catch up
+                const pendingLength = streamQueue.current.length;
+                let chunk = '';
+                
+                if (pendingLength > 200) chunk = streamQueue.current.substring(0, 20); // Very fast
+                else if (pendingLength > 50) chunk = streamQueue.current.substring(0, 5); // Fast
+                else chunk = streamQueue.current.substring(0, 2); // Normal smooth
+
+                streamQueue.current = streamQueue.current.substring(chunk.length);
+
+                setMessages(prev => prev.map(msg => 
+                    msg.id === activeMessageId.current 
+                    ? { ...msg, content: msg.content + chunk, isTyping: true } 
+                    : msg
+                ));
+            } else if (isGenerationComplete.current) {
+                // Buffer is empty AND generation is marked done by API -> Finalize
+                setMessages(prev => prev.map(msg => 
+                    msg.id === activeMessageId.current 
+                    ? { ...msg, isTyping: false } 
+                    : msg
+                ));
+                activeMessageId.current = null;
+                isGenerationComplete.current = false;
+                setIsLoading(false);
+            }
+        }
+    }, 16); // Run at ~60fps
+
+    return () => clearInterval(streamInterval.current);
+  }, []);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -316,10 +380,15 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
     setMessages(prev => [...prev, {
       id: botMsgId,
       role: 'assistant',
-      content: '', // Start empty
+      content: '', // Start empty, content fills via stream
       timestamp: new Date(),
       isTyping: true
     }]);
+
+    // Setup Streaming State
+    activeMessageId.current = botMsgId;
+    streamQueue.current = '';
+    isGenerationComplete.current = false;
 
     try {
       // Determine Index Name & Product Context
@@ -338,32 +407,32 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
         question_id: questionId,
         product: productName,
         onToken: (token) => {
-          setMessages(prev => prev.map(msg => 
-            msg.id === botMsgId 
-              ? { ...msg, content: msg.content + token, isTyping: true } 
-              : msg
-          ));
+          // Push to buffer instead of setting state directly
+          streamQueue.current += token;
         },
         onComplete: (citations) => {
-           setMessages(prev => prev.map(msg => 
-             msg.id === botMsgId 
-               ? { ...msg, isTyping: false, citations: citations } 
-               : msg
-           ));
-           setIsLoading(false);
+           // Mark generation as done; interval will clear isTyping once buffer empties
+           isGenerationComplete.current = true;
+           
+           if (citations) {
+                setMessages(prev => prev.map(msg => 
+                    msg.id === botMsgId 
+                    ? { ...msg, citations: citations } 
+                    : msg
+                ));
+           }
         },
         onError: (errMsg) => {
-           setMessages(prev => prev.map(msg => 
-             msg.id === botMsgId 
-               ? { ...msg, isTyping: false, content: msg.content + `\n\n[Error: ${errMsg}]` } 
-               : msg
-           ));
-           setIsLoading(false);
+           isGenerationComplete.current = true;
+           streamQueue.current += `\n\n[Error: ${errMsg}]`;
         }
       });
 
     } catch (error) {
       console.error("Chat error", error);
+      activeMessageId.current = null;
+      isGenerationComplete.current = false;
+      
       // Remove the typing message and show error
       setMessages(prev => prev.filter(m => m.id !== botMsgId));
       
@@ -449,7 +518,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
                 />
               </div>
 
-              {/* Citations Section - Collapsible */}
+              {/* Citations Section - Collapsible Cards */}
               {msg.citations && Object.keys(msg.citations).length > 0 && (
                   <CitationBlock citations={msg.citations} />
               )}
