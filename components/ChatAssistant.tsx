@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -232,17 +232,23 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
       <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50/50">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-            {/* Avatar Circle */}
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-sm border ${
-              msg.role === 'user' 
-                ? 'bg-slate-800 text-white border-slate-700' 
-                : 'bg-white border-blue-100 text-blue-600'
-            }`}>
-              {msg.role === 'user' ? (
-                <span className="text-[9px] font-bold tracking-tighter">ADMIN</span>
-              ) : (
-                <GIcon className="w-4 h-4" />
-              )}
+            
+            {/* Avatar Column */}
+            <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-1">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm border ${
+                msg.role === 'user' 
+                    ? 'bg-slate-800 text-white border-slate-700' 
+                    : 'bg-white border-blue-100 text-blue-600'
+                }`}>
+                {msg.role === 'user' ? (
+                    <User size={16} />
+                ) : (
+                    <GIcon className="w-4 h-4" />
+                )}
+                </div>
+                {msg.role === 'user' && (
+                    <span className="text-[9px] font-bold text-slate-400 tracking-tight">Admin</span>
+                )}
             </div>
             
             <div className={`flex flex-col max-w-[90%] md:max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Compass, LogOut, ChevronRight, BookOpen, ChevronLeft } from 'lucide-react';
+import { Compass, LogOut, ChevronRight, BookOpen, ChevronLeft, User } from 'lucide-react';
 import { View } from '../types';
 
 interface SidebarProps {
@@ -18,16 +18,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, is
     { id: 'HOME', label: 'CBG KNOWLEDGE HUB', icon: Compass },
     // Only show Library if a product context is selected
     ...(showLibrary ? [{ id: 'LIBRARY', label: 'Library', icon: BookOpen }] : []),
-    // History is intentionally removed as requested
-    // { id: 'HISTORY', label: 'History', icon: FileClock },
   ];
 
   return (
     <div className="h-full w-full bg-fab-navy text-fab-sky/70 flex flex-col shadow-2xl border-r border-fab-royal/50 relative">
       
-      {/* Branding */}
-      <div className={`p-6 flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} border-b border-fab-royal/50 flex-shrink-0 transition-all duration-300`}>
-        <div className="w-9 h-9 bg-gradient-to-br from-fab-navy via-fab-royal to-fab-blue rounded-lg flex items-center justify-center text-white shadow-lg shadow-black/20 relative group shrink-0 overflow-hidden">
+      {/* Branding - Vertical Stack */}
+      <div className={`p-6 flex flex-col items-center gap-3 border-b border-fab-royal/50 flex-shrink-0 transition-all duration-300`}>
+        <div className="w-10 h-10 bg-gradient-to-br from-fab-navy via-fab-royal to-fab-blue rounded-xl flex items-center justify-center text-white shadow-lg shadow-black/20 relative group shrink-0 overflow-hidden ring-1 ring-white/10">
            {/* Inner Shine */}
            <div className="absolute top-0 right-0 w-6 h-6 bg-white/10 blur-md rounded-full transform translate-x-2 -translate-y-2"></div>
            {/* SVG Logo */}
@@ -36,8 +34,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, is
            </svg>
         </div>
         {!isCollapsed && (
-            <div className="overflow-hidden whitespace-nowrap animate-in fade-in duration-300">
-              <h1 className="text-white font-bold text-base tracking-tight leading-none">GERNAS</h1>
+            <div className="animate-in fade-in duration-300">
+              <h1 className="text-white font-bold text-sm tracking-widest leading-none">GERNAS</h1>
             </div>
         )}
       </div>
@@ -45,7 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, is
        {/* Toggle Button (Desktop Only) */}
        <button
         onClick={onToggle}
-        className="absolute top-24 -right-3 bg-fab-royal text-white p-1 rounded-full shadow-lg border border-fab-navy hover:bg-fab-blue transition-colors z-50 hidden lg:flex items-center justify-center"
+        className="absolute top-32 -right-3 bg-fab-royal text-white p-1 rounded-full shadow-lg border border-fab-navy hover:bg-fab-blue transition-colors z-50 hidden lg:flex items-center justify-center"
         title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
       >
         {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
@@ -87,13 +85,27 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, is
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-fab-royal/50 bg-black/10 flex-shrink-0">
+      <div className="p-4 border-t border-fab-royal/50 bg-black/10 flex-shrink-0 space-y-3">
+        
+        {/* User Profile */}
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-2`}>
+            <div className="w-8 h-8 rounded-full bg-fab-royal flex items-center justify-center text-white ring-2 ring-fab-navy">
+                <User size={16} />
+            </div>
+            {!isCollapsed && (
+                <div className="overflow-hidden">
+                    <p className="text-xs font-bold text-white truncate">Admin User</p>
+                    <p className="text-[10px] text-fab-sky/60 truncate">System Administrator</p>
+                </div>
+            )}
+        </div>
+
         <button 
             onClick={onLogout}
             title={isCollapsed ? "Sign Out" : ""}
-            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} p-2.5 rounded-lg text-rose-300 hover:bg-rose-950/30 hover:text-rose-200 transition-all group`}
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} p-2.5 rounded-lg text-rose-300 hover:bg-rose-950/30 hover:text-rose-200 transition-all group border border-transparent hover:border-rose-900/30`}
         >
-            <LogOut size={isCollapsed ? 20 : 16} className="group-hover:-translate-x-0.5 transition-transform" />
+            <LogOut size={isCollapsed ? 18 : 16} className="group-hover:-translate-x-0.5 transition-transform" />
             {!isCollapsed && <span className="text-xs font-medium whitespace-nowrap">Sign Out</span>}
         </button>
       </div>
