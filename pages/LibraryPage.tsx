@@ -4,7 +4,7 @@ import {
     Upload, FileText, Search, Edit3, Trash2, 
     Square, X, FileStack, Plus, Loader2,
     GitMerge, Bot, Calendar, User, RefreshCw, ArrowLeft, Activity,
-    AlertTriangle // Added for Modal
+    AlertTriangle 
 } from 'lucide-react';
 import { LibraryDocument, SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -217,56 +217,65 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     return (
         <div className="h-full flex flex-col bg-slate-50 relative overflow-hidden">
             
-            {/* Header */}
-            <div className="px-6 py-4 bg-white border-b border-slate-200 flex justify-between items-center shrink-0">
-                <div className="flex items-center gap-4">
-                    {/* Back Button */}
-                    {onBack && (
-                        <button 
-                            onClick={onBack}
-                            className="p-2 -ml-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-                            title="Back to Hub"
-                        >
-                            <ArrowLeft size={20} />
-                        </button>
-                    )}
-                    <div>
-                        <h2 className="text-xl font-bold text-fab-navy mb-0.5">Document Library</h2>
-                        <p className="text-slate-500 text-xs">
-                            {preselectedProduct 
-                                ? `Managing documents for: ${preselectedProduct.product_name}` 
-                                : 'Manage documents and monitor ingestion status.'}
-                        </p>
+            {/* Header (Matched with CBG Knowledge Hub Style) */}
+            <div className="px-8 pt-8 pb-6 flex flex-col gap-6 bg-white border-b border-slate-200">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                    <div className="flex flex-col gap-4 w-full">
+                        {/* Top Bar with Back Button & Actions */}
+                        <div className="flex items-center justify-between w-full">
+                             {/* Back Button (Canvas Style) */}
+                            {onBack && (
+                                <button 
+                                    onClick={onBack}
+                                    className="bg-white text-slate-600 hover:bg-slate-100 shadow-md border border-slate-200 rounded-full p-2.5 px-4 flex items-center gap-2 text-xs font-bold transition-all"
+                                    title="Back to Hub"
+                                >
+                                    <ArrowLeft size={16} />
+                                    <span>Back to Hub</span>
+                                </button>
+                            )}
+
+                             {/* Action Buttons */}
+                            <div className="flex gap-2">
+                                {/* View Flow Button */}
+                                {preselectedProduct && onViewFlow && (
+                                    <button
+                                        onClick={onViewFlow}
+                                        className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-200 rounded-full text-xs font-bold transition-all flex items-center gap-2 shadow-sm"
+                                        title="Go to Process Flow"
+                                    >
+                                        <Activity size={16} />
+                                        View Flow
+                                    </button>
+                                )}
+                                
+                                <button 
+                                    onClick={() => {
+                                        if(!preselectedProduct) setProductName('PIL-CONV-001');
+                                        setIsUploadModalOpen(true);
+                                    }}
+                                    className="px-4 py-2.5 bg-fab-royal text-white rounded-full text-xs font-bold shadow-lg shadow-fab-royal/20 hover:bg-fab-blue transition-all flex items-center gap-2"
+                                >
+                                    <Upload size={16} />
+                                    Upload Docs
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h2 className="text-2xl font-bold text-fab-navy mb-1">Document Library</h2>
+                            <p className="text-slate-500 text-sm">
+                                {preselectedProduct 
+                                    ? `Managing documents for: ${preselectedProduct.product_name}` 
+                                    : 'Manage documents and monitor ingestion status.'}
+                            </p>
+                        </div>
                     </div>
-                </div>
-                <div className="flex gap-2">
-                    {/* View Flow Button */}
-                    {preselectedProduct && onViewFlow && (
-                        <button
-                            onClick={onViewFlow}
-                            className="px-3 py-2 bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-                            title="Go to Process Flow"
-                        >
-                            <Activity size={14} />
-                            View Flow
-                        </button>
-                    )}
-                    
-                    <button 
-                        onClick={() => {
-                             if(!preselectedProduct) setProductName('PIL-CONV-001');
-                             setIsUploadModalOpen(true);
-                        }}
-                        className="px-3 py-2 bg-fab-royal text-white rounded-lg text-xs font-bold shadow-lg shadow-fab-royal/20 hover:bg-fab-blue transition-all flex items-center gap-1.5"
-                    >
-                        <Upload size={14} />
-                        Upload
-                    </button>
                 </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="px-6 py-3 bg-slate-50 border-b border-slate-200/50 shrink-0">
+            {/* Search Bar Strip */}
+            <div className="px-8 py-3 bg-slate-50 border-b border-slate-200/50 shrink-0">
                 <div className="relative max-w-md">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input 
@@ -274,13 +283,13 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                         placeholder="Search by Document Name..." 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-fab-royal/30 text-xs"
+                        className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-fab-royal/30 text-xs shadow-sm"
                     />
                 </div>
             </div>
 
             {/* Compact Table */}
-            <div className="flex-1 overflow-auto px-6 py-4">
+            <div className="flex-1 overflow-auto px-8 py-6">
                 <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden min-w-[900px]">
                     <table className="w-full text-left border-collapse table-fixed">
                         <thead className="bg-slate-50 border-b border-slate-200">

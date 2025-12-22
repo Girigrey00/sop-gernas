@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -20,6 +20,13 @@ interface Message {
   citations?: Record<string, string>;
   isTyping?: boolean;
 }
+
+// Branded G Logo Component
+const GIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10H12v3h7.6C18.9 17.5 15.8 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8c2.04 0 3.89.78 5.31 2.05l2.25-2.25C17.2 1.9 14.76 0 12 0z" />
+  </svg>
+);
 
 // Internal Component for Collapsible Citations
 const CitationBlock = ({ citations }: { citations: Record<string, string> }) => {
@@ -194,7 +201,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
       <div className="p-5 border-b border-slate-100 bg-white flex justify-between items-center shadow-sm z-10">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-            <Bot size={18} />
+            <GIcon className="w-5 h-5" />
           </div>
           <div>
             <h3 className="font-bold text-slate-900 text-sm">CBG KNOWLEDGE HUB AI</h3>
@@ -225,10 +232,17 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
       <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50/50">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${
-              msg.role === 'user' ? 'bg-slate-200 text-slate-600' : 'bg-white border border-blue-100 text-blue-600 shadow-sm'
+            {/* Avatar Circle */}
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-sm border ${
+              msg.role === 'user' 
+                ? 'bg-slate-800 text-white border-slate-700' 
+                : 'bg-white border-blue-100 text-blue-600'
             }`}>
-              {msg.role === 'user' ? <User size={14} /> : <Sparkles size={14} />}
+              {msg.role === 'user' ? (
+                <span className="text-[9px] font-bold tracking-tighter">ADMIN</span>
+              ) : (
+                <GIcon className="w-4 h-4" />
+              )}
             </div>
             
             <div className={`flex flex-col max-w-[90%] md:max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
@@ -257,7 +271,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
           </div>
         ))}
         
-        {/* Loading Indicator (Only shown before first token arrives or if explicit loading state) */}
+        {/* Loading Indicator */}
         {isLoading && messages.length > 0 && messages[messages.length - 1].role === 'user' && (
           <div className="flex gap-3">
             <div className="w-8 h-8 rounded-full bg-white border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm mt-1">
