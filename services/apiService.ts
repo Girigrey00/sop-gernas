@@ -320,6 +320,7 @@ export const apiService = {
                 logs: doc.logs || [],
                 latestLog: latestLog,
                 categoryDisplay: categoryDisplay,
+                suggested_questions: doc.suggested_questions || [],
                 metadata: {
                     linkedApp: 'ProcessHub', 
                     productId: doc.product_id,

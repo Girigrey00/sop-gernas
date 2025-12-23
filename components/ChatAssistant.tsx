@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles, FileText, ArrowRight } from 'lucide-react';
-import { SopResponse, Product } from '../types';
+import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles, FileText, ArrowRight, PlayCircle } from 'lucide-react';
+import { SopResponse, Product, LibraryDocument } from '../types';
 import { apiService } from '../services/apiService';
 
 interface ChatAssistantProps {
@@ -20,6 +20,13 @@ interface Message {
   citations?: Record<string, string>;
   isTyping?: boolean;
 }
+
+// Default prompts if no documents are found
+const DEFAULT_PROMPTS = [
+    "What are the main risks in this process?",
+    "Explain the approval workflow steps.",
+    "Who are the key actors involved?"
+];
 
 // Branded G Logo Component
 const GIcon = ({ className }: { className?: string }) => (
@@ -298,6 +305,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>(DEFAULT_PROMPTS);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Initialize Session ID (Unique per instance of chat)
@@ -310,6 +318,80 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
   const activeMessageId = useRef<string | null>(null);
   const streamInterval = useRef<any>(null);
   const isGenerationComplete = useRef<boolean>(false);
+
+  // Fetch and Process Suggested Questions from Product Documents
+  useEffect(() => {
+    const loadSuggestedQuestions = async () => {
+        if (!productContext) return;
+
+        try {
+            // Get all documents (optimized in real app to filter server-side)
+            const allDocs = await apiService.getDocuments();
+            
+            // Filter docs relevant to this product
+            const productDocs = allDocs.filter(d => 
+                d.rootFolder === productContext.product_name || 
+                d.sopName === productContext.product_name ||
+                d.metadata?.productId === productContext.product_name
+            );
+
+            let allQuestions: string[] = [];
+
+            productDocs.forEach(doc => {
+                if (doc.suggested_questions && Array.isArray(doc.suggested_questions)) {
+                    doc.suggested_questions.forEach(q => {
+                        // Handle Markdown wrapped JSON strings like "```json\n[\"Q1\", \"Q2\"]\n```"
+                        let cleanQ = q;
+                        if (cleanQ.includes('```json')) {
+                            try {
+                                const jsonContent = cleanQ.replace(/```json/g, '').replace(/```/g, '').trim();
+                                const parsed = JSON.parse(jsonContent);
+                                if (Array.isArray(parsed)) {
+                                    allQuestions.push(...parsed);
+                                    return;
+                                }
+                            } catch (e) {
+                                // Failed to parse json block, treat as string if meaningful
+                            }
+                        }
+                        
+                        // Handle simple strings or raw JSON strings
+                        try {
+                            if (cleanQ.trim().startsWith('[')) {
+                                const parsed = JSON.parse(cleanQ);
+                                if (Array.isArray(parsed)) {
+                                    allQuestions.push(...parsed);
+                                } else {
+                                    allQuestions.push(cleanQ);
+                                }
+                            } else {
+                                // Cleanup markdown artifacts if just a string
+                                cleanQ = cleanQ.replace(/```/g, '').trim();
+                                if (cleanQ.length > 5) allQuestions.push(cleanQ);
+                            }
+                        } catch {
+                            if (cleanQ.length > 5) allQuestions.push(cleanQ);
+                        }
+                    });
+                }
+            });
+
+            // Shuffle and Pick 3-4 distinct questions
+            if (allQuestions.length > 0) {
+                // Deduplicate
+                const unique = Array.from(new Set(allQuestions));
+                // Shuffle
+                const shuffled = unique.sort(() => 0.5 - Math.random());
+                setSuggestedPrompts(shuffled.slice(0, 4));
+            }
+        } catch (error) {
+            console.error("Failed to load suggested questions:", error);
+            // Fallback to defaults is already set in state initialization
+        }
+    };
+
+    loadSuggestedQuestions();
+  }, [productContext]);
 
   // Typewriter Effect Loop
   useEffect(() => {
@@ -358,13 +440,14 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSend = async (manualInput?: string) => {
+    const textToSend = manualInput || input;
+    if (!textToSend.trim() || isLoading) return;
 
     const userMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input,
+      content: textToSend,
       timestamp: new Date()
     };
 
@@ -479,6 +562,26 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50/50">
+        
+        {/* Empty State Suggestions */}
+        {messages.length === 1 && (
+             <div className="mt-4 mb-8 px-2 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 pl-1">Suggested Questions</p>
+                <div className="grid grid-cols-1 gap-2">
+                    {suggestedPrompts.map((prompt, idx) => (
+                        <button 
+                            key={idx}
+                            onClick={() => handleSend(prompt)}
+                            className="text-left p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-blue-400 hover:shadow-md transition-all text-xs text-slate-700 flex items-center justify-between group"
+                        >
+                            <span className="line-clamp-2">{prompt}</span>
+                            <PlayCircle size={14} className="text-slate-300 group-hover:text-blue-500 shrink-0 ml-2" />
+                        </button>
+                    ))}
+                </div>
+            </div>
+        )}
+
         {messages.map((msg) => (
           <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
             
@@ -561,7 +664,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
             className="flex-1 pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all"
           /> 
           <button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={!input.trim() || isLoading}
             className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
           >

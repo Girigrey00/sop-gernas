@@ -118,6 +118,7 @@ export interface LibraryDocument {
   latestLog?: string;
   totalPages?: number;
   categoryDisplay?: string; // "SOP" or "Process Definition"
+  suggested_questions?: string[]; // AI Generated Questions
 
   metadata?: {
       linkedApp?: string;
