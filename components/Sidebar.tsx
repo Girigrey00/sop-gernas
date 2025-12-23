@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Compass, LogOut, ChevronRight, BookOpen, ChevronLeft, User } from 'lucide-react';
 import { View } from '../types';
@@ -34,7 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, is
            </svg>
         </div>
         {!isCollapsed && (
-            <div className="animate-in fade-in duration-300">
+            <div className="animate-in fade-in duration-300 text-center">
               <h1 className="text-white font-bold text-sm tracking-widest leading-none">GERNAS</h1>
             </div>
         )}

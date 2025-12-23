@@ -1,7 +1,6 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles, FileText, ArrowRight, PlayCircle, Lightbulb, RefreshCw } from 'lucide-react';
-import { SopResponse, Product, LibraryDocument } from '../types';
+import { Send, Loader2, X, BookOpen, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles, FileText, Lightbulb, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
 
 interface ChatAssistantProps {
@@ -307,6 +306,9 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>(DEFAULT_PROMPTS);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Ref for horizontal scrolling suggestions
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // New State for Suggestions Management
   const [showSuggestions, setShowSuggestions] = useState(true);
@@ -328,7 +330,21 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
       const pool = allQuestionsRef.current.length > 0 ? allQuestionsRef.current : DEFAULT_PROMPTS;
       const unique = Array.from(new Set(pool));
       const shuffled = unique.sort(() => 0.5 - Math.random());
-      setSuggestedPrompts(shuffled.slice(0, 4));
+      // CHANGED: Show all questions available (no slice), rely on horizontal scrolling
+      setSuggestedPrompts(shuffled);
+  };
+
+  // Helper: Scroll Suggestions
+  const scrollSuggestions = (direction: 'left' | 'right') => {
+      if (scrollContainerRef.current) {
+          const { current } = scrollContainerRef;
+          const scrollAmount = 200;
+          if (direction === 'left') {
+              current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+          } else {
+              current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+          }
+      }
   };
 
   // Fetch and Process Suggested Questions from Product Documents
@@ -669,18 +685,41 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
                     </button>
                 </div>
                 
-                <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                    {suggestedPrompts.map((prompt, idx) => (
-                        <button 
-                            key={idx}
-                            onClick={() => handleSend(prompt)}
-                            className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-300 text-slate-700 hover:text-slate-900 text-xs rounded-full transition-all whitespace-nowrap font-medium group"
-                            disabled={isLoading}
-                        >
-                             <Sparkles size={11} className="text-slate-500 group-hover:text-slate-700" />
-                             {prompt}
-                        </button>
-                    ))}
+                {/* Scroll Wrapper */}
+                <div className="relative flex items-center">
+                    {/* Left Arrow - Only show on hover/group for clean UI */}
+                    <button 
+                        onClick={() => scrollSuggestions('left')}
+                        className="absolute left-0 z-10 p-1 bg-white/80 backdrop-blur-sm border border-slate-200 shadow-sm rounded-full text-slate-500 hover:text-slate-800 hover:bg-white hidden group-hover/suggestions:flex transition-all hover:scale-110 -ml-1"
+                    >
+                        <ChevronLeft size={14} />
+                    </button>
+
+                    <div 
+                        ref={scrollContainerRef}
+                        className="flex gap-2 overflow-x-auto pb-2 px-1 scrollbar-hide scroll-smooth" 
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
+                        {suggestedPrompts.map((prompt, idx) => (
+                            <button 
+                                key={idx}
+                                onClick={() => handleSend(prompt)}
+                                className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-300 text-slate-700 hover:text-slate-900 text-xs rounded-full transition-all whitespace-nowrap font-medium group"
+                                disabled={isLoading}
+                            >
+                                <Sparkles size={11} className="text-slate-500 group-hover:text-slate-700" />
+                                {prompt}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Right Arrow */}
+                    <button 
+                        onClick={() => scrollSuggestions('right')}
+                        className="absolute right-0 z-10 p-1 bg-white/80 backdrop-blur-sm border border-slate-200 shadow-sm rounded-full text-slate-500 hover:text-slate-800 hover:bg-white hidden group-hover/suggestions:flex transition-all hover:scale-110 -mr-1"
+                    >
+                        <ChevronRight size={14} />
+                    </button>
                 </div>
             </div>
         )}
