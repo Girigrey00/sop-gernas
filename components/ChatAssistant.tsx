@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles, FileText, ArrowRight, PlayCircle, Lightbulb } from 'lucide-react';
+import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles, FileText, ArrowRight, PlayCircle, Lightbulb, RefreshCw } from 'lucide-react';
 import { SopResponse, Product, LibraryDocument } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -308,6 +308,10 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>(DEFAULT_PROMPTS);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // New State for Suggestions Management
+  const [showSuggestions, setShowSuggestions] = useState(true);
+  const allQuestionsRef = useRef<string[]>([]);
+
   // Initialize Session ID (Unique per instance of chat)
   const [sessionId] = useState(() => {
     return globalThis.crypto?.randomUUID() || `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -319,6 +323,14 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
   const streamInterval = useRef<any>(null);
   const isGenerationComplete = useRef<boolean>(false);
 
+  // Helper: Shuffle and set visible suggestions
+  const shuffleSuggestions = () => {
+      const pool = allQuestionsRef.current.length > 0 ? allQuestionsRef.current : DEFAULT_PROMPTS;
+      const unique = Array.from(new Set(pool));
+      const shuffled = unique.sort(() => 0.5 - Math.random());
+      setSuggestedPrompts(shuffled.slice(0, 4));
+  };
+
   // Fetch and Process Suggested Questions from Product Documents
   useEffect(() => {
     const loadSuggestedQuestions = async () => {
@@ -328,7 +340,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
             // Get all documents (optimized in real app to filter server-side)
             const allDocs = await apiService.getDocuments();
             
-            // Filter docs relevant to this product
+            // Filter docs strictly relevant to this product
             const productDocs = allDocs.filter(d => 
                 d.rootFolder === productContext.product_name || 
                 d.sopName === productContext.product_name ||
@@ -376,14 +388,9 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
                 }
             });
 
-            // Shuffle and Pick 3-4 distinct questions
-            if (allQuestions.length > 0) {
-                // Deduplicate
-                const unique = Array.from(new Set(allQuestions));
-                // Shuffle
-                const shuffled = unique.sort(() => 0.5 - Math.random());
-                setSuggestedPrompts(shuffled.slice(0, 4));
-            }
+            allQuestionsRef.current = allQuestions;
+            shuffleSuggestions(); // Initial shuffle
+
         } catch (error) {
             console.error("Failed to load suggested questions:", error);
             // Fallback to defaults is already set in state initialization
@@ -392,6 +399,13 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
 
     loadSuggestedQuestions();
   }, [productContext]);
+
+  // Shuffle suggestions after every message interaction
+  useEffect(() => {
+    if (messages.length > 1) {
+        shuffleSuggestions();
+    }
+  }, [messages.length]);
 
   // Typewriter Effect Loop
   useEffect(() => {
@@ -636,12 +650,23 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
       <div className="bg-white border-t border-slate-100 flex flex-col">
           
         {/* Suggested Questions Horizontal Scroll */}
-        {suggestedPrompts.length > 0 && (
-            <div className="px-3 pt-2 pb-1 bg-slate-50/50">
-                {/* Header for Suggestions similar to image */}
-                <div className="flex items-center gap-2 mb-2 px-1">
-                    <Lightbulb size={12} className="text-slate-400 fill-slate-100" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Suggestions</span>
+        {showSuggestions && suggestedPrompts.length > 0 && (
+            <div className="px-3 pt-2 pb-1 bg-slate-50/50 relative group/suggestions">
+                {/* Header for Suggestions */}
+                <div className="flex items-center justify-between mb-2 px-1">
+                    <div className="flex items-center gap-2">
+                        <Lightbulb size={12} className="text-slate-400 fill-slate-100" />
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Suggestions</span>
+                    </div>
+                    
+                    {/* Close Suggestions Button */}
+                    <button 
+                        onClick={() => setShowSuggestions(false)}
+                        className="text-slate-400 hover:text-slate-600 p-0.5 hover:bg-slate-200 rounded"
+                        title="Hide Suggestions"
+                    >
+                        <X size={12} />
+                    </button>
                 </div>
                 
                 <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -658,6 +683,18 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
                     ))}
                 </div>
             </div>
+        )}
+        
+        {/* Show Suggestions Toggle if hidden */}
+        {!showSuggestions && (
+             <div className="flex justify-center -mt-3 mb-1 relative z-20">
+                <button 
+                    onClick={() => { setShowSuggestions(true); shuffleSuggestions(); }}
+                    className="bg-white border border-slate-200 shadow-sm text-slate-400 hover:text-blue-500 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1 transition-all hover:shadow-md"
+                >
+                    <Lightbulb size={10} /> Show Suggestions
+                </button>
+             </div>
         )}
 
         {/* Input Field */}
