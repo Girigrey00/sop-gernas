@@ -160,6 +160,13 @@ export const apiService = {
     try {
         // Add timestamp to prevent caching
         const data = await handleResponse(await fetch(`${API_BASE_URL}/documents?t=${Date.now()}`));
+        
+        // Safeguard: Ensure we return an array
+        if (!Array.isArray(data)) {
+            console.warn("API returned non-array for documents:", data);
+            return [];
+        }
+
         return data.map((doc: any) => ({
             ...doc,
             id: doc.id || doc._id,
@@ -185,6 +192,13 @@ export const apiService = {
   getProducts: async (): Promise<Product[]> => {
     try {
         const data = await handleResponse(await fetch(`${API_BASE_URL}/products?t=${Date.now()}`));
+        
+        // Safeguard: Ensure we return an array
+        if (!Array.isArray(data)) {
+            console.warn("API returned non-array for products:", data);
+            return [];
+        }
+        
         return data;
     } catch (error) {
         console.error("Fetch Products Error", error);

@@ -273,7 +273,10 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
         }
     };
 
-    const filteredProducts = products
+    // SAFEGUARD: Ensure products is an array before filtering
+    const safeProducts = Array.isArray(products) ? products : [];
+    
+    const filteredProducts = safeProducts
         .filter(item => {
             return item.product_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                    (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
