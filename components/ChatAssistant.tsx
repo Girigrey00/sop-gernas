@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles, FileText, ArrowRight, PlayCircle } from 'lucide-react';
+import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles, FileText, ArrowRight, PlayCircle, Lightbulb } from 'lucide-react';
 import { SopResponse, Product, LibraryDocument } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -637,23 +637,31 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
           
         {/* Suggested Questions Horizontal Scroll */}
         {suggestedPrompts.length > 0 && (
-            <div className="px-3 pt-3 flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {suggestedPrompts.map((prompt, idx) => (
-                    <button 
-                        key={idx}
-                        onClick={() => handleSend(prompt)}
-                        className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-600 hover:text-blue-700 text-xs rounded-full transition-all shadow-sm whitespace-nowrap"
-                        disabled={isLoading}
-                    >
-                         <Sparkles size={11} className="text-slate-400" />
-                         {prompt}
-                    </button>
-                ))}
+            <div className="px-3 pt-2 pb-1 bg-slate-50/50">
+                {/* Header for Suggestions similar to image */}
+                <div className="flex items-center gap-2 mb-2 px-1">
+                    <Lightbulb size={12} className="text-slate-400 fill-slate-100" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Suggestions</span>
+                </div>
+                
+                <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    {suggestedPrompts.map((prompt, idx) => (
+                        <button 
+                            key={idx}
+                            onClick={() => handleSend(prompt)}
+                            className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-300 text-slate-700 hover:text-slate-900 text-xs rounded-full transition-all whitespace-nowrap font-medium group"
+                            disabled={isLoading}
+                        >
+                             <Sparkles size={11} className="text-slate-500 group-hover:text-slate-700" />
+                             {prompt}
+                        </button>
+                    ))}
+                </div>
             </div>
         )}
 
         {/* Input Field */}
-        <div className="p-4 pt-1">
+        <div className="p-4 pt-2">
             <div className="relative flex items-center gap-2">
             <input
                 type="text"
