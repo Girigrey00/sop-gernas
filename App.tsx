@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import CanvasPage from './pages/CanvasPage';
@@ -273,10 +274,7 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
         }
     };
 
-    // SAFEGUARD: Ensure products is an array before filtering
-    const safeProducts = Array.isArray(products) ? products : [];
-    
-    const filteredProducts = safeProducts
+    const filteredProducts = products
         .filter(item => {
             return item.product_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                    (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -647,11 +645,7 @@ const App: React.FC = () => {
                          if(selectedContextProduct.flow_status === 'Completed') {
                              try {
                                  const flowData = await apiService.getProcessFlow(selectedContextProduct.product_name);
-                                 if (flowData) {
-                                     handleStartWithData(flowData);
-                                 } else {
-                                     showNotification("Flow data is empty or missing.", 'error');
-                                 }
+                                 handleStartWithData(flowData);
                              } catch(e) {
                                  console.error(e);
                                  showNotification("Error loading flow. Please check console.", 'error');
