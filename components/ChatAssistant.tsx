@@ -562,26 +562,6 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50/50">
-        
-        {/* Empty State Suggestions */}
-        {messages.length === 1 && (
-             <div className="mt-4 mb-8 px-2 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 pl-1">Suggested Questions</p>
-                <div className="grid grid-cols-1 gap-2">
-                    {suggestedPrompts.map((prompt, idx) => (
-                        <button 
-                            key={idx}
-                            onClick={() => handleSend(prompt)}
-                            className="text-left p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-blue-400 hover:shadow-md transition-all text-xs text-slate-700 flex items-center justify-between group"
-                        >
-                            <span className="line-clamp-2">{prompt}</span>
-                            <PlayCircle size={14} className="text-slate-300 group-hover:text-blue-500 shrink-0 ml-2" />
-                        </button>
-                    ))}
-                </div>
-            </div>
-        )}
-
         {messages.map((msg) => (
           <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
             
@@ -652,24 +632,46 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="p-4 bg-white border-t border-slate-100">
-        <div className="relative flex items-center gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask about risks, actors, or next steps..."
-            className="flex-1 pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all"
-          /> 
-          <button
-            onClick={() => handleSend()}
-            disabled={!input.trim() || isLoading}
-            className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
-          >
-            <Send size={18} />
-          </button>
+      {/* Input & Suggestions */}
+      <div className="bg-white border-t border-slate-100 flex flex-col">
+          
+        {/* Suggested Questions Horizontal Scroll */}
+        {suggestedPrompts.length > 0 && (
+            <div className="px-3 pt-3 flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {suggestedPrompts.map((prompt, idx) => (
+                    <button 
+                        key={idx}
+                        onClick={() => handleSend(prompt)}
+                        className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-600 hover:text-blue-700 text-xs rounded-full transition-all shadow-sm whitespace-nowrap"
+                        disabled={isLoading}
+                    >
+                         <Sparkles size={11} className="text-slate-400" />
+                         {prompt}
+                    </button>
+                ))}
+            </div>
+        )}
+
+        {/* Input Field */}
+        <div className="p-4 pt-1">
+            <div className="relative flex items-center gap-2">
+            <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                placeholder="Ask about risks, actors, or next steps..."
+                className="flex-1 pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all"
+                disabled={isLoading}
+            /> 
+            <button
+                onClick={() => handleSend()}
+                disabled={!input.trim() || isLoading}
+                className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
+            >
+                <Send size={18} />
+            </button>
+            </div>
         </div>
       </div>
     </div>
