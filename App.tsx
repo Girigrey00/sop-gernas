@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import CanvasPage from './pages/CanvasPage';
@@ -645,7 +644,11 @@ const App: React.FC = () => {
                          if(selectedContextProduct.flow_status === 'Completed') {
                              try {
                                  const flowData = await apiService.getProcessFlow(selectedContextProduct.product_name);
-                                 handleStartWithData(flowData);
+                                 if (flowData) {
+                                     handleStartWithData(flowData);
+                                 } else {
+                                     showNotification("Flow data is empty or missing.", 'error');
+                                 }
                              } catch(e) {
                                  console.error(e);
                                  showNotification("Error loading flow. Please check console.", 'error');
