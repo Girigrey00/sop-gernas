@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles, FileText, ArrowRight, PlayCircle, Lightbulb, RefreshCw } from 'lucide-react';
+import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles, FileText, ArrowRight, PlayCircle, Lightbulb, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SopResponse, Product, LibraryDocument } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -307,6 +307,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>(DEFAULT_PROMPTS);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // New State for Suggestions Management
   const [showSuggestions, setShowSuggestions] = useState(true);
@@ -327,8 +328,25 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
   const shuffleSuggestions = () => {
       const pool = allQuestionsRef.current.length > 0 ? allQuestionsRef.current : DEFAULT_PROMPTS;
       const unique = Array.from(new Set(pool));
+      // Shuffle the entire unique pool
       const shuffled = unique.sort(() => 0.5 - Math.random());
-      setSuggestedPrompts(shuffled.slice(0, 4));
+      // Show up to 15 items in the scrollable view
+      setSuggestedPrompts(shuffled.slice(0, 15));
+      
+      // Reset scroll position
+      if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+      }
+  };
+
+  const scrollSuggestions = (direction: 'left' | 'right') => {
+      if (scrollContainerRef.current) {
+          const scrollAmount = 250;
+          scrollContainerRef.current.scrollBy({
+              left: direction === 'left' ? -scrollAmount : scrollAmount,
+              behavior: 'smooth'
+          });
+      }
   };
 
   // Fetch and Process Suggested Questions from Product Documents
@@ -340,8 +358,11 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
             // Get all documents (optimized in real app to filter server-side)
             const allDocs = await apiService.getDocuments();
             
-            // Filter docs strictly relevant to this product
-            const productDocs = allDocs.filter(d => 
+            // Priority: Filter by index_name first, then fallback to product name for older schema
+            const indexToMatch = productContext.index_name || productContext.product_name;
+
+            const relevantDocs = allDocs.filter(d => 
+                (d.indexName && d.indexName === indexToMatch) || 
                 d.rootFolder === productContext.product_name || 
                 d.sopName === productContext.product_name ||
                 d.metadata?.productId === productContext.product_name
@@ -349,7 +370,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
 
             let allQuestions: string[] = [];
 
-            productDocs.forEach(doc => {
+            relevantDocs.forEach(doc => {
                 if (doc.suggested_questions && Array.isArray(doc.suggested_questions)) {
                     doc.suggested_questions.forEach(q => {
                         // Handle Markdown wrapped JSON strings like "```json\n[\"Q1\", \"Q2\"]\n```"
@@ -656,7 +677,9 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
                 <div className="flex items-center justify-between mb-2 px-1">
                     <div className="flex items-center gap-2">
                         <Lightbulb size={12} className="text-slate-400 fill-slate-100" />
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Suggestions</span>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                           Suggestions ({suggestedPrompts.length})
+                        </span>
                     </div>
                     
                     {/* Close Suggestions Button */}
@@ -669,18 +692,40 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
                     </button>
                 </div>
                 
-                <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                    {suggestedPrompts.map((prompt, idx) => (
-                        <button 
-                            key={idx}
-                            onClick={() => handleSend(prompt)}
-                            className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-300 text-slate-700 hover:text-slate-900 text-xs rounded-full transition-all whitespace-nowrap font-medium group"
-                            disabled={isLoading}
-                        >
-                             <Sparkles size={11} className="text-slate-500 group-hover:text-slate-700" />
-                             {prompt}
-                        </button>
-                    ))}
+                <div className="relative">
+                    {/* Left Scroll Arrow */}
+                    <button 
+                        onClick={() => scrollSuggestions('left')}
+                        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 shadow-md border border-slate-200 p-1.5 rounded-full text-slate-500 hover:text-blue-600 hover:scale-105 transition-all opacity-0 group-hover/suggestions:opacity-100 disabled:opacity-0"
+                    >
+                        <ChevronLeft size={16} />
+                    </button>
+
+                    {/* Right Scroll Arrow */}
+                    <button 
+                        onClick={() => scrollSuggestions('right')}
+                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 shadow-md border border-slate-200 p-1.5 rounded-full text-slate-500 hover:text-blue-600 hover:scale-105 transition-all opacity-0 group-hover/suggestions:opacity-100 disabled:opacity-0"
+                    >
+                        <ChevronRight size={16} />
+                    </button>
+
+                    <div 
+                        ref={scrollContainerRef}
+                        className="flex gap-2 overflow-x-auto pb-2 px-1 scroll-smooth" 
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
+                        {suggestedPrompts.map((prompt, idx) => (
+                            <button 
+                                key={idx}
+                                onClick={() => handleSend(prompt)}
+                                className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-300 text-slate-700 hover:text-slate-900 text-xs rounded-full transition-all whitespace-nowrap font-medium group"
+                                disabled={isLoading}
+                            >
+                                <Sparkles size={11} className="text-slate-500 group-hover:text-slate-700" />
+                                {prompt}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
         )}
