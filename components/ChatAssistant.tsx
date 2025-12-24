@@ -1,7 +1,11 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, X, BookOpen, Quote, Maximize2, Minimize2, ChevronDown, ChevronUp, User, Sparkles, FileText, ArrowRight, PlayCircle, Lightbulb, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
-import { SopResponse, Product, LibraryDocument } from '../types';
+import { 
+  Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
+  ChevronDown, ChevronUp, User, Sparkles, FileText, 
+  Lightbulb, ChevronLeft, ThumbsUp, ThumbsDown, Copy, Check, Clock, History, MessageSquare 
+} from 'lucide-react';
+import { SopResponse, Product, ChatSession } from '../types';
 import { apiService } from '../services/apiService';
 
 interface ChatAssistantProps {
@@ -10,22 +14,26 @@ interface ChatAssistantProps {
   productContext?: Product | null;
   onToggleMaximize?: () => void;
   isMaximized?: boolean;
+  initialSessionId?: string;
 }
 
 interface Message {
-  id: string;
+  id: string; // Used as question_id for feedback
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
   citations?: Record<string, string>;
   isTyping?: boolean;
+  feedback?: 'thumbs_up' | 'thumbs_down' | null;
 }
 
-// Default prompts if no documents are found
 const DEFAULT_PROMPTS = [
     "What are the main risks in this process?",
     "Explain the approval workflow steps.",
-    "Who are the key actors involved?"
+    "Who are the key actors involved?",
+    "What are the control measures?",
+    "Show me the compliance requirements.",
+    "Are there any manual steps?"
 ];
 
 // Branded G Logo Component
@@ -35,18 +43,15 @@ const GIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// --- Enhanced Citation Component ---
+// --- Citation Block ---
 const CitationBlock = ({ citations }: { citations: Record<string, string> }) => {
   const [isOpen, setIsOpen] = useState(false);
   const count = Object.keys(citations).length;
-  
   if (count === 0) return null;
 
   return (
     <div className="mt-3 w-full animate-in fade-in slide-in-from-top-1 duration-500">
       <div className={`transition-all duration-300 overflow-hidden ${isOpen ? 'bg-slate-50/80 rounded-xl border border-slate-200/60 shadow-sm' : ''}`}>
-        
-        {/* Toggle Button */}
         <button 
           onClick={() => setIsOpen(!isOpen)}
           className={`flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors group ${!isOpen ? '-ml-2' : 'w-full mb-1 border-b border-slate-100'}`}
@@ -58,30 +63,18 @@ const CitationBlock = ({ citations }: { citations: Record<string, string> }) => 
                {count} Reference{count > 1 ? 's' : ''} Found
             </span>
             {isOpen && <div className="flex-1" />}
-            {isOpen ? (
-                <ChevronUp size={14} className="text-slate-400 mr-2" />
-            ) : (
-                <ChevronDown size={14} className="text-slate-400 opacity-50 group-hover:opacity-100" />
-            )}
+            {isOpen ? <ChevronUp size={14} className="text-slate-400 mr-2" /> : <ChevronDown size={14} className="text-slate-400 opacity-50 group-hover:opacity-100" />}
         </button>
-
-        {/* Content */}
         {isOpen && (
              <div className="p-3 pt-2 grid gap-3">
                 {Object.entries(citations).map(([key, value]) => {
-                    // Smart Parse logic for "Filename - Page X: Content"
                     let source = "Source Document";
                     let page = "";
                     let content = value;
-
-                    // Try to split by colon first to separate content
                     const firstColon = value.indexOf(':');
                     if (firstColon > -1 && firstColon < 100) {
                         const meta = value.substring(0, firstColon);
                         content = value.substring(firstColon + 1).trim();
-
-                        // Try to extract page number from meta
-                        // Matches " - Page 4" or " (Page 4)"
                         const pageMatch = meta.match(/[-|(]\s*Page\s*(\d+)/i);
                         if (pageMatch) {
                             page = `Page ${pageMatch[1]}`;
@@ -90,7 +83,6 @@ const CitationBlock = ({ citations }: { citations: Record<string, string> }) => 
                             source = meta.trim();
                         }
                     }
-
                     return (
                         <div key={key} className="flex gap-3 items-start group/card relative bg-white p-3 rounded-lg border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all">
                             <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-500 shadow-sm mt-0.5 group-hover/card:bg-blue-50 group-hover/card:text-blue-600 transition-colors">
@@ -100,19 +92,11 @@ const CitationBlock = ({ citations }: { citations: Record<string, string> }) => 
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                     <div className="flex items-center gap-1.5 min-w-0">
                                         <FileText size={12} className="text-slate-400 shrink-0" />
-                                        <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wide truncate max-w-[180px]" title={source}>
-                                            {source}
-                                        </p>
+                                        <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wide truncate max-w-[180px]" title={source}>{source}</p>
                                     </div>
-                                    {page && (
-                                        <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded border border-slate-200">
-                                            {page}
-                                        </span>
-                                    )}
+                                    {page && <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded border border-slate-200">{page}</span>}
                                 </div>
-                                <div className="text-xs text-slate-600 leading-relaxed pl-1 border-l-2 border-slate-100 group-hover/card:border-blue-200 transition-colors">
-                                    "{content}"
-                                </div>
+                                <div className="text-xs text-slate-600 leading-relaxed pl-1 border-l-2 border-slate-100 group-hover/card:border-blue-200 transition-colors">"{content}"</div>
                             </div>
                         </div>
                     )
@@ -124,16 +108,13 @@ const CitationBlock = ({ citations }: { citations: Record<string, string> }) => 
   );
 };
 
-// Helper: Text Formatter (Bold + Citations)
+// --- Text Formatter ---
 const formatText = (text: string, isUser: boolean) => {
-    // Basic split for bolding
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, index) => {
         if (part.startsWith('**') && part.endsWith('**')) {
             return <strong key={index} className={`font-bold ${isUser ? 'text-white' : 'text-slate-900'}`}>{part.slice(2, -2)}</strong>;
         }
-        
-        // Inside normal text, look for [n] patterns
         const citationParts = part.split(/(\[\d+\])/g);
         return (
             <span key={index}>
@@ -142,15 +123,8 @@ const formatText = (text: string, isUser: boolean) => {
                         return (
                             <sup 
                                 key={subIndex} 
-                                className={`text-[9px] font-bold px-1.5 py-0 rounded ml-0.5 cursor-help transition-transform hover:scale-110 inline-block ${
-                                    isUser 
-                                    ? 'text-blue-200 bg-white/20' 
-                                    : 'text-blue-600 bg-blue-50 border border-blue-100'
-                                }`}
-                                title="Scroll down for reference"
-                            >
-                                {subPart.replace(/[\[\]]/g, '')}
-                            </sup>
+                                className={`text-[9px] font-bold px-1.5 py-0 rounded ml-0.5 cursor-help transition-transform hover:scale-110 inline-block ${isUser ? 'text-blue-200 bg-white/20' : 'text-blue-600 bg-blue-50 border border-blue-100'}`}
+                            >{subPart.replace(/[\[\]]/g, '')}</sup>
                         );
                     }
                     return <span key={subIndex}>{subPart}</span>;
@@ -160,324 +134,132 @@ const formatText = (text: string, isUser: boolean) => {
     });
 };
 
-// Component to Render Tables, Lists, and Text
 const MessageRenderer = ({ content, isTyping, role }: { content: string, isTyping?: boolean, role: 'user' | 'assistant' }) => {
     const isUser = role === 'user';
-    const lines = content.split('\n');
-    const blocks: Array<{ type: 'text' | 'table' | 'list', data: string[] }> = [];
-    
-    let currentTableRows: string[] = [];
-    let currentListItems: string[] = [];
-    
-    lines.forEach((line) => {
-        const trimmedLine = line.trim();
-
-        // Check for Table
-        if (trimmedLine.startsWith('|')) {
-             if (currentListItems.length > 0) {
-                blocks.push({ type: 'list', data: currentListItems });
-                currentListItems = [];
-            }
-            currentTableRows.push(line);
-        } 
-        // Check for Lists (Bullets or Numbers)
-        // Matches "- ", "* ", "1. ", "• "
-        else if (/^(\*|-|•|\d+\.)\s/.test(trimmedLine)) {
-            if (currentTableRows.length > 0) {
-                blocks.push({ type: 'table', data: currentTableRows });
-                currentTableRows = [];
-            }
-            currentListItems.push(line);
-        }
-        // Check for Text
-        else {
-            if (currentTableRows.length > 0) {
-                blocks.push({ type: 'table', data: currentTableRows });
-                currentTableRows = [];
-            }
-            if (currentListItems.length > 0) {
-                blocks.push({ type: 'list', data: currentListItems });
-                currentListItems = [];
-            }
-            blocks.push({ type: 'text', data: [line] });
-        }
-    });
-    
-    // Flush remaining buffers
-    if (currentTableRows.length > 0) blocks.push({ type: 'table', data: currentTableRows });
-    if (currentListItems.length > 0) blocks.push({ type: 'list', data: currentListItems });
-
     return (
-        <div className={`space-y-2 font-medium ${isUser ? 'text-white' : 'text-slate-700'}`}>
-            {blocks.map((block, i) => {
-                // --- RENDER TABLE ---
-                if (block.type === 'table') {
-                    const rows = block.data;
-                    const headerRow = rows[0];
-                    const separatorRow = rows.length > 1 && rows[1].includes('---') ? rows[1] : null;
-                    const bodyRows = separatorRow ? rows.slice(2) : rows.slice(1);
-                    
-                    const safeParseRow = (r: string) => {
-                        const cells = r.split('|');
-                        if (cells.length > 0 && cells[0].trim() === '') cells.shift();
-                        if (cells.length > 0 && cells[cells.length-1].trim() === '') cells.pop();
-                        return cells;
-                    };
-
-                    const headers = safeParseRow(headerRow);
-                    
-                    return (
-                        <div key={i} className="my-4 overflow-x-auto rounded-lg border border-slate-200 shadow-sm bg-white ring-1 ring-slate-100">
-                            <table className="min-w-full divide-y divide-slate-200">
-                                {separatorRow && (
-                                    <thead className="bg-slate-50">
-                                        <tr>
-                                            {headers.map((h, hIdx) => (
-                                                <th key={hIdx} className="px-3 py-2 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider border-r border-slate-100 last:border-0">
-                                                    {formatText(h.trim(), false)}
-                                                </th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                )}
-                                <tbody className="bg-white divide-y divide-slate-50">
-                                    {(separatorRow ? bodyRows : rows).map((row, rIdx) => {
-                                        if (row.includes('---')) return null;
-                                        const cells = safeParseRow(row);
-                                        return (
-                                            <tr key={rIdx} className={`transition-colors hover:bg-slate-50/50`}>
-                                                {cells.map((c, cIdx) => (
-                                                    <td key={cIdx} className="px-3 py-2 text-xs text-slate-700 whitespace-pre-wrap leading-relaxed border-r border-slate-50 last:border-0 align-top">
-                                                        {formatText(c.trim(), false)}
-                                                    </td>
-                                                ))}
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    );
-                } 
-                // --- RENDER LIST ---
-                else if (block.type === 'list') {
-                     return (
-                        <div key={i} className="pl-1 py-1 space-y-1.5">
-                            {block.data.map((item, idx) => {
-                                // Detect list type
-                                const isOrdered = /^\d+\./.test(item.trim());
-                                const content = item.replace(/^(\*|-|•|\d+\.)\s/, '');
-                                return (
-                                    <div key={idx} className="flex items-start gap-2.5">
-                                        <span className={`mt-1.5 shrink-0 select-none ${isUser ? 'text-blue-200' : 'text-blue-500'}`}>
-                                            {isOrdered ? (
-                                                <span className="text-[10px] font-bold tabular-nums opacity-80">{item.match(/^\d+\./)?.[0]}</span>
-                                            ) : (
-                                                <div className="w-1.5 h-1.5 rounded-full bg-current mt-1 shadow-sm" />
-                                            )}
-                                        </span>
-                                        <span className="leading-relaxed text-sm">{formatText(content, isUser)}</span>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                     )
-                }
-                // --- RENDER TEXT ---
-                else {
-                    const text = block.data[0];
-                    if (!text && !isTyping) return <div key={i} className="h-3"></div>;
-                    return <div key={i} className="leading-relaxed whitespace-pre-wrap">{formatText(text, isUser)}</div>;
-                }
-            })}
+        <div className={`space-y-2 font-medium leading-relaxed whitespace-pre-wrap ${isUser ? 'text-white' : 'text-slate-700'}`}>
+            {formatText(content, isUser)}
+            {!content && !isTyping && <div className="h-3"></div>}
         </div>
     );
 };
 
-const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, productContext, onToggleMaximize, isMaximized }) => {
+// --- Main Chat Component ---
+const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, productContext, onToggleMaximize, isMaximized, initialSessionId }) => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: `Hello! I'm your SOP Assistant. I have analyzed the **${sopData.processDefinition.title}** process. Ask me anything about steps, risks, actors, or timelines!`,
-      timestamp: new Date()
-    }
+      { id: 'sys', role: 'assistant', content: '', timestamp: new Date() }
   ]);
   const [isLoading, setIsLoading] = useState(false);
-  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>(DEFAULT_PROMPTS);
+  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  // History State
+  const [showHistory, setShowHistory] = useState(false);
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  // Initialize with passed session ID or create new if not present
+  const [sessionId, setSessionId] = useState<string>(initialSessionId || (globalThis.crypto?.randomUUID() || `sess-${Date.now()}`));
 
-  // New State for Suggestions Management
-  const [showSuggestions, setShowSuggestions] = useState(true);
-  const allQuestionsRef = useRef<string[]>([]);
-
-  // Initialize Session ID (Unique per instance of chat)
-  const [sessionId] = useState(() => {
-    return globalThis.crypto?.randomUUID() || `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-  });
-
-  // --- Smooth Streaming Buffer Logic ---
   const streamQueue = useRef<string>('');
   const activeMessageId = useRef<string | null>(null);
   const streamInterval = useRef<any>(null);
   const isGenerationComplete = useRef<boolean>(false);
 
-  // Helper: Shuffle and set visible suggestions
-  const shuffleSuggestions = () => {
-      const pool = allQuestionsRef.current.length > 0 ? allQuestionsRef.current : DEFAULT_PROMPTS;
-      const unique = Array.from(new Set(pool));
-      // Shuffle the entire unique pool
-      const shuffled = unique.sort(() => 0.5 - Math.random());
-      // Show up to 15 items in the scrollable view
-      setSuggestedPrompts(shuffled.slice(0, 15));
-      
-      // Reset scroll position
-      if (scrollContainerRef.current) {
-          scrollContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
-      }
-  };
-
-  const scrollSuggestions = (direction: 'left' | 'right') => {
-      if (scrollContainerRef.current) {
-          const scrollAmount = 250;
-          scrollContainerRef.current.scrollBy({
-              left: direction === 'left' ? -scrollAmount : scrollAmount,
-              behavior: 'smooth'
-          });
-      }
-  };
-
-  // Fetch and Process Suggested Questions from Product Documents
+  // If initialSessionId changes, update state and load
   useEffect(() => {
-    const loadSuggestedQuestions = async () => {
-        if (!productContext) return;
-
-        try {
-            // Get all documents (optimized in real app to filter server-side)
-            const allDocs = await apiService.getDocuments();
-            
-            // Priority: Filter by index_name first, then fallback to product name for older schema
-            const indexToMatch = productContext.index_name || productContext.product_name;
-
-            const relevantDocs = allDocs.filter(d => 
-                (d.indexName && d.indexName === indexToMatch) || 
-                d.rootFolder === productContext.product_name || 
-                d.sopName === productContext.product_name ||
-                d.metadata?.productId === productContext.product_name
-            );
-
-            let allQuestions: string[] = [];
-
-            relevantDocs.forEach(doc => {
-                if (doc.suggested_questions && Array.isArray(doc.suggested_questions)) {
-                    doc.suggested_questions.forEach(q => {
-                        // Handle Markdown wrapped JSON strings like "```json\n[\"Q1\", \"Q2\"]\n```"
-                        let cleanQ = q;
-                        if (cleanQ.includes('```json')) {
-                            try {
-                                const jsonContent = cleanQ.replace(/```json/g, '').replace(/```/g, '').trim();
-                                const parsed = JSON.parse(jsonContent);
-                                if (Array.isArray(parsed)) {
-                                    allQuestions.push(...parsed);
-                                    return;
-                                }
-                            } catch (e) {
-                                // Failed to parse json block, treat as string if meaningful
-                            }
-                        }
-                        
-                        // Handle simple strings or raw JSON strings
-                        try {
-                            if (cleanQ.trim().startsWith('[')) {
-                                const parsed = JSON.parse(cleanQ);
-                                if (Array.isArray(parsed)) {
-                                    allQuestions.push(...parsed);
-                                } else {
-                                    allQuestions.push(cleanQ);
-                                }
-                            } else {
-                                // Cleanup markdown artifacts if just a string
-                                cleanQ = cleanQ.replace(/```/g, '').trim();
-                                if (cleanQ.length > 5) allQuestions.push(cleanQ);
-                            }
-                        } catch {
-                            if (cleanQ.length > 5) allQuestions.push(cleanQ);
-                        }
+    if (initialSessionId && initialSessionId !== sessionId) {
+        setSessionId(initialSessionId);
+        // Logic to load specific session details will be handled by the useEffect below if we add a loader
+        // or we can reuse handleHistoryClick logic here
+        const loadSession = async () => {
+             setIsLoading(true);
+             try {
+                const detail = await apiService.getChatSessionDetails(initialSessionId);
+                if (detail && detail.messages) {
+                    const mappedMessages: Message[] = [];
+                    detail.messages.forEach(m => {
+                        mappedMessages.push({
+                            id: `u-${m.question_id}`,
+                            role: 'user',
+                            content: m.question,
+                            timestamp: new Date(m.timestamp)
+                        });
+                        mappedMessages.push({
+                            id: m.question_id,
+                            role: 'assistant',
+                            content: m.answer,
+                            citations: m.citations,
+                            timestamp: new Date(m.timestamp),
+                            isTyping: false
+                        });
                     });
+                    setMessages(mappedMessages);
                 }
-            });
-
-            allQuestionsRef.current = allQuestions;
-            shuffleSuggestions(); // Initial shuffle
-
-        } catch (error) {
-            console.error("Failed to load suggested questions:", error);
-            // Fallback to defaults is already set in state initialization
+             } catch(e) { console.error(e); }
+             finally { setIsLoading(false); }
         }
-    };
+        loadSession();
+    } else if (!initialSessionId && !messages.find(m => m.id === 'sys')) {
+         // Reset if no session provided (new chat)
+         setSessionId(globalThis.crypto?.randomUUID());
+         setMessages([{ id: 'sys', role: 'assistant', content: '', timestamp: new Date() }]);
+    }
+  }, [initialSessionId]);
 
-    loadSuggestedQuestions();
+  // Load History List
+  useEffect(() => {
+    const loadHistory = async () => {
+        const sessions = await apiService.getChatSessions();
+        sessions.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
+        setChatSessions(sessions);
+    };
+    loadHistory();
+  }, [productContext, sessionId]); // Reload list when session changes (e.g. new message added)
+
+  // Load and Shuffle Suggestions
+  useEffect(() => {
+    let pool = [...DEFAULT_PROMPTS];
+    const unique = Array.from(new Set(pool));
+    const shuffled = unique.sort(() => 0.5 - Math.random());
+    setSuggestedPrompts(shuffled.slice(0, 4)); 
   }, [productContext]);
 
-  // Shuffle suggestions after every message interaction
-  useEffect(() => {
-    if (messages.length > 1) {
-        shuffleSuggestions();
-    }
-  }, [messages.length]);
-
-  // Typewriter Effect Loop
+  // Streaming Loop
   useEffect(() => {
     streamInterval.current = setInterval(() => {
         if (activeMessageId.current) {
             const hasData = streamQueue.current.length > 0;
-            
             if (hasData) {
-                // Adaptive speed: If buffer is large, consume chunks faster to catch up
                 const pendingLength = streamQueue.current.length;
                 let chunk = '';
-                
-                if (pendingLength > 200) chunk = streamQueue.current.substring(0, 20); // Very fast
-                else if (pendingLength > 50) chunk = streamQueue.current.substring(0, 5); // Fast
-                else chunk = streamQueue.current.substring(0, 2); // Normal smooth
-
+                if (pendingLength > 200) chunk = streamQueue.current.substring(0, 20);
+                else if (pendingLength > 50) chunk = streamQueue.current.substring(0, 5);
+                else chunk = streamQueue.current.substring(0, 2);
                 streamQueue.current = streamQueue.current.substring(chunk.length);
 
-                setMessages(prev => prev.map(msg => 
-                    msg.id === activeMessageId.current 
-                    ? { ...msg, content: msg.content + chunk, isTyping: true } 
-                    : msg
-                ));
+                setMessages(prev => prev.map(msg => msg.id === activeMessageId.current ? { ...msg, content: msg.content + chunk, isTyping: true } : msg));
             } else if (isGenerationComplete.current) {
-                // Buffer is empty AND generation is marked done by API -> Finalize
-                setMessages(prev => prev.map(msg => 
-                    msg.id === activeMessageId.current 
-                    ? { ...msg, isTyping: false } 
-                    : msg
-                ));
+                setMessages(prev => prev.map(msg => msg.id === activeMessageId.current ? { ...msg, isTyping: false } : msg));
                 activeMessageId.current = null;
                 isGenerationComplete.current = false;
                 setIsLoading(false);
             }
         }
-    }, 16); // Run at ~60fps
-
+    }, 16);
     return () => clearInterval(streamInterval.current);
   }, []);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   useEffect(() => {
-    scrollToBottom();
+    if (messages.length > 2) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleSend = async (manualInput?: string) => {
     const textToSend = manualInput || input;
     if (!textToSend.trim() || isLoading) return;
+
+    if (messages.length === 1 && messages[0].id === 'sys') {
+        setMessages([]); 
+    }
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -486,55 +268,42 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    setMessages(prev => {
+        const clean = prev.filter(m => m.id !== 'sys');
+        return [...clean, userMsg];
+    });
     setInput('');
     setIsLoading(true);
 
-    // Initial placeholder for Bot Message
-    const botMsgId = (Date.now() + 1).toString();
+    const botMsgId = globalThis.crypto?.randomUUID() || `qn-${Date.now()}`;
     setMessages(prev => [...prev, {
       id: botMsgId,
       role: 'assistant',
-      content: '', // Start empty, content fills via stream
+      content: '',
       timestamp: new Date(),
       isTyping: true
     }]);
 
-    // Setup Streaming State
     activeMessageId.current = botMsgId;
     streamQueue.current = '';
     isGenerationComplete.current = false;
 
     try {
-      // Determine Index Name & Product Context
       const meta = sopData.metadata as any;
-      const indexName = productContext?.index_name || meta?.index_name || meta?.target_index || "cbgknowledgehub";
-      const productName = productContext?.product_name || meta?.productId || sopData.processDefinition.title || "";
-      const questionId = globalThis.crypto?.randomUUID() || `qn-${Date.now()}`;
-
-      console.log("ChatInference Streaming Context:", { indexName, productName, sessionId });
-
-      // Call Streaming API
+      const indexName = productContext?.index_name || meta?.index_name || "cbgknowledgehub";
+      const productName = productContext?.product_name || sopData.processDefinition.title || "";
+      
       await apiService.chatInference({
         question: userMsg.content,
         index_name: indexName,
         session_id: sessionId,
-        question_id: questionId,
+        question_id: botMsgId, 
         product: productName,
-        onToken: (token) => {
-          // Push to buffer instead of setting state directly
-          streamQueue.current += token;
-        },
+        onToken: (token) => { streamQueue.current += token; },
         onComplete: (citations) => {
-           // Mark generation as done; interval will clear isTyping once buffer empties
            isGenerationComplete.current = true;
-           
            if (citations) {
-                setMessages(prev => prev.map(msg => 
-                    msg.id === botMsgId 
-                    ? { ...msg, citations: citations } 
-                    : msg
-                ));
+                setMessages(prev => prev.map(msg => msg.id === botMsgId ? { ...msg, citations: citations } : msg));
            }
         },
         onError: (errMsg) => {
@@ -542,50 +311,92 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
            streamQueue.current += `\n\n[Error: ${errMsg}]`;
         }
       });
-
     } catch (error) {
-      console.error("Chat error", error);
       activeMessageId.current = null;
       isGenerationComplete.current = false;
-      
-      // Remove the typing message and show error
-      setMessages(prev => prev.filter(m => m.id !== botMsgId));
-      
-      const errorMsg: Message = {
-        id: (Date.now() + 2).toString(),
-        role: 'assistant',
-        content: "I'm having trouble connecting to the knowledge base right now. Please try again later.",
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMsg]);
       setIsLoading(false);
     }
   };
 
+  const handleCopy = (text: string) => {
+      navigator.clipboard.writeText(text);
+  };
+
+  const handleFeedback = (messageId: string, rating: 'thumbs_up' | 'thumbs_down') => {
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, feedback: rating } : m));
+      apiService.submitFeedback({
+          question_id: messageId,
+          session_id: sessionId,
+          feedback_type: rating
+      }).catch(err => console.error(err));
+  };
+
+  const handleHistoryClick = async (session: ChatSession) => {
+      setIsLoading(true);
+      try {
+          const detail = await apiService.getChatSessionDetails(session._id);
+          if (detail && detail.messages) {
+              const mappedMessages: Message[] = [];
+              detail.messages.forEach(m => {
+                  mappedMessages.push({
+                      id: `u-${m.question_id}`,
+                      role: 'user',
+                      content: m.question,
+                      timestamp: new Date(m.timestamp)
+                  });
+                  mappedMessages.push({
+                      id: m.question_id,
+                      role: 'assistant',
+                      content: m.answer,
+                      citations: m.citations,
+                      timestamp: new Date(m.timestamp),
+                      isTyping: false
+                  });
+              });
+              setMessages(mappedMessages);
+              setSessionId(session._id);
+              setShowHistory(false);
+          }
+      } catch (e) {
+          console.error("Failed to load session", e);
+      } finally {
+          setIsLoading(false);
+      }
+  };
+
+  const hasMessages = messages.length > 1;
+
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-white relative overflow-hidden">
+      
       {/* Header */}
-      <div className="p-5 border-b border-slate-100 bg-white flex justify-between items-center shadow-sm z-10">
+      <div className={`p-4 border-b border-slate-100 bg-white flex justify-between items-center shadow-sm z-20 transition-all ${hasMessages ? 'h-16' : 'h-16 bg-transparent border-none shadow-none'}`}>
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-            <GIcon className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="font-bold text-slate-900 text-sm">CBG KNOWLEDGE HUB AI</h3>
-            <p className="text-[10px] text-slate-500 font-medium flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Knowledge Base Active
-            </p>
-          </div>
+          {hasMessages ? (
+             <>
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                    <GIcon className="w-5 h-5" />
+                </div>
+                <div>
+                    <h3 className="font-bold text-slate-900 text-sm">CBG KNOWLEDGE HUB</h3>
+                    <p className="text-[10px] text-slate-500 font-medium">AI Assistant Active</p>
+                </div>
+             </>
+          ) : (
+             <div className="w-8 h-8"></div> // Spacer
+          )}
         </div>
         
         <div className="flex items-center gap-2">
+            <button 
+                onClick={() => setShowHistory(!showHistory)}
+                className={`p-1.5 rounded-md transition-colors ${showHistory ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                title="Chat History"
+            >
+                <History size={18} />
+            </button>
             {onToggleMaximize && (
-                <button 
-                    onClick={onToggleMaximize} 
-                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                    title={isMaximized ? "Minimize" : "Maximize"}
-                >
+                <button onClick={onToggleMaximize} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
                     {isMaximized ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
                 </button>
             )}
@@ -595,174 +406,167 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50/50">
-        {messages.map((msg) => (
-          <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+      {/* History Slide-over Sidebar */}
+      <div className={`absolute top-16 right-0 bottom-0 w-64 bg-slate-50 border-l border-slate-200 z-30 transform transition-transform duration-300 ${showHistory ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className="p-4 border-b border-slate-200 bg-white">
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                    <Clock size={12} /> Recent Sessions
+                </h4>
+            </div>
+            <div className="overflow-y-auto h-full p-2 space-y-2">
+                {chatSessions.length === 0 ? (
+                    <p className="text-xs text-slate-400 text-center py-4">No history available</p>
+                ) : (
+                    chatSessions.map(session => (
+                        <button 
+                            key={session._id} 
+                            onClick={() => handleHistoryClick(session)}
+                            className={`w-full text-left p-3 rounded-lg border hover:shadow-sm transition-all group ${
+                                session._id === sessionId 
+                                ? 'bg-blue-50 border-blue-200' 
+                                : 'bg-white border-slate-200 hover:border-blue-300'
+                            }`}
+                        >
+                            <p className={`text-xs font-bold truncate ${session._id === sessionId ? 'text-blue-700' : 'text-slate-700 group-hover:text-blue-600'}`}>
+                                {session.last_message?.question || session.product || 'Untitled Session'}
+                            </p>
+                            <p className="text-[10px] text-slate-400 mt-1 truncate">{session.last_message?.answer || 'No messages'}</p>
+                            <p className="text-[9px] text-slate-300 mt-2">{new Date(session.last_activity).toLocaleDateString()}</p>
+                        </button>
+                    ))
+                )}
+            </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50/30 relative">
+        
+        {/* Welcome Screen (Only if no messages) */}
+        {!hasMessages && (
+             <div className="absolute inset-0 flex flex-col items-center justify-center p-8 z-0 animate-in fade-in duration-500">
+                <div className="mb-6 w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-xl shadow-blue-500/30">
+                    <GIcon className="w-8 h-8" />
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900 mb-2 text-center">Welcome to CBG Knowledge Hub!</h1>
+                <p className="text-slate-500 mb-10 text-center">How can I help you today?</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
+                    {suggestedPrompts.map((prompt, idx) => (
+                        <button 
+                            key={idx}
+                            onClick={() => handleSend(prompt)}
+                            className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-200 hover:scale-[1.02] transition-all text-left group"
+                        >
+                            <div className="flex items-center gap-2 mb-1">
+                                <Sparkles size={14} className="text-slate-300 group-hover:text-blue-500" />
+                                <span className="text-xs font-bold text-slate-400 group-hover:text-blue-600 uppercase tracking-wider">Suggestion</span>
+                            </div>
+                            <p className="text-sm text-slate-700 font-medium">{prompt}</p>
+                        </button>
+                    ))}
+                </div>
+             </div>
+        )}
+
+        {/* Messages List */}
+        {hasMessages && messages.filter(m => m.id !== 'sys').map((msg) => (
+          <div key={msg.id} className={`flex gap-3 relative z-10 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
             
-            {/* Avatar Column */}
             <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-1 min-w-[40px]">
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-sm border transition-all ${
-                msg.role === 'user' 
-                    ? 'bg-slate-800 text-white border-slate-700' 
-                    : 'bg-white border-blue-100 text-blue-600'
+                msg.role === 'user' ? 'bg-slate-800 text-white border-slate-700' : 'bg-white border-blue-100 text-blue-600'
                 }`}>
-                {msg.role === 'user' ? (
-                    <User size={18} />
-                ) : (
-                    <GIcon className="w-5 h-5" />
-                )}
+                    {msg.role === 'user' ? <User size={18} /> : <GIcon className="w-5 h-5" />}
                 </div>
-                <span className="text-[9px] font-bold text-slate-400 tracking-tight uppercase leading-none mt-0.5">
-                    {msg.role === 'user' ? 'Admin' : 'Gernas'}
-                </span>
             </div>
             
             <div className={`flex flex-col max-w-[90%] md:max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
               
-              {/* Message Bubble */}
-              <div className={`px-4 py-3.5 rounded-2xl text-sm leading-relaxed shadow-sm transition-all ${
+              {/* Message Bubble with Glare Effect for Assistant */}
+              <div className={`relative px-5 py-4 rounded-2xl text-sm leading-relaxed shadow-sm transition-all overflow-hidden ${
                 msg.role === 'user' 
                   ? 'bg-slate-800 text-white rounded-tr-none shadow-md' 
-                  : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none'
+                  : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]'
               }`}>
-                <MessageRenderer 
-                    content={msg.content} 
-                    isTyping={msg.isTyping && msg.role === 'assistant'} 
-                    role={msg.role} 
-                />
+                {msg.role === 'assistant' && (
+                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white via-transparent to-slate-50/50 opacity-80"></div>
+                )}
+                
+                <div className="relative z-10">
+                    <MessageRenderer content={msg.content} isTyping={msg.isTyping && msg.role === 'assistant'} role={msg.role} />
+                </div>
               </div>
 
-              {/* Citations Section - Collapsible Cards */}
-              {msg.citations && Object.keys(msg.citations).length > 0 && (
-                  <CitationBlock citations={msg.citations} />
-              )}
+              {/* Citations */}
+              {msg.citations && Object.keys(msg.citations).length > 0 && <CitationBlock citations={msg.citations} />}
 
-              <span className="text-[10px] text-slate-400 mt-1 px-1">
-                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
+              {/* Feedback & Actions Toolbar */}
+              {msg.role === 'assistant' && !msg.isTyping && (
+                  <div className="flex items-center gap-2 mt-2 ml-1 animate-in fade-in duration-500">
+                      <button onClick={() => handleCopy(msg.content)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors" title="Copy">
+                          <Copy size={14} />
+                      </button>
+                      <div className="h-3 w-px bg-slate-200 mx-1"></div>
+                      <button 
+                        onClick={() => handleFeedback(msg.id, 'thumbs_up')} 
+                        className={`p-1.5 rounded transition-colors ${msg.feedback === 'thumbs_up' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
+                      >
+                          <ThumbsUp size={14} />
+                      </button>
+                      <button 
+                        onClick={() => handleFeedback(msg.id, 'thumbs_down')} 
+                        className={`p-1.5 rounded transition-colors ${msg.feedback === 'thumbs_down' ? 'text-rose-600 bg-rose-50' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'}`}
+                      >
+                          <ThumbsDown size={14} />
+                      </button>
+                      <span className="text-[10px] text-slate-300 ml-auto">{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+              )}
             </div>
           </div>
         ))}
         
-        {/* Loading Indicator (Initial connection only) */}
-        {isLoading && messages.length > 0 && messages[messages.length - 1].role === 'user' && (
-          <div className="flex gap-3">
-             {/* Ghost Avatar */}
-            <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-1 min-w-[40px]">
-                <div className="w-9 h-9 rounded-full bg-white border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm">
-                   <Sparkles size={16} className="animate-pulse" />
-                </div>
-            </div>
-
-            <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm flex items-center">
-              <div className="flex gap-1.5">
-                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-              </div>
-            </div>
-          </div>
+        {/* Loading Ghost */}
+        {isLoading && messages[messages.length - 1].role === 'user' && (
+           <div className="flex gap-3">
+             <div className="w-9 h-9 rounded-full bg-white border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm mt-1">
+                 <Sparkles size={16} className="animate-pulse" />
+             </div>
+             <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm flex items-center">
+               <div className="flex gap-1.5">
+                 <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                 <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                 <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+               </div>
+             </div>
+           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input & Suggestions */}
-      <div className="bg-white border-t border-slate-100 flex flex-col">
-          
-        {/* Suggested Questions Horizontal Scroll */}
-        {showSuggestions && suggestedPrompts.length > 0 && (
-            <div className="px-3 pt-2 pb-1 bg-slate-50/50 relative group/suggestions">
-                {/* Header for Suggestions */}
-                <div className="flex items-center justify-between mb-2 px-1">
-                    <div className="flex items-center gap-2">
-                        <Lightbulb size={12} className="text-slate-400 fill-slate-100" />
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                           Suggestions ({suggestedPrompts.length})
-                        </span>
-                    </div>
-                    
-                    {/* Close Suggestions Button */}
-                    <button 
-                        onClick={() => setShowSuggestions(false)}
-                        className="text-slate-400 hover:text-slate-600 p-0.5 hover:bg-slate-200 rounded"
-                        title="Hide Suggestions"
-                    >
-                        <X size={12} />
-                    </button>
-                </div>
-                
-                <div className="relative">
-                    {/* Left Scroll Arrow */}
-                    <button 
-                        onClick={() => scrollSuggestions('left')}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 shadow-md border border-slate-200 p-1.5 rounded-full text-slate-500 hover:text-blue-600 hover:scale-105 transition-all opacity-0 group-hover/suggestions:opacity-100 disabled:opacity-0"
-                    >
-                        <ChevronLeft size={16} />
-                    </button>
-
-                    {/* Right Scroll Arrow */}
-                    <button 
-                        onClick={() => scrollSuggestions('right')}
-                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 shadow-md border border-slate-200 p-1.5 rounded-full text-slate-500 hover:text-blue-600 hover:scale-105 transition-all opacity-0 group-hover/suggestions:opacity-100 disabled:opacity-0"
-                    >
-                        <ChevronRight size={16} />
-                    </button>
-
-                    <div 
-                        ref={scrollContainerRef}
-                        className="flex gap-2 overflow-x-auto pb-2 px-1 scroll-smooth" 
-                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                    >
-                        {suggestedPrompts.map((prompt, idx) => (
-                            <button 
-                                key={idx}
-                                onClick={() => handleSend(prompt)}
-                                className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-300 text-slate-700 hover:text-slate-900 text-xs rounded-full transition-all whitespace-nowrap font-medium group"
-                                disabled={isLoading}
-                            >
-                                <Sparkles size={11} className="text-slate-500 group-hover:text-slate-700" />
-                                {prompt}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        )}
-        
-        {/* Show Suggestions Toggle if hidden */}
-        {!showSuggestions && (
-             <div className="flex justify-center -mt-3 mb-1 relative z-20">
-                <button 
-                    onClick={() => { setShowSuggestions(true); shuffleSuggestions(); }}
-                    className="bg-white border border-slate-200 shadow-sm text-slate-400 hover:text-blue-500 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1 transition-all hover:shadow-md"
-                >
-                    <Lightbulb size={10} /> Show Suggestions
-                </button>
-             </div>
-        )}
-
-        {/* Input Field */}
-        <div className="p-4 pt-2">
-            <div className="relative flex items-center gap-2">
+      {/* Input Area */}
+      <div className="bg-white border-t border-slate-100 p-4 pb-2 z-20">
+        <div className="relative flex items-center gap-2">
             <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Ask about risks, actors, or next steps..."
-                className="flex-1 pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all"
+                placeholder="Ask a question..."
+                className="flex-1 pl-4 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all shadow-inner"
                 disabled={isLoading}
             /> 
             <button
                 onClick={() => handleSend()}
                 disabled={!input.trim() || isLoading}
-                className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
+                className="absolute right-2 top-1.5 bottom-1.5 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-blue-500/20"
             >
-                <Send size={18} />
+                {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
             </button>
-            </div>
         </div>
+        <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">
+            Note that the CBG Knowledge Hub can make mistakes. Please double check important information.
+        </p>
       </div>
     </div>
   );

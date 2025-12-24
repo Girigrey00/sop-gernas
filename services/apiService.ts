@@ -1,5 +1,5 @@
 
-import { LibraryDocument, SopResponse, Product } from '../types';
+import { LibraryDocument, SopResponse, Product, ChatSession, FeedbackPayload, ChatSessionDetail } from '../types';
 
 // CHANGED: Use relative path to leverage Vite Proxy configured in vite.config.ts
 // This resolves CORS issues by routing requests through the local dev server
@@ -256,6 +256,51 @@ export const apiService = {
         } catch (error: any) {
             console.error("Streaming Error:", error);
             if (payload.onError) payload.onError(error.message || "Stream failed");
+        }
+    },
+
+    // --- Feedback Endpoint ---
+    submitFeedback: async (feedback: FeedbackPayload): Promise<any> => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/feedback`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(feedback)
+            });
+            return handleResponse(response);
+        } catch (error) {
+            console.error("Failed to submit feedback", error);
+            throw error;
+        }
+    },
+
+    // --- Chat History ---
+    getChatSessions: async (): Promise<ChatSession[]> => {
+        try {
+            const url = `${API_BASE_URL}/history/sessions`;
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                return data.sessions || [];
+            }
+            return [];
+        } catch (e) {
+            console.error("Failed to fetch history", e);
+            return [];
+        }
+    },
+
+    getChatSessionDetails: async (sessionId: string): Promise<ChatSessionDetail | null> => {
+        try {
+            const url = `${API_BASE_URL}/history/sessions/${sessionId}`;
+            const res = await fetch(url);
+            if(res.ok) {
+                return await res.json();
+            }
+            return null;
+        } catch (e) {
+            console.error("Failed to fetch session details", e);
+            return null;
         }
     },
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ReactFlow, { 
     Background, 
@@ -36,9 +37,10 @@ interface CanvasPageProps {
     onFlowGenerated?: (data: SopResponse, prompt: string) => void;
     onBack: () => void;
     productContext?: Product | null;
+    initialSessionId?: string;
 }
 
-const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, onFlowGenerated, onBack, productContext }) => {
+const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, onFlowGenerated, onBack, productContext, initialSessionId }) => {
     // Flow State
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -48,8 +50,8 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
     const [layoutMode, setLayoutMode] = useState<LayoutType>('SWIMLANE');
     const [activeStage, setActiveStage] = useState<string>('ALL');
     const [selectedStep, setSelectedStep] = useState<ProcessStep | null>(null);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [activePanel, setActivePanel] = useState<'GUIDE' | 'CHAT'>('GUIDE');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(!!initialSessionId); // Open by default if session ID provided
+    const [activePanel, setActivePanel] = useState<'GUIDE' | 'CHAT'>(initialSessionId ? 'CHAT' : 'GUIDE'); // Default to Chat if session ID provided
     const [isLoading, setIsLoading] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [isLegendOpen, setIsLegendOpen] = useState(false);
@@ -504,6 +506,7 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
                                 productContext={productContext}
                                 onToggleMaximize={() => setIsSidebarMaximized(!isSidebarMaximized)}
                                 isMaximized={isSidebarMaximized}
+                                initialSessionId={initialSessionId}
                             />
                         )}
                     </>
@@ -513,12 +516,13 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
     );
 };
 
-const CanvasPage = ({ initialPrompt, initialData, onFlowGenerated, onBack, productContext }: { 
+const CanvasPage = ({ initialPrompt, initialData, onFlowGenerated, onBack, productContext, initialSessionId }: { 
     initialPrompt?: string, 
     initialData?: SopResponse | null,
     onFlowGenerated?: (data: SopResponse, prompt: string) => void,
     onBack: () => void,
-    productContext?: Product | null
+    productContext?: Product | null,
+    initialSessionId?: string
 }) => {
     return (
         <ReactFlowProvider>
@@ -528,6 +532,7 @@ const CanvasPage = ({ initialPrompt, initialData, onFlowGenerated, onBack, produ
                 onFlowGenerated={onFlowGenerated} 
                 onBack={onBack}
                 productContext={productContext}
+                initialSessionId={initialSessionId}
              />
         </ReactFlowProvider>
     );

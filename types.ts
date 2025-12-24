@@ -1,5 +1,4 @@
 
-
 // Enums for clarity
 export enum StepType {
   Start = 'Start',
@@ -84,12 +83,54 @@ export interface SopResponse {
   metadata?: any;
 }
 
+// --- History & Chat API Types ---
+
+export interface ChatMessageDetail {
+    question_id: string;
+    question: string;
+    answer: string;
+    citations?: Record<string, string>;
+    clarification_needed?: boolean;
+    timestamp: string;
+}
+
+export interface ChatSessionDetail {
+    _id: string;
+    user_id: string;
+    product: string;
+    index_name: string;
+    created_at: string;
+    last_activity: string;
+    metadata: any;
+    messages: ChatMessageDetail[];
+}
+
+export interface ChatSession {
+    _id: string;
+    user_id: string;
+    product: string;
+    index_name: string;
+    created_at: string;
+    last_activity: string;
+    message_count: number;
+    last_message?: {
+        question_id: string;
+        question: string;
+        answer: string;
+        timestamp: string;
+    };
+    // UI Helpers
+    title?: string; // Derived from last message or product
+}
+
 export interface HistoryItem {
     id: string;
     timestamp: string;
     title: string;
     prompt: string;
-    data: SopResponse;
+    data?: SopResponse; // Optional now as we fetch fresh
+    productName?: string; // For API fetching
+    sessionId?: string;
 }
 
 // --- New Library Document Interface ---
@@ -151,6 +192,15 @@ export interface Product {
     created_at?: string;
     last_updated?: string;
     metadata?: any;
+}
+
+// --- Chat & Feedback Types ---
+export interface FeedbackPayload {
+    question_id: string;
+    session_id: string;
+    feedback_type: 'thumbs_up' | 'thumbs_down';
+    comment?: string;
+    jwt_token?: string;
 }
 
 // Layout types

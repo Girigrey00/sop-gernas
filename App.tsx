@@ -3,13 +3,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import CanvasPage from './pages/CanvasPage';
 import LibraryPage from './pages/LibraryPage';
-import { View, HistoryItem, SopResponse, Product } from './types';
+import { View, HistoryItem, SopResponse, Product, ChatSession } from './types';
 import { apiService } from './services/apiService';
 import { 
     FileText, Clock, ChevronRight, Lock, User, ArrowRight, Search, ShieldAlert, 
     Briefcase, Menu, Plus, Loader2, RefreshCw, CreditCard, Landmark, ShieldCheck, Wallet, 
     Banknote, Coins, FileSpreadsheet, Zap,
-    // New Icons for Variety
     PieChart, TrendingUp, Globe, Building2, Scale, FileSignature, Calculator, 
     Receipt, Gem, Key, Database, Smartphone, Award, Target, BarChart, Stamp, BadgeDollarSign, 
     Vault, ScrollText, Truck, ShoppingCart, Anchor, Gavel, FileCheck, Layers, Trash2,
@@ -58,7 +57,6 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
 
     return (
         <div className="h-screen w-screen bg-fab-navy flex items-center justify-center relative overflow-hidden">
-            {/* Background Effects */}
             <div className="absolute inset-0 overflow-hidden">
                  <div className="absolute top-[-30%] left-[-10%] w-[800px] h-[800px] bg-fab-royal/40 blur-[120px] rounded-full animate-pulse"></div>
                  <div className="absolute bottom-[-30%] right-[-10%] w-[800px] h-[800px] bg-fab-blue/30 blur-[120px] rounded-full animate-pulse delay-700"></div>
@@ -67,14 +65,11 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
             <div className="w-full max-w-md z-10 p-6">
                 <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-2xl shadow-black/50 relative overflow-hidden">
                     
-                    {/* Logo / Brand */}
                     <div className="flex flex-col items-center gap-4 mb-10 relative z-10">
                         <div className="w-24 h-24 bg-gradient-to-br from-fab-navy via-fab-royal to-fab-blue rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-black/40 mb-2 ring-1 ring-white/10 transform hover:scale-105 transition-all duration-500 relative overflow-hidden group">
-                            {/* Inner Shine Effect */}
                             <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 blur-xl rounded-full transform translate-x-4 -translate-y-4"></div>
                             <div className="absolute bottom-0 left-0 w-12 h-12 bg-fab-sky/20 blur-lg rounded-full transform -translate-x-2 translate-y-2"></div>
                             
-                            {/* Stylized G SVG Logo */}
                             <svg viewBox="0 0 24 24" fill="currentColor" className="w-14 h-14 drop-shadow-md relative z-10">
                                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10H12v3h7.6C18.9 17.5 15.8 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8c2.04 0 3.89.78 5.31 2.05l2.25-2.25C17.2 1.9 14.76 0 12 0z" />
                             </svg>
@@ -177,7 +172,6 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
             const data = await apiService.getProducts();
             setProducts(data);
 
-            // Poll logic: Continuously poll every 5s to check for status updates
             if (!pollingRef.current) {
                pollingRef.current = setInterval(() => fetchProducts(true), 5000);
             }
@@ -222,7 +216,6 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
     };
 
     const handleDeleteClick = (product: Product) => {
-        // Trigger Modal
         setProductToDelete(product);
     };
 
@@ -243,16 +236,13 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
     };
 
     const handleCardClick = async (product: Product, e: React.MouseEvent) => {
-        // Prevent navigation if clicking on interactive elements (like delete)
         if ((e.target as HTMLElement).closest('.delete-btn')) return;
 
-        // Update context to show library link
         onSelectProduct(product, false);
 
         if (product.flow_status === 'Completed') {
             setIsLoading(true);
             try {
-                // Call API with product_name
                 const flowData = await apiService.getProcessFlow(product.product_name);
                 if (flowData) {
                     onStart(flowData);
@@ -266,10 +256,8 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
                 setIsLoading(false);
             }
         } else if (!product.flow_status) {
-            // Redirect to library upload if flow is missing
-            onSelectProduct(product, true); // Force redirect
+            onSelectProduct(product, true); 
         } else {
-            // Processing or other state
             onNotification(`Flow is currently: ${product.flow_status}. Please wait.`, 'error');
         }
     };
@@ -279,7 +267,6 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
             return item.product_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                    (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
         })
-        // Sort Newest to Oldest based on created_at or fallback
         .sort((a, b) => {
              const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
              const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
@@ -288,7 +275,6 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
 
     return (
         <div className="h-full flex flex-col bg-slate-50 relative">
-            {/* Header & Controls */}
             <div className="px-8 pt-8 pb-6 flex flex-col gap-6 bg-white border-b border-slate-200">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                     <div>
@@ -317,7 +303,6 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
                 </div>
             </div>
 
-            {/* Grid Content */}
             <div className="flex-1 overflow-y-auto px-8 py-8">
                 {isLoading ? (
                      <div className="flex flex-col items-center justify-center h-64 text-slate-500">
@@ -343,7 +328,6 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
                                     onClick={(e) => handleCardClick(item, e)}
                                     className="p-5 rounded-xl border border-slate-200 bg-white hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all text-left group flex flex-col h-full relative overflow-hidden"
                                 >
-                                     {/* Delete Button (Corner) */}
                                     <div className="absolute top-3 right-3 z-20 delete-btn">
                                          <div 
                                             onClick={(e) => {
@@ -366,7 +350,6 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
                                     <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-2 pr-6">{item.product_name}</h3>
                                     <p className="text-xs text-slate-500 leading-relaxed mb-3 flex-1 line-clamp-3" title={item.description}>{item.description || 'No description available'}</p>
 
-                                    {/* Status Section (Below Description) */}
                                     <div className="mb-4">
                                         <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded-full border inline-flex items-center gap-1 ${
                                             isCompleted ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
@@ -391,7 +374,6 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
                 )}
             </div>
 
-            {/* Create Product Modal */}
             {isCreateOpen && (
                 <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
@@ -437,7 +419,6 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
                 </div>
             )}
 
-            {/* Delete Product Confirmation Modal */}
             {productToDelete && (
                 <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 transform transition-all scale-100 opacity-100">
@@ -479,12 +460,30 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
 
 // --- History Page Component ---
 const HistoryPage = ({ 
-    history, 
-    onOpenItem 
+    onOpenSession 
 }: { 
-    history: HistoryItem[], 
-    onOpenItem: (item: HistoryItem) => void 
+    onOpenSession: (session: ChatSession) => void 
 }) => {
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadSessions = async () => {
+        setLoading(true);
+        try {
+            const data = await apiService.getChatSessions();
+             // Sort sessions by last activity desc
+            data.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
+            setSessions(data);
+        } catch(e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+    loadSessions();
+  }, []);
+
   return (
     <div className="h-full flex flex-col bg-slate-50">
       <div className="px-8 py-8 border-b border-slate-200 bg-white">
@@ -492,7 +491,9 @@ const HistoryPage = ({
         <p className="text-slate-500 text-sm">View and manage your previously generated workflows.</p>
       </div>
       <div className="flex-1 overflow-y-auto px-8 py-8">
-          {history.length === 0 ? (
+          {loading ? (
+             <div className="flex justify-center p-10"><Loader2 className="animate-spin text-slate-400" /></div>
+          ) : sessions.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-16 text-center flex flex-col items-center gap-4 max-w-xl mx-auto mt-10">
                 <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300">
                     <Clock size={28} />
@@ -504,10 +505,10 @@ const HistoryPage = ({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {history.map(item => (
+                {sessions.map(item => (
                     <button
-                        key={item.id}
-                        onClick={() => onOpenItem(item)}
+                        key={item._id}
+                        onClick={() => onOpenSession(item)}
                         className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all text-left flex flex-col h-full relative overflow-hidden"
                     >
                          <div className="absolute top-0 left-0 w-1 h-full bg-fab-royal opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -517,19 +518,19 @@ const HistoryPage = ({
                                 <FileText size={20} />
                             </div>
                             <span className="text-[10px] font-medium text-slate-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100">
-                                {new Date(item.timestamp).toLocaleDateString()}
+                                {new Date(item.last_activity).toLocaleDateString()}
                             </span>
                         </div>
 
                         <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-1 line-clamp-1">
-                            {item.title}
+                            {item.last_message?.question || item.product || 'Untitled Session'}
                         </h3>
                         <p className="text-xs text-slate-500 mb-4 line-clamp-2 flex-1">
-                            {item.data.processDefinition.title}
+                            {item.last_message?.answer || 'No content'}
                         </p>
 
                         <div className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                            Open Flow <ChevronRight size={14} />
+                            Open Chat <ChevronRight size={14} />
                         </div>
                     </button>
                 ))}
@@ -545,20 +546,14 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentView, setCurrentView] = useState<View>('HOME');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(true); // Default collapsed
+  const [isCollapsed, setIsCollapsed] = useState(true); 
   const [initialPrompt, setInitialPrompt] = useState<string>('');
-  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedSop, setSelectedSop] = useState<SopResponse | null>(null);
-  
-  // Notification State
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
-
-  // State to trigger upload modal automatically when entering library
   const [autoOpenUpload, setAutoOpenUpload] = useState(false);
-  // NEW: State to pass selected product to library for context-aware upload and filtering
   const [selectedContextProduct, setSelectedContextProduct] = useState<Product | null>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(undefined);
 
-  // Authentication Logic
   const handleLogin = (u: string, p: string) => {
       if (u === 'admin' && p === 'admin') {
           setIsAuthenticated(true);
@@ -573,6 +568,7 @@ const App: React.FC = () => {
       setInitialPrompt('');
       setSelectedSop(null);
       setSelectedContextProduct(null);
+      setCurrentSessionId(undefined);
   };
 
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
@@ -583,6 +579,7 @@ const App: React.FC = () => {
   const handleStartWithData = (data: SopResponse) => {
       setSelectedSop(data);
       setInitialPrompt('');
+      setCurrentSessionId(undefined); // Clear session ID for new flow
       setCurrentView('CANVAS');
       setIsSidebarOpen(false);
   };
@@ -595,32 +592,35 @@ const App: React.FC = () => {
       }
   };
 
+  const handleOpenSession = async (session: ChatSession) => {
+      // 1. Fetch flow data first (to open Canvas)
+      try {
+          // If session has product name, load it
+          if (session.product) {
+               const flowData = await apiService.getProcessFlow(session.product);
+               setSelectedSop(flowData);
+               setSelectedContextProduct({ 
+                   product_name: session.product, 
+                   index_name: session.index_name,
+                   // minimal product info needed for context
+                   _id: '', id: '', has_index: 'Yes', has_flow: 'Yes', document_count: 0 
+               }); 
+               
+               setCurrentSessionId(session._id); // Store session ID to pass to Canvas -> ChatAssistant
+               setCurrentView('CANVAS');
+               setIsSidebarOpen(false);
+          } else {
+              showNotification("Session has no associated product context", 'error');
+          }
+      } catch (e) {
+          showNotification("Failed to load flow for this session", 'error');
+          console.error(e);
+      }
+  };
+
   const handleFlowGenerated = (data: SopResponse, prompt: string) => {
-      const exists = history.some(h => h.title === data.processDefinition.title);
-      if (exists) return;
-
-      const newItem: HistoryItem = {
-          id: Date.now().toString(),
-          timestamp: new Date().toISOString(),
-          title: prompt,
-          prompt: prompt,
-          data: data
-      };
-      setHistory(prev => [newItem, ...prev]);
-  };
-
-  const handleOpenHistoryItem = (item: HistoryItem) => {
-      setSelectedSop(item.data);
-      setInitialPrompt('');
-      setCurrentView('CANVAS');
-      setIsSidebarOpen(false);
-  };
-
-  const handleOpenSopFromLibrary = (data: SopResponse) => {
-      setSelectedSop(data);
-      setInitialPrompt('');
-      setCurrentView('CANVAS');
-      setIsSidebarOpen(false);
+      // Legacy handler, not really needed if using new Chat/History API mostly
+      // But useful if generating flow from scratch via prompt
   };
 
   const renderContent = () => {
@@ -635,7 +635,6 @@ const App: React.FC = () => {
                 initialUploadOpen={autoOpenUpload}
                 onCloseInitialUpload={() => {
                     setAutoOpenUpload(false);
-                    // Do not clear context here to keep library filtered
                 }}
                 preselectedProduct={selectedContextProduct}
                 onBack={() => setCurrentView('HOME')}
@@ -665,10 +664,11 @@ const App: React.FC = () => {
                 onFlowGenerated={handleFlowGenerated}
                 onBack={() => setCurrentView('HOME')}
                 productContext={selectedContextProduct}
+                initialSessionId={currentSessionId}
             />
         );
       case 'HISTORY':
-        return <HistoryPage history={history} onOpenItem={handleOpenHistoryItem} />;
+        return <HistoryPage onOpenSession={handleOpenSession} />;
       default:
         return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} onNotification={showNotification} />;
     }
@@ -692,7 +692,6 @@ const App: React.FC = () => {
 
       <div className={`fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)}></div>
       
-      {/* Sidebar Container with Dynamic Width */}
       <div className={`fixed inset-y-0 left-0 z-50 ${isCollapsed ? 'w-20' : 'w-64'} transform lg:relative lg:translate-x-0 transition-all duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <Sidebar 
             currentView={currentView === 'SOPS' ? 'HOME' : currentView} 
@@ -701,6 +700,7 @@ const App: React.FC = () => {
             isCollapsed={isCollapsed}
             onToggle={() => setIsCollapsed(!isCollapsed)}
             showLibrary={!!selectedContextProduct}
+            onLoadSession={handleOpenSession}
           />
       </div>
 

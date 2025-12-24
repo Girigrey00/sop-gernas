@@ -1,7 +1,8 @@
 
-import React from 'react';
-import { Compass, LogOut, ChevronRight, BookOpen, ChevronLeft, User } from 'lucide-react';
-import { View } from '../types';
+import React, { useEffect, useState } from 'react';
+import { Compass, LogOut, ChevronRight, BookOpen, ChevronLeft, User, Clock, MessageSquare } from 'lucide-react';
+import { View, ChatSession } from '../types';
+import { apiService } from '../services/apiService';
 
 interface SidebarProps {
   currentView: View;
@@ -10,12 +11,30 @@ interface SidebarProps {
   isCollapsed: boolean;
   onToggle: () => void;
   showLibrary: boolean;
+  onLoadSession: (session: ChatSession) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, isCollapsed, onToggle, showLibrary }) => {
-  
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, isCollapsed, onToggle, showLibrary, onLoadSession }) => {
+  const [recentSessions, setRecentSessions] = useState<ChatSession[]>([]);
+
+  // Fetch recent history for the sidebar
+  useEffect(() => {
+    const fetchHistory = async () => {
+        try {
+            const sessions = await apiService.getChatSessions();
+            // Sort by last activity and take top 5
+            const sorted = sessions.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime()).slice(0, 5);
+            setRecentSessions(sorted);
+        } catch (e) {
+            console.error("Sidebar history fetch error", e);
+        }
+    };
+    fetchHistory();
+  }, [currentView]); // Refresh when view changes (e.g. after a new chat)
+
   const navItems = [
     { id: 'HOME', label: 'CBG KNOWLEDGE HUB', icon: Compass },
+    { id: 'HISTORY', label: 'History', icon: Clock },
     // Only show Library if a product context is selected
     ...(showLibrary ? [{ id: 'LIBRARY', label: 'Library', icon: BookOpen }] : []),
   ];
@@ -50,13 +69,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, is
       </button>
 
       {/* Nav Items */}
-      <div className="flex-1 px-3 py-6 space-y-2 overflow-y-auto overflow-x-hidden">
+      <div className="flex-1 px-3 py-6 space-y-2 overflow-y-auto overflow-x-hidden custom-scrollbar">
         {!isCollapsed && (
             <p className="px-3 mb-2 text-[10px] font-bold text-fab-sky/50 uppercase tracking-wider animate-in fade-in duration-300">Navigation</p>
         )}
         {navItems.map(item => {
             const Icon = item.icon;
-            // Map CANVAS view to HOME (Hub) for sidebar highlighting if needed
+            // Map CANVAS/SOPS view to HOME for highlighting if no specific match
             const isActive = currentView === item.id || (item.id === 'HOME' && (currentView === 'CANVAS' || currentView === 'SOPS'));
             return (
               <button
@@ -82,6 +101,28 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, is
               </button>
             );
         })}
+
+        {/* Recent History List */}
+        {!isCollapsed && recentSessions.length > 0 && (
+            <div className="mt-8 animate-in fade-in duration-500">
+                <p className="px-3 mb-2 text-[10px] font-bold text-fab-sky/50 uppercase tracking-wider">Recent Chats</p>
+                <div className="space-y-1">
+                    {recentSessions.map(session => (
+                        <button
+                            key={session._id}
+                            onClick={() => onLoadSession(session)}
+                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-fab-royal/30 text-fab-sky/80 hover:text-white transition-colors group flex items-start gap-2"
+                        >
+                            <MessageSquare size={14} className="mt-0.5 opacity-60 group-hover:opacity-100 shrink-0" />
+                            <div className="overflow-hidden">
+                                <p className="text-[11px] font-medium truncate w-full">{session.last_message?.question || session.product || "New Session"}</p>
+                                <p className="text-[9px] opacity-50 truncate">{new Date(session.last_activity).toLocaleDateString()}</p>
+                            </div>
+                        </button>
+                    ))}
+                </div>
+            </div>
+        )}
       </div>
 
       {/* Footer */}
