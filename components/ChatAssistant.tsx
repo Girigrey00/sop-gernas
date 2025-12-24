@@ -2,10 +2,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
-  ChevronDown, ChevronUp, Sparkles, FileText, 
-  ThumbsUp, ThumbsDown, Copy, Pin
+  ChevronDown, ChevronUp, FileText, 
+  ThumbsUp, ThumbsDown, Copy
 } from 'lucide-react';
-import { SopResponse, Product, ChatSession } from '../types';
+import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
 
 interface ChatAssistantProps {
@@ -134,7 +134,7 @@ const formatInlineText = (text: string, isUser: boolean) => {
     });
 };
 
-const MessageRenderer = ({ content, isTyping, role }: { content: string, isTyping?: boolean, role: 'user' | 'assistant' }) => {
+const MessageRenderer = ({ content, role }: { content: string, role: 'user' | 'assistant' }) => {
     const isUser = role === 'user';
     
     // Split content by lines to detect structure (Tables, Lists)
@@ -158,12 +158,12 @@ const MessageRenderer = ({ content, isTyping, role }: { content: string, isTypin
                 const rows = tableBuffer.slice(2).map(r => r.split('|').filter(c => c.trim()).map(c => c.trim())); // Skip alignment row [1]
                 
                 elements.push(
-                    <div key={`tbl-${i}`} className="my-3 overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
-                        <table className="w-full text-left text-xs">
+                    <div key={`tbl-${i}`} className="my-3 w-full overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+                        <table className="w-full text-left text-xs min-w-[300px]">
                             <thead className="bg-slate-50 border-b border-slate-200">
                                 <tr>
                                     {headers.map((h, hIdx) => (
-                                        <th key={hIdx} className="p-2 font-bold text-slate-700">{formatInlineText(h, isUser)}</th>
+                                        <th key={hIdx} className="p-2 font-bold text-slate-700 whitespace-nowrap">{formatInlineText(h, isUser)}</th>
                                     ))}
                                 </tr>
                             </thead>
@@ -171,7 +171,7 @@ const MessageRenderer = ({ content, isTyping, role }: { content: string, isTypin
                                 {rows.map((row, rIdx) => (
                                     <tr key={rIdx} className="hover:bg-slate-50/50">
                                         {row.map((cell, cIdx) => (
-                                            <td key={cIdx} className="p-2 text-slate-600">{formatInlineText(cell, isUser)}</td>
+                                            <td key={cIdx} className="p-2 text-slate-600 min-w-[80px] break-words">{formatInlineText(cell, isUser)}</td>
                                         ))}
                                     </tr>
                                 ))}
@@ -186,19 +186,17 @@ const MessageRenderer = ({ content, isTyping, role }: { content: string, isTypin
         } 
         
         if (inTable) {
-             // Should verify alignment row typically, but simplified for now
              if(trimmed.match(/^[|\s-:]+$/)) {
-                 tableBuffer.push(trimmed); // Keep alignment row in buffer logic
+                 tableBuffer.push(trimmed); 
                  return;
              }
              inTable = false; 
-             // Fallback if table broken
         }
 
         // --- Header Detection ---
         if (trimmed.startsWith('### ')) {
             elements.push(
-                <h3 key={i} className={`text-base font-bold mt-4 mb-2 ${isUser ? 'text-white' : 'text-slate-800'}`}>
+                <h3 key={i} className={`text-base font-bold mt-4 mb-2 break-words ${isUser ? 'text-white' : 'text-slate-800'}`}>
                     {formatInlineText(trimmed.replace(/^###\s+/, ''), isUser)}
                 </h3>
             );
@@ -210,7 +208,7 @@ const MessageRenderer = ({ content, isTyping, role }: { content: string, isTypin
             elements.push(
                 <div key={i} className="flex items-start gap-2 mb-1 pl-1">
                     <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${isUser ? 'bg-white' : 'bg-blue-500'}`}></span>
-                    <span className={`${isUser ? 'text-white' : 'text-slate-700'}`}>
+                    <span className={`break-words ${isUser ? 'text-white' : 'text-slate-700'}`}>
                         {formatInlineText(trimmed.substring(2), isUser)}
                     </span>
                 </div>
@@ -224,7 +222,7 @@ const MessageRenderer = ({ content, isTyping, role }: { content: string, isTypin
             elements.push(
                 <div key={i} className="flex items-start gap-2 mb-1 pl-1">
                     <span className={`font-bold min-w-[16px] ${isUser ? 'text-white/80' : 'text-slate-500'}`}>{numMatch[1]}.</span>
-                    <span className={`${isUser ? 'text-white' : 'text-slate-700'}`}>
+                    <span className={`break-words ${isUser ? 'text-white' : 'text-slate-700'}`}>
                         {formatInlineText(numMatch[2], isUser)}
                     </span>
                 </div>
@@ -237,7 +235,7 @@ const MessageRenderer = ({ content, isTyping, role }: { content: string, isTypin
             elements.push(<div key={i} className="h-3"></div>);
         } else {
             elements.push(
-                <div key={i} className={`leading-relaxed ${isUser ? 'text-white' : 'text-slate-700'}`}>
+                <div key={i} className={`leading-relaxed break-words whitespace-pre-wrap ${isUser ? 'text-white' : 'text-slate-700'}`}>
                     {formatInlineText(line, isUser)}
                 </div>
             );
@@ -245,9 +243,8 @@ const MessageRenderer = ({ content, isTyping, role }: { content: string, isTypin
     });
 
     return (
-        <div className="text-sm">
+        <div className="text-sm w-full max-w-full overflow-hidden">
             {elements}
-            {isTyping && <span className="inline-block w-1.5 h-4 ml-1 align-middle bg-blue-500 animate-pulse"></span>}
         </div>
     );
 };
@@ -262,7 +259,6 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>(DEFAULT_PROMPTS);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Initialize with passed session ID or create new if not present
   const [sessionId, setSessionId] = useState<string>(initialSessionId || (globalThis.crypto?.randomUUID() || `sess-${Date.now()}`));
 
   const streamQueue = useRef<string>('');
@@ -270,7 +266,6 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
   const streamInterval = useRef<any>(null);
   const isGenerationComplete = useRef<boolean>(false);
 
-  // If initialSessionId changes, update state and load
   useEffect(() => {
     if (initialSessionId && initialSessionId !== sessionId) {
         setSessionId(initialSessionId);
@@ -309,7 +304,6 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
   }, [initialSessionId]);
 
 
-  // Streaming Loop
   useEffect(() => {
     streamInterval.current = setInterval(() => {
         if (activeMessageId.current) {
@@ -361,15 +355,9 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
     setIsLoading(true);
 
     const botMsgId = globalThis.crypto?.randomUUID() || `qn-${Date.now()}`;
-    setMessages(prev => [...prev, {
-      id: botMsgId,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-      isTyping: true
-    }]);
+    let isFirstToken = true;
 
-    activeMessageId.current = botMsgId;
+    activeMessageId.current = null;
     streamQueue.current = '';
     isGenerationComplete.current = false;
 
@@ -384,7 +372,20 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
         session_id: sessionId,
         question_id: botMsgId, 
         product: productName,
-        onToken: (token) => { streamQueue.current += token; },
+        onToken: (token) => { 
+            if (isFirstToken) {
+                isFirstToken = false;
+                setMessages(prev => [...prev, {
+                  id: botMsgId,
+                  role: 'assistant',
+                  content: '',
+                  timestamp: new Date(),
+                  isTyping: true
+                }]);
+                activeMessageId.current = botMsgId;
+            }
+            streamQueue.current += token; 
+        },
         onComplete: (citations) => {
            isGenerationComplete.current = true;
            if (citations) {
@@ -393,13 +394,33 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
         },
         onError: (errMsg) => {
            isGenerationComplete.current = true;
-           streamQueue.current += `\n\n[Error: ${errMsg}]`;
+           if (isFirstToken) {
+               setMessages(prev => [...prev, {
+                  id: botMsgId,
+                  role: 'assistant',
+                  content: 'Sorry, I encountered an error connecting to the service.',
+                  timestamp: new Date(),
+                  isTyping: false
+               }]);
+               setIsLoading(false);
+           } else {
+               streamQueue.current += `\n\n[Error: ${errMsg}]`;
+           }
         }
       });
     } catch (error) {
       activeMessageId.current = null;
       isGenerationComplete.current = false;
       setIsLoading(false);
+      if (isFirstToken) {
+         setMessages(prev => [...prev, {
+            id: botMsgId,
+            role: 'assistant',
+            content: 'Sorry, I encountered an error. Please try again.',
+            timestamp: new Date(),
+            isTyping: false
+         }]);
+      }
     }
   };
 
@@ -438,7 +459,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
                 </div>
              </>
           ) : (
-             <div className="w-8 h-8"></div> // Spacer
+             <div className="w-8 h-8"></div>
           )}
         </div>
         
@@ -455,28 +476,25 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50/30 relative">
+      <div className="flex-1 overflow-y-auto p-4 bg-slate-50/30 relative">
         
-        {/* Welcome Screen (Only if no messages) */}
+        {/* Welcome Screen */}
         {!hasMessages && (
-             <div className="absolute inset-0 flex flex-col justify-center px-10 md:px-20 z-0 bg-slate-50/80 animate-in fade-in duration-500 overflow-y-auto">
-                <div className="max-w-4xl w-full">
-                    <h1 className="text-4xl md:text-5xl font-medium text-slate-800 mb-2 tracking-tight">Welcome to GERNAS!</h1>
-                    <h2 className="text-4xl md:text-5xl font-medium text-slate-800 mb-10 tracking-tight opacity-90">How can I help you today?</h2>
+             <div className="h-full flex flex-col justify-center px-6 md:px-12">
+                <div className="max-w-3xl w-full mx-auto py-10">
+                    <h1 className="text-3xl md:text-4xl font-semibold text-slate-800 mb-3 tracking-tight">Welcome to GERNAS!</h1>
+                    <h2 className="text-3xl md:text-4xl font-semibold text-slate-400/80 mb-10 tracking-tight">How can I help you today?</h2>
 
-                    <p className="text-sm font-semibold text-slate-500 mb-4 pl-1">Suggested questions</p>
+                    <p className="text-sm font-semibold text-slate-500 mb-4 pl-1 uppercase tracking-wide">Suggested questions</p>
 
-                    <div className="flex flex-col gap-3 items-start w-full">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
                         {suggestedPrompts.map((prompt, idx) => (
                             <button 
                                 key={idx}
                                 onClick={() => handleSend(prompt)}
-                                className="px-5 py-4 bg-slate-100 hover:bg-white border border-transparent hover:border-slate-200 rounded-2xl text-left transition-all text-slate-600 hover:text-slate-900 text-[15px] font-normal w-fit max-w-full shadow-sm relative group"
+                                className="text-left p-4 rounded-xl border border-slate-200 bg-white hover:border-blue-300 hover:shadow-md transition-all text-slate-600 hover:text-blue-700 text-sm font-medium leading-relaxed"
                             >
                                 {prompt}
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Pin size={14} className="text-slate-400 rotate-45" />
-                                </span>
                             </button>
                         ))}
                     </div>
@@ -485,83 +503,86 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
         )}
 
         {/* Messages List */}
-        {hasMessages && messages.filter(m => m.id !== 'sys').map((msg) => (
-          <div key={msg.id} className={`flex gap-3 relative z-10 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-            
-            <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-1 min-w-[40px]">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-sm border transition-all ${
-                msg.role === 'user' ? 'bg-slate-800 text-white border-slate-700' : 'bg-white border-slate-200 text-slate-900'
-                }`}>
-                    {msg.role === 'user' ? <span className="text-[10px] font-bold">YOU</span> : <GIcon className="w-5 h-5" />}
-                </div>
-            </div>
-            
-            <div className={`flex flex-col max-w-[90%] md:max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-              
-              {/* Message Bubble */}
-              <div className={`relative px-5 py-4 rounded-2xl text-sm leading-relaxed shadow-sm transition-all overflow-hidden ${
-                msg.role === 'user' 
-                  ? 'bg-blue-600 text-white rounded-tr-none shadow-md' 
-                  : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]'
-              }`}>
+        {hasMessages && (
+           <div className="space-y-6 max-w-4xl mx-auto">
+            {messages.filter(m => m.id !== 'sys').map((msg) => (
+            <div key={msg.id} className={`flex gap-3 relative z-10 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                 
-                <div className="relative z-10">
-                    <MessageRenderer content={msg.content} isTyping={msg.isTyping && msg.role === 'assistant'} role={msg.role} />
+                <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-1 min-w-[40px]">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-sm border transition-all ${
+                    msg.role === 'user' ? 'bg-slate-800 text-white border-slate-700' : 'bg-white border-slate-200 text-slate-900'
+                    }`}>
+                        {msg.role === 'user' ? <span className="text-[10px] font-bold">YOU</span> : <GIcon className="w-5 h-5" />}
+                    </div>
                 </div>
-              </div>
+                
+                <div className={`flex flex-col max-w-[85%] md:max-w-[90%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                
+                {/* Message Bubble */}
+                <div className={`relative px-5 py-4 rounded-2xl text-sm leading-relaxed shadow-sm transition-all w-full overflow-hidden ${
+                    msg.role === 'user' 
+                    ? 'bg-blue-600 text-white rounded-tr-none shadow-md' 
+                    : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]'
+                }`}>
+                    <div className="relative z-10 w-full">
+                        <MessageRenderer content={msg.content} role={msg.role} />
+                    </div>
+                </div>
 
-              {/* Citations */}
-              {msg.citations && Object.keys(msg.citations).length > 0 && <CitationBlock citations={msg.citations} />}
+                {/* Citations */}
+                {msg.citations && Object.keys(msg.citations).length > 0 && <CitationBlock citations={msg.citations} />}
 
-              {/* Feedback & Actions Toolbar */}
-              {msg.role === 'assistant' && !msg.isTyping && (
-                  <div className="flex items-center gap-2 mt-2 ml-1 animate-in fade-in duration-500">
-                      <button onClick={() => handleCopy(msg.content)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors" title="Copy">
-                          <Copy size={16} />
-                      </button>
-                      <button 
-                        onClick={() => handleFeedback(msg.id, 'thumbs_up')} 
-                        className={`p-1.5 rounded transition-colors ${msg.feedback === 'thumbs_up' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
-                        title="Good Answer"
-                      >
-                          <ThumbsUp size={16} />
-                      </button>
-                      <button 
-                        onClick={() => handleFeedback(msg.id, 'thumbs_down')} 
-                        className={`p-1.5 rounded transition-colors ${msg.feedback === 'thumbs_down' ? 'text-rose-600 bg-rose-50' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'}`}
-                        title="Bad Answer"
-                      >
-                          <ThumbsDown size={16} />
-                      </button>
-                  </div>
-              )}
+                {/* Feedback & Actions Toolbar */}
+                {msg.role === 'assistant' && !msg.isTyping && (
+                    <div className="flex items-center gap-2 mt-2 ml-1 animate-in fade-in duration-500">
+                        <button onClick={() => handleCopy(msg.content)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors" title="Copy">
+                            <Copy size={16} />
+                        </button>
+                        <button 
+                            onClick={() => handleFeedback(msg.id, 'thumbs_up')} 
+                            className={`p-1.5 rounded transition-colors ${msg.feedback === 'thumbs_up' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
+                            title="Good Answer"
+                        >
+                            <ThumbsUp size={16} />
+                        </button>
+                        <button 
+                            onClick={() => handleFeedback(msg.id, 'thumbs_down')} 
+                            className={`p-1.5 rounded transition-colors ${msg.feedback === 'thumbs_down' ? 'text-rose-600 bg-rose-50' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'}`}
+                            title="Bad Answer"
+                        >
+                            <ThumbsDown size={16} />
+                        </button>
+                    </div>
+                )}
+                </div>
             </div>
-          </div>
-        ))}
-        
-        {/* Skeleton Glare Loader (3 Lines) */}
-        {isLoading && messages[messages.length - 1].role === 'user' && (
-           <div className="flex gap-3">
-             <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-900 shadow-sm mt-1">
-                 <GIcon className="w-5 h-5 animate-pulse" />
-             </div>
-             <div className="bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-tl-none shadow-sm flex flex-col gap-2 min-w-[200px]">
-                {/* Line 1 - Long with Shimmer */}
-                <div className="relative w-full h-3 bg-slate-100 rounded overflow-hidden">
-                     <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+            ))}
+
+            {/* Skeleton Glare Loader (3 Lines) */}
+            {isLoading && messages[messages.length - 1].role === 'user' && (
+            <div className="flex gap-3">
+                <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-900 shadow-sm mt-1">
+                    <GIcon className="w-5 h-5 animate-pulse" />
                 </div>
-                {/* Line 2 - Medium with Shimmer */}
-                <div className="relative w-3/4 h-3 bg-slate-100 rounded overflow-hidden">
-                     <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+                <div className="bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-tl-none shadow-sm flex flex-col gap-2 min-w-[200px] w-full max-w-lg">
+                    {/* Line 1 */}
+                    <div className="relative w-full h-3 bg-slate-100 rounded overflow-hidden">
+                        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+                    </div>
+                    {/* Line 2 */}
+                    <div className="relative w-3/4 h-3 bg-slate-100 rounded overflow-hidden">
+                        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+                    </div>
+                    {/* Line 3 */}
+                    <div className="relative w-1/2 h-3 bg-slate-100 rounded overflow-hidden">
+                        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+                    </div>
                 </div>
-                {/* Line 3 - Short with Shimmer */}
-                <div className="relative w-1/2 h-3 bg-slate-100 rounded overflow-hidden">
-                     <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
-                </div>
-             </div>
+            </div>
+            )}
+            <div ref={messagesEndRef} />
            </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}
