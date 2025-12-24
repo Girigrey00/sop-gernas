@@ -4,7 +4,7 @@ import { Compass, LogOut, ChevronRight, BookOpen, ChevronLeft, User, Clock, Mess
 import { View, ChatSession } from '../types';
 import { apiService } from '../services/apiService';
 
-interface SidebarProps {
+export interface SidebarProps {
   currentView: View;
   onNavigate: (view: View) => void;
   onLogout: () => void;
@@ -14,7 +14,15 @@ interface SidebarProps {
   onLoadSession: (session: ChatSession) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onLogout, isCollapsed, onToggle, showLibrary, onLoadSession }) => {
+const Sidebar = ({ 
+  currentView, 
+  onNavigate, 
+  onLogout, 
+  isCollapsed, 
+  onToggle, 
+  showLibrary, 
+  onLoadSession 
+}: SidebarProps) => {
   const [recentSessions, setRecentSessions] = useState<ChatSession[]>([]);
 
   // Fetch recent history for the sidebar
