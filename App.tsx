@@ -3,11 +3,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import CanvasPage from './pages/CanvasPage';
 import LibraryPage from './pages/LibraryPage';
-import { View, HistoryItem, SopResponse, Product, ChatSession } from './types';
+import { View, SopResponse, Product, ChatSession } from './types';
 import { apiService } from './services/apiService';
 import { 
     FileText, Clock, ChevronRight, Lock, User, ArrowRight, Search, ShieldAlert, 
-    Briefcase, Menu, Plus, Loader2, RefreshCw, CreditCard, Landmark, ShieldCheck, Wallet, 
+    Briefcase, Menu, Plus, Loader2, CreditCard, Landmark, ShieldCheck, Wallet, 
     Banknote, Coins, FileSpreadsheet, Zap,
     PieChart, TrendingUp, Globe, Building2, Scale, FileSignature, Calculator, 
     Receipt, Gem, Key, Database, Smartphone, Award, Target, BarChart, Stamp, BadgeDollarSign, 
@@ -618,7 +618,7 @@ const App: React.FC = () => {
       }
   };
 
-  const handleFlowGenerated = (data: SopResponse, prompt: string) => {
+  const handleFlowGenerated = (_data: SopResponse, _prompt: string) => {
       // Legacy handler, not really needed if using new Chat/History API mostly
       // But useful if generating flow from scratch via prompt
   };

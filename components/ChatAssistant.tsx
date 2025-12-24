@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
   ChevronDown, ChevronUp, User, Sparkles, FileText, 
-  Lightbulb, ChevronLeft, ThumbsUp, ThumbsDown, Copy, Check, Clock, History, MessageSquare 
+  ThumbsUp, ThumbsDown, Copy, Clock, History 
 } from 'lucide-react';
 import { SopResponse, Product, ChatSession } from '../types';
 import { apiService } from '../services/apiService';
