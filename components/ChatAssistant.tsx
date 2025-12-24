@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
   ChevronDown, ChevronUp, FileText, 
-  ThumbsUp, ThumbsDown, Copy
+  ThumbsUp, ThumbsDown, Copy, MessageSquare
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -436,9 +436,11 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
     const textToSend = manualInput || input;
     if (!textToSend.trim() || isLoading) return;
 
+    // Ensure no previous message is stuck in typing state
+    let newMessages = messages.map(m => ({ ...m, isTyping: false }));
+
     // Clear system message if it's the first interaction
-    let newMessages = [...messages];
-    if (messages.length === 1 && messages[0].id === 'sys') {
+    if (newMessages.length === 1 && newMessages[0].id === 'sys') {
         newMessages = [];
     }
 
@@ -551,7 +553,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
                 <GIcon className="w-5 h-5" />
             </div>
             <div>
-                <h3 className="font-bold text-slate-900 text-sm">GERNAS</h3>
+                <h3 className="font-bold text-slate-900 text-sm">CBG Knowledge Hub AI</h3>
                 <p className="text-[10px] text-slate-500 font-medium">Assistant</p>
             </div>
         </div>
@@ -573,18 +575,19 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
         
         {/* Welcome Screen - Always visible at top */}
         <div className="max-w-4xl mx-auto w-full mb-8 pt-4 px-2">
-            <h1 className="text-3xl md:text-4xl font-semibold text-slate-900 mb-2 tracking-tight">Welcome to GERNAS!</h1>
-            <h2 className="text-3xl md:text-4xl font-semibold text-slate-400/80 mb-8 tracking-tight">How can I help you today?</h2>
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900 mb-2 tracking-tight">Welcome to CBG Knowledge Hub AI</h1>
+            <h2 className="text-xl md:text-2xl font-semibold text-slate-400/80 mb-8 tracking-tight">How can I help you today?</h2>
 
-            <p className="text-sm font-semibold text-slate-500 mb-2 pl-1 uppercase tracking-wide">Suggested questions</p>
+            <p className="text-sm font-semibold text-slate-500 mb-3 pl-1 uppercase tracking-wide">Suggested questions</p>
 
-            <div className="flex flex-col gap-1 w-full items-start">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full">
                 {suggestedPrompts.map((prompt, idx) => (
                     <button 
                         key={idx}
                         onClick={() => handleSend(prompt)}
-                        className="text-left py-2 px-3 hover:bg-slate-100 transition-colors text-slate-600 hover:text-slate-900 text-[15px] font-normal italic w-fit max-w-full rounded"
+                        className="text-left p-3 bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 rounded-xl shadow-sm transition-all text-sm font-medium flex items-start gap-2 group"
                     >
+                         <MessageSquare size={16} className="mt-0.5 opacity-50 group-hover:opacity-100 shrink-0" />
                         {prompt}
                     </button>
                 ))}
@@ -622,25 +625,26 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
                 {msg.citations && Object.keys(msg.citations).length > 0 && <CitationBlock citations={msg.citations} />}
 
                 {/* Feedback & Actions Toolbar */}
-                {msg.role === 'assistant' && !msg.isTyping && (
-                    <div className="flex items-center gap-3 mt-2 ml-2">
-                        <button onClick={() => handleCopy(msg.content)} className="text-slate-400 hover:text-blue-600 transition-colors p-1" title="Copy">
-                            <Copy size={16} />
+                {msg.role === 'assistant' && (
+                    <div className={`flex items-center gap-3 mt-2 ml-2 transition-all duration-500 ease-in-out ${msg.isTyping ? 'opacity-0 max-h-0 overflow-hidden' : 'opacity-100 max-h-10'}`}>
+                        <button onClick={() => handleCopy(msg.content)} className="text-slate-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-slate-100 rounded-md" title="Copy">
+                            <Copy size={14} />
                         </button>
+                        <div className="w-px h-4 bg-slate-200 mx-1"></div>
                         <div className="flex items-center gap-1">
                             <button 
                                 onClick={() => handleFeedback(msg.id, 'thumbs_up')} 
-                                className={`p-1 rounded transition-colors ${msg.feedback === 'thumbs_up' ? 'text-emerald-600' : 'text-slate-400 hover:text-emerald-600'}`}
-                                title="Good Answer"
+                                className={`p-1.5 rounded-md transition-colors flex items-center gap-1 ${msg.feedback === 'thumbs_up' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-slate-100'}`}
+                                title="Helpful"
                             >
-                                <ThumbsUp size={16} />
+                                <ThumbsUp size={14} />
                             </button>
                             <button 
                                 onClick={() => handleFeedback(msg.id, 'thumbs_down')} 
-                                className={`p-1 rounded transition-colors ${msg.feedback === 'thumbs_down' ? 'text-rose-600' : 'text-slate-400 hover:text-rose-600'}`}
-                                title="Bad Answer"
+                                className={`p-1.5 rounded-md transition-colors flex items-center gap-1 ${msg.feedback === 'thumbs_down' ? 'text-rose-600 bg-rose-50' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'}`}
+                                title="Not Helpful"
                             >
-                                <ThumbsDown size={16} />
+                                <ThumbsDown size={14} />
                             </button>
                         </div>
                     </div>
@@ -697,7 +701,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
             </button>
         </div>
         <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">
-            Note that GERNAS can make mistakes. Please validate all answers provided by this tool.
+            Note that CBG Knowledge Hub AI can make mistakes. Please validate all answers provided by this tool.
         </p>
       </div>
     </div>
