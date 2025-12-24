@@ -34,6 +34,62 @@ const DEFAULT_PROMPTS = [
     "Analyze the monthly operating income trend in UAE."
 ];
 
+// Helper to clean messy JSON/Markdown questions from API
+const cleanQuestions = (raw: any[]): string[] => {
+    if (!Array.isArray(raw)) return [];
+    
+    let candidates: string[] = [];
+    // Filter only strings to be safe
+    const rawStrings = raw.filter(i => typeof i === 'string') as string[];
+
+    // Strategy 1: The API often splits the markdown block into array elements
+    // e.g. ["```json", "[\"Q1\", \"Q2\"]", "```"]
+    const combined = rawStrings.join('\n');
+    
+    // Attempt to find a JSON block in the combined string
+    const jsonBlockMatch = combined.match(/```json\s*([\s\S]*?)\s*```/) || combined.match(/\[\s*".*"\s*\]/);
+    
+    if (jsonBlockMatch) {
+        try {
+            // Try to parse the extracted block
+            const inner = jsonBlockMatch[1] || jsonBlockMatch[0];
+            const parsed = JSON.parse(inner);
+            if (Array.isArray(parsed)) {
+                parsed.forEach(p => {
+                    if (typeof p === 'string' && p.length > 5) candidates.push(p);
+                });
+                if (candidates.length > 0) return candidates; 
+            }
+        } catch (e) { 
+            // refined parsing failed, fall through to individual item check
+        }
+    }
+
+    // Strategy 2: Iterate items individually (Fall back)
+    rawStrings.forEach(item => {
+        const cleanItem = item.trim();
+        // Check for JSON array string inside an element
+        if (cleanItem.startsWith('[') && cleanItem.endsWith(']')) {
+             try {
+                const parsed = JSON.parse(cleanItem);
+                if (Array.isArray(parsed)) {
+                     parsed.forEach(p => typeof p === 'string' && candidates.push(p));
+                }
+             } catch (e) {}
+        } else {
+            // Assume it's a raw question string if it doesn't look like code syntax
+            if (!cleanItem.startsWith('```') && !cleanItem.startsWith('//') && cleanItem.length > 10) {
+                // Remove surrounding quotes if present due to bad extraction
+                const text = cleanItem.replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim();
+                candidates.push(text);
+            }
+        }
+    });
+
+    // Deduplicate and return
+    return Array.from(new Set(candidates));
+}
+
 // Branded G Logo Component
 const GIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -48,7 +104,7 @@ const CitationBlock = ({ citations }: { citations: Record<string, string> }) => 
   if (count === 0) return null;
 
   return (
-    <div className="mt-3 w-full animate-in fade-in slide-in-from-top-1 duration-500">
+    <div className="mt-3 w-full">
       <div className={`transition-all duration-300 overflow-hidden ${isOpen ? 'bg-slate-50/80 rounded-xl border border-slate-200/60 shadow-sm' : ''}`}>
         <button 
           onClick={() => setIsOpen(!isOpen)}
@@ -256,10 +312,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
       { id: 'sys', role: 'assistant', content: '', timestamp: new Date() }
   ]);
   const [isLoading, setIsLoading] = useState(false);
-  // Use metadata suggestions if available, otherwise fallback to defaults
-  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>(
-      (sopData.metadata as any)?.suggested_questions || DEFAULT_PROMPTS
-  );
+  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>(DEFAULT_PROMPTS);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const [sessionId, setSessionId] = useState<string>(initialSessionId || (globalThis.crypto?.randomUUID() || `sess-${Date.now()}`));
@@ -268,6 +321,50 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
   const activeMessageId = useRef<string | null>(null);
   const streamInterval = useRef<any>(null);
   const isGenerationComplete = useRef<boolean>(false);
+
+  // --- Fetch Suggested Questions from Documents ---
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+        let pool: string[] = [];
+        
+        // The index name to search for
+        const targetIndex = productContext?.index_name || (sopData.metadata as any)?.index_name || 'cbgknowledgehub';
+
+        // 1. Fetch from documents API for broader context
+        try {
+            const docs = await apiService.getDocuments();
+            // Filter docs relevant to this product/index
+            const relatedDocs = docs.filter(d => d.indexName === targetIndex || d.rootFolder === productContext?.product_name);
+
+            relatedDocs.forEach(d => {
+                if (d.suggested_questions && d.suggested_questions.length > 0) {
+                    const cleaned = cleanQuestions(d.suggested_questions);
+                    pool = [...pool, ...cleaned];
+                }
+            });
+        } catch (err) {
+            console.error("Failed to fetch document suggestions", err);
+        }
+
+        // 2. Also check immediate SOP metadata if api failed or yielded nothing
+        if (pool.length === 0) {
+            const metaSuggestions = (sopData.metadata as any)?.suggested_questions;
+            if (metaSuggestions && Array.isArray(metaSuggestions)) {
+                pool = cleanQuestions(metaSuggestions);
+            }
+        }
+
+        // 3. Fallback to defaults
+        if (pool.length === 0) pool = DEFAULT_PROMPTS;
+        
+        // 4. Shuffle and slice (Pick 4 random)
+        const shuffled = Array.from(new Set(pool)).sort(() => 0.5 - Math.random()).slice(0, 4);
+        setSuggestedPrompts(shuffled);
+    }
+    
+    fetchSuggestions();
+  }, [productContext, sopData]);
+
 
   useEffect(() => {
     if (initialSessionId && initialSessionId !== sessionId) {
@@ -339,8 +436,10 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
     const textToSend = manualInput || input;
     if (!textToSend.trim() || isLoading) return;
 
+    // Clear system message if it's the first interaction
+    let newMessages = [...messages];
     if (messages.length === 1 && messages[0].id === 'sys') {
-        setMessages([]); 
+        newMessages = [];
     }
 
     const userMsg: Message = {
@@ -350,10 +449,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
       timestamp: new Date()
     };
 
-    setMessages(prev => {
-        const clean = prev.filter(m => m.id !== 'sys');
-        return [...clean, userMsg];
-    });
+    setMessages([...newMessages, userMsg]);
     setInput('');
     setIsLoading(true);
 
@@ -448,22 +544,16 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
   return (
     <div className="flex flex-col h-full bg-white relative overflow-hidden">
       
-      {/* Header */}
-      <div className={`p-4 border-b border-slate-100 bg-white flex justify-between items-center shadow-sm z-20 transition-all ${hasMessages ? 'h-16' : 'h-16 bg-transparent border-none shadow-none'}`}>
+      {/* Header - Fixed Visibility */}
+      <div className="p-4 border-b border-slate-100 bg-white flex justify-between items-center shadow-sm z-20 h-16">
         <div className="flex items-center gap-3">
-          {hasMessages ? (
-             <>
-                <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white shadow-md">
-                   <GIcon className="w-5 h-5" />
-                </div>
-                <div>
-                    <h3 className="font-bold text-slate-900 text-sm">GERNAS</h3>
-                    <p className="text-[10px] text-slate-500 font-medium">Assistant</p>
-                </div>
-             </>
-          ) : (
-             <div className="w-8 h-8"></div>
-          )}
+            <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white shadow-md">
+                <GIcon className="w-5 h-5" />
+            </div>
+            <div>
+                <h3 className="font-bold text-slate-900 text-sm">GERNAS</h3>
+                <p className="text-[10px] text-slate-500 font-medium">Assistant</p>
+            </div>
         </div>
         
         <div className="flex items-center gap-2">
@@ -481,19 +571,19 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto px-4 py-6 bg-slate-50/30 relative scroll-smooth">
         
-        {/* Welcome Screen - Always visible at top of scroll */}
+        {/* Welcome Screen - Always visible at top */}
         <div className="max-w-4xl mx-auto w-full mb-8 pt-4 px-2">
             <h1 className="text-3xl md:text-4xl font-semibold text-slate-900 mb-2 tracking-tight">Welcome to GERNAS!</h1>
             <h2 className="text-3xl md:text-4xl font-semibold text-slate-400/80 mb-8 tracking-tight">How can I help you today?</h2>
 
-            <p className="text-sm font-semibold text-slate-500 mb-3 pl-1 uppercase tracking-wide">Suggested questions</p>
+            <p className="text-sm font-semibold text-slate-500 mb-2 pl-1 uppercase tracking-wide">Suggested questions</p>
 
-            <div className="flex flex-col gap-2 w-full items-start">
+            <div className="flex flex-col gap-1 w-full items-start">
                 {suggestedPrompts.map((prompt, idx) => (
                     <button 
                         key={idx}
                         onClick={() => handleSend(prompt)}
-                        className="text-left py-2 px-3 rounded-lg hover:bg-slate-100 transition-colors text-slate-600 hover:text-slate-900 text-[15px] font-normal w-fit max-w-full"
+                        className="text-left py-2 px-3 hover:bg-slate-100 transition-colors text-slate-600 hover:text-slate-900 text-[15px] font-normal italic w-fit max-w-full rounded"
                     >
                         {prompt}
                     </button>
@@ -531,26 +621,28 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
                 {/* Citations */}
                 {msg.citations && Object.keys(msg.citations).length > 0 && <CitationBlock citations={msg.citations} />}
 
-                {/* Feedback & Actions Toolbar */}
+                {/* Feedback & Actions Toolbar - ALWAYS VISIBLE for Assistant Messages that are NOT typing */}
                 {msg.role === 'assistant' && !msg.isTyping && (
-                    <div className="flex items-center gap-2 mt-2 ml-1 animate-in fade-in duration-500">
-                        <button onClick={() => handleCopy(msg.content)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors" title="Copy">
+                    <div className="flex items-center gap-3 mt-2 ml-2">
+                        <button onClick={() => handleCopy(msg.content)} className="text-slate-400 hover:text-blue-600 transition-colors p-1" title="Copy">
                             <Copy size={16} />
                         </button>
-                        <button 
-                            onClick={() => handleFeedback(msg.id, 'thumbs_up')} 
-                            className={`p-1.5 rounded transition-colors ${msg.feedback === 'thumbs_up' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
-                            title="Good Answer"
-                        >
-                            <ThumbsUp size={16} />
-                        </button>
-                        <button 
-                            onClick={() => handleFeedback(msg.id, 'thumbs_down')} 
-                            className={`p-1.5 rounded transition-colors ${msg.feedback === 'thumbs_down' ? 'text-rose-600 bg-rose-50' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'}`}
-                            title="Bad Answer"
-                        >
-                            <ThumbsDown size={16} />
-                        </button>
+                        <div className="flex items-center gap-1">
+                            <button 
+                                onClick={() => handleFeedback(msg.id, 'thumbs_up')} 
+                                className={`p-1 rounded transition-colors ${msg.feedback === 'thumbs_up' ? 'text-emerald-600' : 'text-slate-400 hover:text-emerald-600'}`}
+                                title="Good Answer"
+                            >
+                                <ThumbsUp size={16} />
+                            </button>
+                            <button 
+                                onClick={() => handleFeedback(msg.id, 'thumbs_down')} 
+                                className={`p-1 rounded transition-colors ${msg.feedback === 'thumbs_down' ? 'text-rose-600' : 'text-slate-400 hover:text-rose-600'}`}
+                                title="Bad Answer"
+                            >
+                                <ThumbsDown size={16} />
+                            </button>
+                        </div>
                     </div>
                 )}
                 </div>
