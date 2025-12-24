@@ -256,7 +256,10 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
       { id: 'sys', role: 'assistant', content: '', timestamp: new Date() }
   ]);
   const [isLoading, setIsLoading] = useState(false);
-  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>(DEFAULT_PROMPTS);
+  // Use metadata suggestions if available, otherwise fallback to defaults
+  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>(
+      (sopData.metadata as any)?.suggested_questions || DEFAULT_PROMPTS
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const [sessionId, setSessionId] = useState<string>(initialSessionId || (globalThis.crypto?.randomUUID() || `sess-${Date.now()}`));
@@ -476,35 +479,31 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-4 bg-slate-50/30 relative">
+      <div className="flex-1 overflow-y-auto px-4 py-6 bg-slate-50/30 relative scroll-smooth">
         
-        {/* Welcome Screen */}
-        {!hasMessages && (
-             <div className="h-full flex flex-col justify-center px-6 md:px-12">
-                <div className="max-w-3xl w-full mx-auto py-10">
-                    <h1 className="text-3xl md:text-4xl font-semibold text-slate-800 mb-3 tracking-tight">Welcome to GERNAS!</h1>
-                    <h2 className="text-3xl md:text-4xl font-semibold text-slate-400/80 mb-10 tracking-tight">How can I help you today?</h2>
+        {/* Welcome Screen - Always visible at top of scroll */}
+        <div className="max-w-4xl mx-auto w-full mb-8 pt-4 px-2">
+            <h1 className="text-3xl md:text-4xl font-semibold text-slate-900 mb-2 tracking-tight">Welcome to GERNAS!</h1>
+            <h2 className="text-3xl md:text-4xl font-semibold text-slate-400/80 mb-8 tracking-tight">How can I help you today?</h2>
 
-                    <p className="text-sm font-semibold text-slate-500 mb-4 pl-1 uppercase tracking-wide">Suggested questions</p>
+            <p className="text-sm font-semibold text-slate-500 mb-3 pl-1 uppercase tracking-wide">Suggested questions</p>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
-                        {suggestedPrompts.map((prompt, idx) => (
-                            <button 
-                                key={idx}
-                                onClick={() => handleSend(prompt)}
-                                className="text-left p-4 rounded-xl border border-slate-200 bg-white hover:border-blue-300 hover:shadow-md transition-all text-slate-600 hover:text-blue-700 text-sm font-medium leading-relaxed"
-                            >
-                                {prompt}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-             </div>
-        )}
+            <div className="flex flex-col gap-2 w-full items-start">
+                {suggestedPrompts.map((prompt, idx) => (
+                    <button 
+                        key={idx}
+                        onClick={() => handleSend(prompt)}
+                        className="text-left py-2 px-3 rounded-lg hover:bg-slate-100 transition-colors text-slate-600 hover:text-slate-900 text-[15px] font-normal w-fit max-w-full"
+                    >
+                        {prompt}
+                    </button>
+                ))}
+            </div>
+        </div>
 
         {/* Messages List */}
         {hasMessages && (
-           <div className="space-y-6 max-w-4xl mx-auto">
+           <div className="space-y-6 max-w-4xl mx-auto pb-4">
             {messages.filter(m => m.id !== 'sys').map((msg) => (
             <div key={msg.id} className={`flex gap-3 relative z-10 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                 
