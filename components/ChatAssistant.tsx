@@ -2,8 +2,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
-  ChevronDown, ChevronUp, User, Sparkles, FileText, 
-  ThumbsUp, ThumbsDown, Copy, Clock, History 
+  ChevronDown, ChevronUp, Sparkles, FileText, 
+  ThumbsUp, ThumbsDown, Copy, Pin
 } from 'lucide-react';
 import { SopResponse, Product, ChatSession } from '../types';
 import { apiService } from '../services/apiService';
@@ -28,12 +28,10 @@ interface Message {
 }
 
 const DEFAULT_PROMPTS = [
-    "What are the main risks in this process?",
-    "Explain the approval workflow steps.",
-    "Who are the key actors involved?",
-    "What are the control measures?",
-    "Show me the compliance requirements.",
-    "Are there any manual steps?"
+    "What is the breakdown of 2024 revenue by geography?",
+    "What is the total IT cost in APAC for the full year 2025?",
+    "How is group's operating income performing in 2025 vs. last year?",
+    "Analyze the monthly operating income trend in UAE."
 ];
 
 // Branded G Logo Component
@@ -108,13 +106,15 @@ const CitationBlock = ({ citations }: { citations: Record<string, string> }) => 
   );
 };
 
-// --- Text Formatter ---
-const formatText = (text: string, isUser: boolean) => {
+// --- Rich Text Formatter (Markdown Lite) ---
+const formatInlineText = (text: string, isUser: boolean) => {
+    // Handle Bold **text**
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, index) => {
         if (part.startsWith('**') && part.endsWith('**')) {
             return <strong key={index} className={`font-bold ${isUser ? 'text-white' : 'text-slate-900'}`}>{part.slice(2, -2)}</strong>;
         }
+        // Handle Citations [1]
         const citationParts = part.split(/(\[\d+\])/g);
         return (
             <span key={index}>
@@ -136,10 +136,118 @@ const formatText = (text: string, isUser: boolean) => {
 
 const MessageRenderer = ({ content, isTyping, role }: { content: string, isTyping?: boolean, role: 'user' | 'assistant' }) => {
     const isUser = role === 'user';
+    
+    // Split content by lines to detect structure (Tables, Lists)
+    const lines = content.split('\n');
+    const elements: React.ReactNode[] = [];
+    
+    let tableBuffer: string[] = [];
+    let inTable = false;
+
+    lines.forEach((line, i) => {
+        const trimmed = line.trim();
+        
+        // --- Table Detection ---
+        if (trimmed.startsWith('|')) {
+            inTable = true;
+            tableBuffer.push(trimmed);
+            // If this is the last line or next line is not table, process table
+            if (i === lines.length - 1 || !lines[i+1].trim().startsWith('|')) {
+                // Process accumulated table
+                const headers = tableBuffer[0].split('|').filter(c => c.trim()).map(c => c.trim());
+                const rows = tableBuffer.slice(2).map(r => r.split('|').filter(c => c.trim()).map(c => c.trim())); // Skip alignment row [1]
+                
+                elements.push(
+                    <div key={`tbl-${i}`} className="my-3 overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+                        <table className="w-full text-left text-xs">
+                            <thead className="bg-slate-50 border-b border-slate-200">
+                                <tr>
+                                    {headers.map((h, hIdx) => (
+                                        <th key={hIdx} className="p-2 font-bold text-slate-700">{formatInlineText(h, isUser)}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {rows.map((row, rIdx) => (
+                                    <tr key={rIdx} className="hover:bg-slate-50/50">
+                                        {row.map((cell, cIdx) => (
+                                            <td key={cIdx} className="p-2 text-slate-600">{formatInlineText(cell, isUser)}</td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                );
+                tableBuffer = [];
+                inTable = false;
+            }
+            return; // Skip standard processing
+        } 
+        
+        if (inTable) {
+             // Should verify alignment row typically, but simplified for now
+             if(trimmed.match(/^[|\s-:]+$/)) {
+                 tableBuffer.push(trimmed); // Keep alignment row in buffer logic
+                 return;
+             }
+             inTable = false; 
+             // Fallback if table broken
+        }
+
+        // --- Header Detection ---
+        if (trimmed.startsWith('### ')) {
+            elements.push(
+                <h3 key={i} className={`text-base font-bold mt-4 mb-2 ${isUser ? 'text-white' : 'text-slate-800'}`}>
+                    {formatInlineText(trimmed.replace(/^###\s+/, ''), isUser)}
+                </h3>
+            );
+            return;
+        }
+
+        // --- List Detection ---
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+            elements.push(
+                <div key={i} className="flex items-start gap-2 mb-1 pl-1">
+                    <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${isUser ? 'bg-white' : 'bg-blue-500'}`}></span>
+                    <span className={`${isUser ? 'text-white' : 'text-slate-700'}`}>
+                        {formatInlineText(trimmed.substring(2), isUser)}
+                    </span>
+                </div>
+            );
+            return;
+        }
+
+        // --- Numbered List Detection ---
+        const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+        if (numMatch) {
+            elements.push(
+                <div key={i} className="flex items-start gap-2 mb-1 pl-1">
+                    <span className={`font-bold min-w-[16px] ${isUser ? 'text-white/80' : 'text-slate-500'}`}>{numMatch[1]}.</span>
+                    <span className={`${isUser ? 'text-white' : 'text-slate-700'}`}>
+                        {formatInlineText(numMatch[2], isUser)}
+                    </span>
+                </div>
+            );
+            return;
+        }
+
+        // --- Standard Text ---
+        if (trimmed === '') {
+            elements.push(<div key={i} className="h-3"></div>);
+        } else {
+            elements.push(
+                <div key={i} className={`leading-relaxed ${isUser ? 'text-white' : 'text-slate-700'}`}>
+                    {formatInlineText(line, isUser)}
+                </div>
+            );
+        }
+    });
+
     return (
-        <div className={`space-y-2 font-medium leading-relaxed whitespace-pre-wrap ${isUser ? 'text-white' : 'text-slate-700'}`}>
-            {formatText(content, isUser)}
-            {!content && !isTyping && <div className="h-3"></div>}
+        <div className="text-sm">
+            {elements}
+            {isTyping && <span className="inline-block w-1.5 h-4 ml-1 align-middle bg-blue-500 animate-pulse"></span>}
         </div>
     );
 };
@@ -151,12 +259,9 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
       { id: 'sys', role: 'assistant', content: '', timestamp: new Date() }
   ]);
   const [isLoading, setIsLoading] = useState(false);
-  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
+  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>(DEFAULT_PROMPTS);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // History State
-  const [showHistory, setShowHistory] = useState(false);
-  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   // Initialize with passed session ID or create new if not present
   const [sessionId, setSessionId] = useState<string>(initialSessionId || (globalThis.crypto?.randomUUID() || `sess-${Date.now()}`));
 
@@ -169,8 +274,6 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
   useEffect(() => {
     if (initialSessionId && initialSessionId !== sessionId) {
         setSessionId(initialSessionId);
-        // Logic to load specific session details will be handled by the useEffect below if we add a loader
-        // or we can reuse handleHistoryClick logic here
         const loadSession = async () => {
              setIsLoading(true);
              try {
@@ -200,29 +303,11 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
         }
         loadSession();
     } else if (!initialSessionId && !messages.find(m => m.id === 'sys')) {
-         // Reset if no session provided (new chat)
          setSessionId(globalThis.crypto?.randomUUID());
          setMessages([{ id: 'sys', role: 'assistant', content: '', timestamp: new Date() }]);
     }
   }, [initialSessionId]);
 
-  // Load History List
-  useEffect(() => {
-    const loadHistory = async () => {
-        const sessions = await apiService.getChatSessions();
-        sessions.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
-        setChatSessions(sessions);
-    };
-    loadHistory();
-  }, [productContext, sessionId]); // Reload list when session changes (e.g. new message added)
-
-  // Load and Shuffle Suggestions
-  useEffect(() => {
-    let pool = [...DEFAULT_PROMPTS];
-    const unique = Array.from(new Set(pool));
-    const shuffled = unique.sort(() => 0.5 - Math.random());
-    setSuggestedPrompts(shuffled.slice(0, 4)); 
-  }, [productContext]);
 
   // Streaming Loop
   useEffect(() => {
@@ -324,44 +409,14 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
 
   const handleFeedback = (messageId: string, rating: 'thumbs_up' | 'thumbs_down') => {
       setMessages(prev => prev.map(m => m.id === messageId ? { ...m, feedback: rating } : m));
+      
       apiService.submitFeedback({
           question_id: messageId,
           session_id: sessionId,
-          feedback_type: rating
+          feedback_type: rating,
+      }).then((res) => {
+        console.log("Feedback submitted", res);
       }).catch(err => console.error(err));
-  };
-
-  const handleHistoryClick = async (session: ChatSession) => {
-      setIsLoading(true);
-      try {
-          const detail = await apiService.getChatSessionDetails(session._id);
-          if (detail && detail.messages) {
-              const mappedMessages: Message[] = [];
-              detail.messages.forEach(m => {
-                  mappedMessages.push({
-                      id: `u-${m.question_id}`,
-                      role: 'user',
-                      content: m.question,
-                      timestamp: new Date(m.timestamp)
-                  });
-                  mappedMessages.push({
-                      id: m.question_id,
-                      role: 'assistant',
-                      content: m.answer,
-                      citations: m.citations,
-                      timestamp: new Date(m.timestamp),
-                      isTyping: false
-                  });
-              });
-              setMessages(mappedMessages);
-              setSessionId(session._id);
-              setShowHistory(false);
-          }
-      } catch (e) {
-          console.error("Failed to load session", e);
-      } finally {
-          setIsLoading(false);
-      }
   };
 
   const hasMessages = messages.length > 1;
@@ -374,12 +429,12 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
         <div className="flex items-center gap-3">
           {hasMessages ? (
              <>
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-                    <GIcon className="w-5 h-5" />
+                <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white shadow-md">
+                   <GIcon className="w-5 h-5" />
                 </div>
                 <div>
-                    <h3 className="font-bold text-slate-900 text-sm">CBG KNOWLEDGE HUB</h3>
-                    <p className="text-[10px] text-slate-500 font-medium">AI Assistant Active</p>
+                    <h3 className="font-bold text-slate-900 text-sm">GERNAS</h3>
+                    <p className="text-[10px] text-slate-500 font-medium">Assistant</p>
                 </div>
              </>
           ) : (
@@ -388,13 +443,6 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
         </div>
         
         <div className="flex items-center gap-2">
-            <button 
-                onClick={() => setShowHistory(!showHistory)}
-                className={`p-1.5 rounded-md transition-colors ${showHistory ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`}
-                title="Chat History"
-            >
-                <History size={18} />
-            </button>
             {onToggleMaximize && (
                 <button onClick={onToggleMaximize} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
                     {isMaximized ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
@@ -406,64 +454,32 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
         </div>
       </div>
 
-      {/* History Slide-over Sidebar */}
-      <div className={`absolute top-16 right-0 bottom-0 w-64 bg-slate-50 border-l border-slate-200 z-30 transform transition-transform duration-300 ${showHistory ? 'translate-x-0' : 'translate-x-full'}`}>
-            <div className="p-4 border-b border-slate-200 bg-white">
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                    <Clock size={12} /> Recent Sessions
-                </h4>
-            </div>
-            <div className="overflow-y-auto h-full p-2 space-y-2">
-                {chatSessions.length === 0 ? (
-                    <p className="text-xs text-slate-400 text-center py-4">No history available</p>
-                ) : (
-                    chatSessions.map(session => (
-                        <button 
-                            key={session._id} 
-                            onClick={() => handleHistoryClick(session)}
-                            className={`w-full text-left p-3 rounded-lg border hover:shadow-sm transition-all group ${
-                                session._id === sessionId 
-                                ? 'bg-blue-50 border-blue-200' 
-                                : 'bg-white border-slate-200 hover:border-blue-300'
-                            }`}
-                        >
-                            <p className={`text-xs font-bold truncate ${session._id === sessionId ? 'text-blue-700' : 'text-slate-700 group-hover:text-blue-600'}`}>
-                                {session.last_message?.question || session.product || 'Untitled Session'}
-                            </p>
-                            <p className="text-[10px] text-slate-400 mt-1 truncate">{session.last_message?.answer || 'No messages'}</p>
-                            <p className="text-[9px] text-slate-300 mt-2">{new Date(session.last_activity).toLocaleDateString()}</p>
-                        </button>
-                    ))
-                )}
-            </div>
-      </div>
-
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50/30 relative">
         
         {/* Welcome Screen (Only if no messages) */}
         {!hasMessages && (
-             <div className="absolute inset-0 flex flex-col items-center justify-center p-8 z-0 animate-in fade-in duration-500">
-                <div className="mb-6 w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-xl shadow-blue-500/30">
-                    <GIcon className="w-8 h-8" />
-                </div>
-                <h1 className="text-2xl font-bold text-slate-900 mb-2 text-center">Welcome to CBG Knowledge Hub!</h1>
-                <p className="text-slate-500 mb-10 text-center">How can I help you today?</p>
+             <div className="absolute inset-0 flex flex-col justify-center px-10 md:px-20 z-0 bg-slate-50/80 animate-in fade-in duration-500 overflow-y-auto">
+                <div className="max-w-4xl w-full">
+                    <h1 className="text-4xl md:text-5xl font-medium text-slate-800 mb-2 tracking-tight">Welcome to GERNAS!</h1>
+                    <h2 className="text-4xl md:text-5xl font-medium text-slate-800 mb-10 tracking-tight opacity-90">How can I help you today?</h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
-                    {suggestedPrompts.map((prompt, idx) => (
-                        <button 
-                            key={idx}
-                            onClick={() => handleSend(prompt)}
-                            className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-200 hover:scale-[1.02] transition-all text-left group"
-                        >
-                            <div className="flex items-center gap-2 mb-1">
-                                <Sparkles size={14} className="text-slate-300 group-hover:text-blue-500" />
-                                <span className="text-xs font-bold text-slate-400 group-hover:text-blue-600 uppercase tracking-wider">Suggestion</span>
-                            </div>
-                            <p className="text-sm text-slate-700 font-medium">{prompt}</p>
-                        </button>
-                    ))}
+                    <p className="text-sm font-semibold text-slate-500 mb-4 pl-1">Suggested questions</p>
+
+                    <div className="flex flex-col gap-3 items-start w-full">
+                        {suggestedPrompts.map((prompt, idx) => (
+                            <button 
+                                key={idx}
+                                onClick={() => handleSend(prompt)}
+                                className="px-5 py-4 bg-slate-100 hover:bg-white border border-transparent hover:border-slate-200 rounded-2xl text-left transition-all text-slate-600 hover:text-slate-900 text-[15px] font-normal w-fit max-w-full shadow-sm relative group"
+                            >
+                                {prompt}
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Pin size={14} className="text-slate-400 rotate-45" />
+                                </span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
              </div>
         )}
@@ -474,23 +490,20 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
             
             <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-1 min-w-[40px]">
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-sm border transition-all ${
-                msg.role === 'user' ? 'bg-slate-800 text-white border-slate-700' : 'bg-white border-blue-100 text-blue-600'
+                msg.role === 'user' ? 'bg-slate-800 text-white border-slate-700' : 'bg-white border-slate-200 text-slate-900'
                 }`}>
-                    {msg.role === 'user' ? <User size={18} /> : <GIcon className="w-5 h-5" />}
+                    {msg.role === 'user' ? <span className="text-[10px] font-bold">YOU</span> : <GIcon className="w-5 h-5" />}
                 </div>
             </div>
             
             <div className={`flex flex-col max-w-[90%] md:max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
               
-              {/* Message Bubble with Glare Effect for Assistant */}
+              {/* Message Bubble */}
               <div className={`relative px-5 py-4 rounded-2xl text-sm leading-relaxed shadow-sm transition-all overflow-hidden ${
                 msg.role === 'user' 
-                  ? 'bg-slate-800 text-white rounded-tr-none shadow-md' 
+                  ? 'bg-blue-600 text-white rounded-tr-none shadow-md' 
                   : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]'
               }`}>
-                {msg.role === 'assistant' && (
-                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white via-transparent to-slate-50/50 opacity-80"></div>
-                )}
                 
                 <div className="relative z-10">
                     <MessageRenderer content={msg.content} isTyping={msg.isTyping && msg.role === 'assistant'} role={msg.role} />
@@ -504,40 +517,47 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
               {msg.role === 'assistant' && !msg.isTyping && (
                   <div className="flex items-center gap-2 mt-2 ml-1 animate-in fade-in duration-500">
                       <button onClick={() => handleCopy(msg.content)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors" title="Copy">
-                          <Copy size={14} />
+                          <Copy size={16} />
                       </button>
-                      <div className="h-3 w-px bg-slate-200 mx-1"></div>
                       <button 
                         onClick={() => handleFeedback(msg.id, 'thumbs_up')} 
                         className={`p-1.5 rounded transition-colors ${msg.feedback === 'thumbs_up' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
+                        title="Good Answer"
                       >
-                          <ThumbsUp size={14} />
+                          <ThumbsUp size={16} />
                       </button>
                       <button 
                         onClick={() => handleFeedback(msg.id, 'thumbs_down')} 
                         className={`p-1.5 rounded transition-colors ${msg.feedback === 'thumbs_down' ? 'text-rose-600 bg-rose-50' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'}`}
+                        title="Bad Answer"
                       >
-                          <ThumbsDown size={14} />
+                          <ThumbsDown size={16} />
                       </button>
-                      <span className="text-[10px] text-slate-300 ml-auto">{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
               )}
             </div>
           </div>
         ))}
         
-        {/* Loading Ghost */}
+        {/* Skeleton Glare Loader (3 Lines) */}
         {isLoading && messages[messages.length - 1].role === 'user' && (
            <div className="flex gap-3">
-             <div className="w-9 h-9 rounded-full bg-white border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm mt-1">
-                 <Sparkles size={16} className="animate-pulse" />
+             <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-900 shadow-sm mt-1">
+                 <GIcon className="w-5 h-5 animate-pulse" />
              </div>
-             <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm flex items-center">
-               <div className="flex gap-1.5">
-                 <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                 <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                 <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-               </div>
+             <div className="bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-tl-none shadow-sm flex flex-col gap-2 min-w-[200px]">
+                {/* Line 1 - Long with Shimmer */}
+                <div className="relative w-full h-3 bg-slate-100 rounded overflow-hidden">
+                     <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+                </div>
+                {/* Line 2 - Medium with Shimmer */}
+                <div className="relative w-3/4 h-3 bg-slate-100 rounded overflow-hidden">
+                     <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+                </div>
+                {/* Line 3 - Short with Shimmer */}
+                <div className="relative w-1/2 h-3 bg-slate-100 rounded overflow-hidden">
+                     <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+                </div>
              </div>
            </div>
         )}
@@ -546,26 +566,26 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
 
       {/* Input Area */}
       <div className="bg-white border-t border-slate-100 p-4 pb-2 z-20">
-        <div className="relative flex items-center gap-2">
+        <div className="relative flex items-center gap-2 max-w-4xl mx-auto w-full">
             <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="Ask a question..."
-                className="flex-1 pl-4 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all shadow-inner"
+                className="flex-1 pl-5 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all shadow-inner"
                 disabled={isLoading}
             /> 
             <button
                 onClick={() => handleSend()}
                 disabled={!input.trim() || isLoading}
-                className="absolute right-2 top-1.5 bottom-1.5 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-blue-500/20"
+                className="absolute right-2 top-1.5 bottom-1.5 p-2 bg-slate-900 hover:bg-slate-800 text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
             >
                 {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
             </button>
         </div>
         <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">
-            Note that the CBG Knowledge Hub can make mistakes. Please double check important information.
+            Note that GERNAS can make mistakes. Please validate all answers provided by this tool.
         </p>
       </div>
     </div>
