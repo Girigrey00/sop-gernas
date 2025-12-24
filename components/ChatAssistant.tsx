@@ -436,9 +436,11 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
     const textToSend = manualInput || input;
     if (!textToSend.trim() || isLoading) return;
 
+    // Ensure no previous message is stuck in typing state
+    let newMessages = messages.map(m => ({ ...m, isTyping: false }));
+    
     // Clear system message if it's the first interaction
-    let newMessages = [...messages];
-    if (messages.length === 1 && messages[0].id === 'sys') {
+    if (newMessages.length === 1 && newMessages[0].id === 'sys') {
         newMessages = [];
     }
 
@@ -621,26 +623,27 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
                 {/* Citations */}
                 {msg.citations && Object.keys(msg.citations).length > 0 && <CitationBlock citations={msg.citations} />}
 
-                {/* Feedback & Actions Toolbar - ALWAYS VISIBLE for Assistant Messages that are NOT typing */}
-                {msg.role === 'assistant' && !msg.isTyping && (
-                    <div className="flex items-center gap-3 mt-2 ml-2">
-                        <button onClick={() => handleCopy(msg.content)} className="text-slate-400 hover:text-blue-600 transition-colors p-1" title="Copy">
-                            <Copy size={16} />
+                {/* Feedback & Actions Toolbar */}
+                {msg.role === 'assistant' && (
+                    <div className={`flex items-center gap-3 mt-2 ml-2 transition-all duration-500 ease-in-out ${msg.isTyping ? 'opacity-0 max-h-0 overflow-hidden' : 'opacity-100 max-h-10'}`}>
+                        <button onClick={() => handleCopy(msg.content)} className="text-slate-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-slate-100 rounded-md" title="Copy">
+                            <Copy size={14} />
                         </button>
+                        <div className="w-px h-4 bg-slate-200 mx-1"></div>
                         <div className="flex items-center gap-1">
                             <button 
                                 onClick={() => handleFeedback(msg.id, 'thumbs_up')} 
-                                className={`p-1 rounded transition-colors ${msg.feedback === 'thumbs_up' ? 'text-emerald-600' : 'text-slate-400 hover:text-emerald-600'}`}
-                                title="Good Answer"
+                                className={`p-1.5 rounded-md transition-colors flex items-center gap-1 ${msg.feedback === 'thumbs_up' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-slate-100'}`}
+                                title="Helpful"
                             >
-                                <ThumbsUp size={16} />
+                                <ThumbsUp size={14} />
                             </button>
                             <button 
                                 onClick={() => handleFeedback(msg.id, 'thumbs_down')} 
-                                className={`p-1 rounded transition-colors ${msg.feedback === 'thumbs_down' ? 'text-rose-600' : 'text-slate-400 hover:text-rose-600'}`}
-                                title="Bad Answer"
+                                className={`p-1.5 rounded-md transition-colors flex items-center gap-1 ${msg.feedback === 'thumbs_down' ? 'text-rose-600 bg-rose-50' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'}`}
+                                title="Not Helpful"
                             >
-                                <ThumbsDown size={16} />
+                                <ThumbsDown size={14} />
                             </button>
                         </div>
                     </div>
