@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import CanvasPage from './pages/CanvasPage';
@@ -12,7 +11,7 @@ import {
     PieChart, TrendingUp, Globe, Building2, Scale, FileSignature, Calculator, 
     Receipt, Gem, Key, Database, Smartphone, Award, Target, BarChart, Stamp, BadgeDollarSign, 
     Vault, ScrollText, Truck, ShoppingCart, Anchor, Gavel, FileCheck, Layers, Trash2,
-    X, CheckCircle, AlertTriangle, MessageSquareText
+    X, CheckCircle, AlertTriangle, MessageSquareText, Calendar, Hash, MessageCircle
 } from 'lucide-react';
 
 // --- Icon Helper ---
@@ -33,6 +32,21 @@ const getProductIcon = (name: string) => {
     for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
     return PRODUCT_ICONS[Math.abs(hash) % PRODUCT_ICONS.length];
 };
+
+// --- Helper: Create Fallback SOP Data ---
+// Used when real flow data cannot be fetched but we still need to open the Chat Interface
+const createFallbackSop = (productName: string, indexName: string): SopResponse => ({
+    startNode: { stepId: 'START', stepName: 'Start', description: 'Process Start', actor: 'System', stepType: 'Start', nextStep: null },
+    endNode: { stepId: 'END', stepName: 'End', description: 'Process End', actor: 'System', stepType: 'End', nextStep: null },
+    processDefinition: { title: productName, version: '1.0', classification: 'N/A', documentLink: '#' },
+    processObjectives: [],
+    inherentRisks: [],
+    processFlow: { stages: [] }, // Empty stages will result in empty canvas, which is fine for chat-only view
+    metricsAndMeasures: [],
+    policiesAndStandards: [],
+    qualityAssurance: [],
+    metadata: { index_name: indexName, product_name: productName }
+});
 
 // --- Login Page Component ---
 const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) => {
@@ -492,7 +506,7 @@ const HistoryPage = ({
         <p className="text-slate-500 text-sm">Resume previous conversations and view generated insights.</p>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-8 max-w-6xl mx-auto w-full">
+      <div className="flex-1 overflow-y-auto p-8 max-w-5xl mx-auto w-full">
           {loading ? (
              <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-fab-royal" size={32} /></div>
           ) : sessions.length === 0 ? (
@@ -511,41 +525,50 @@ const HistoryPage = ({
                     <button
                         key={item._id}
                         onClick={() => onOpenSession(item)}
-                        className="group w-full bg-white p-4 rounded-xl border border-slate-200 hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all flex items-center justify-between gap-4 text-left"
+                        className="group relative w-full bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-lg hover:shadow-fab-royal/5 hover:border-fab-royal/30 transition-all duration-300 text-left flex items-center gap-6 overflow-hidden"
                     >
-                        <div className="flex items-center gap-4 flex-1 min-w-0">
-                             {/* Icon */}
-                            <div className="w-12 h-12 rounded-full bg-fab-royal/5 text-fab-royal flex items-center justify-center border border-fab-royal/10 group-hover:bg-fab-royal group-hover:text-white transition-colors shrink-0">
-                                <MessageSquareText size={20} />
-                            </div>
-                            
-                            {/* Text Info */}
-                            <div className="flex flex-col min-w-0">
-                                <h3 className="text-base font-bold text-slate-800 group-hover:text-fab-royal truncate">
+                         {/* Hover Accent Bar */}
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-fab-royal transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+
+                        {/* Icon */}
+                        <div className="w-12 h-12 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center border border-slate-100 group-hover:bg-fab-royal group-hover:text-white group-hover:border-fab-royal transition-all shrink-0">
+                            <MessageCircle size={22} />
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-base font-bold text-slate-800 group-hover:text-fab-royal truncate pr-4 leading-tight">
                                    {item.last_message?.question || "New Session"}
                                 </h3>
-                                <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
-                                    <span className="font-medium px-2 py-0.5 bg-slate-100 rounded text-slate-600 border border-slate-200 group-hover:bg-fab-royal/5 group-hover:border-fab-royal/20 group-hover:text-fab-royal transition-colors">
-                                        {item.product || 'General'}
-                                    </span>
-                                    <span className="flex items-center gap-1 opacity-60">
-                                        <Clock size={12} />
-                                        {new Date(item.last_activity).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold uppercase border border-slate-200 group-hover:bg-fab-royal/5 group-hover:text-fab-royal group-hover:border-fab-royal/20 transition-colors flex items-center gap-1.5">
+                                        <Hash size={10} />
+                                        {item.message_count || 0} Q/A
                                     </span>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Right Side Stats & Action */}
-                        <div className="flex items-center gap-6 shrink-0">
-                            <div className="flex flex-col items-end">
-                                <span className="text-sm font-bold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 group-hover:bg-fab-royal/5 group-hover:text-fab-royal group-hover:border-fab-royal/20 transition-colors">
-                                    {item.message_count || 0} Q/A
+                            <div className="flex items-center gap-4 text-xs text-slate-500">
+                                <span className="flex items-center gap-1.5 font-medium text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                                    <Briefcase size={10} className="opacity-70" />
+                                    {item.product || 'General'}
+                                </span>
+                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                <span className="flex items-center gap-1.5 opacity-80">
+                                    <Calendar size={10} />
+                                    {new Date(item.last_activity).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                                <span className="flex items-center gap-1.5 opacity-80">
+                                    <Clock size={10} />
+                                    {new Date(item.last_activity).toLocaleTimeString(undefined, {hour: '2-digit', minute:'2-digit'})}
                                 </span>
                             </div>
-                            <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-fab-royal group-hover:text-white transition-all border border-transparent group-hover:border-fab-royal/20">
-                                <ChevronRight size={16} />
-                            </div>
+                        </div>
+
+                        {/* Arrow */}
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 group-hover:text-fab-royal group-hover:translate-x-1 transition-all">
+                            <ChevronRight size={20} />
                         </div>
                     </button>
                 ))}
@@ -607,30 +630,47 @@ const App: React.FC = () => {
       }
   };
 
+  // UPDATED: Robust Session Opener
   const handleOpenSession = async (session: ChatSession) => {
-      // 1. Fetch flow data first (to open Canvas)
+      // 1. Determine product context (fallback if missing)
+      const productName = session.product || "General Chat";
+      const indexName = session.index_name || "cbgknowledgehub";
+
+      // 2. Set context immediately (critical for ChatAssistant to load)
+      setCurrentSessionId(session._id);
+      setSelectedContextProduct({ 
+          product_name: productName, 
+          index_name: indexName,
+          // minimal product info needed for context
+          _id: session._id, id: session._id, has_index: 'Yes', has_flow: 'No', document_count: 0 
+      }); 
+
+      // 3. Try to fetch flow data (Bonus context)
+      // Even if this fails, we proceed to open the Canvas so the Chat works.
       try {
-          // If session has product name, load it
-          if (session.product) {
-               const flowData = await apiService.getProcessFlow(session.product);
-               setSelectedSop(flowData);
-               setSelectedContextProduct({ 
-                   product_name: session.product, 
-                   index_name: session.index_name,
-                   // minimal product info needed for context
-                   _id: '', id: '', has_index: 'Yes', has_flow: 'Yes', document_count: 0 
-               }); 
-               
-               setCurrentSessionId(session._id); // Store session ID to pass to Canvas -> ChatAssistant
-               setCurrentView('CANVAS');
-               setIsSidebarOpen(false);
+          // Attempt to load flow if we have a product name
+          if (productName && productName !== "General Chat") {
+               const flowData = await apiService.getProcessFlow(productName);
+               if (flowData && flowData.processFlow) {
+                   setSelectedSop(flowData);
+               } else {
+                   // Flow structure missing/invalid -> Use Fallback
+                   console.warn("Flow data incomplete, using fallback for chat view.");
+                   setSelectedSop(createFallbackSop(productName, indexName));
+               }
           } else {
-              showNotification("Session has no associated product context", 'error');
+               // No product linked -> Use Fallback
+               setSelectedSop(createFallbackSop(productName, indexName));
           }
       } catch (e) {
-          showNotification("Failed to load flow for this session", 'error');
-          console.error(e);
+          console.warn("Failed to load flow for this session. Opening in Chat-Only mode.", e);
+          // 4. Fallback on Error: Create dummy SOP data so CanvasPage renders and ChatAssistant mounts
+          setSelectedSop(createFallbackSop(productName, indexName));
       }
+
+      // 5. Navigate
+      setCurrentView('CANVAS');
+      setIsSidebarOpen(false);
   };
 
   const handleFlowGenerated = (_data: SopResponse, _prompt: string) => {
