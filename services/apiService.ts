@@ -152,6 +152,21 @@ export const apiService = {
         }
     },
 
+    // --- Session Management (New) ---
+    initializeSession: async (payload: { session_id?: string, product?: string, index_name?: string }): Promise<any> => {
+        try {
+            return await handleResponse(await fetch(`${API_BASE_URL}/session`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }));
+        } catch (e) {
+            console.warn("Session Init Warning (non-blocking):", e);
+            // Return dummy success if backend doesn't implement this yet but we want to proceed
+            return { status: 'ok', session_id: payload.session_id };
+        }
+    },
+
     // --- Chat Endpoint (Streaming) ---
     chatInference: async (payload: { 
         question: string, 

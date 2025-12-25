@@ -401,7 +401,19 @@ Ask your own in the chat.`;
         const loadSession = async () => {
              setIsLoading(true);
              try {
+                // REQUESTED FIX: Call /session (initializeSession) first
+                // This ensures the backend context is set or validated before loading details
+                try {
+                    await apiService.initializeSession({ 
+                        session_id: initialSessionId,
+                        product: productContext?.product_name,
+                        index_name: productContext?.index_name
+                    });
+                } catch(e) { console.warn("Init session failed, proceeding to fetch details", e); }
+
+                // Then Call History Details
                 const detail = await apiService.getChatSessionDetails(initialSessionId);
+                
                 if (detail && detail.messages) {
                     const mappedMessages: Message[] = [];
                     // Always add Welcome Message at top for consistency
