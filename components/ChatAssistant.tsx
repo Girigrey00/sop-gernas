@@ -181,7 +181,7 @@ const formatInlineText = (text: string, isUser: boolean) => {
                         return (
                             <sup 
                                 key={subIndex} 
-                                className={`text-[9px] font-bold px-1.5 py-0 rounded ml-0.5 cursor-help transition-transform hover:scale-110 inline-block ${isUser ? 'text-blue-200 bg-white/20' : 'text-blue-600 bg-blue-50 border border-blue-100'}`}
+                                className={`text-[9px] font-bold px-1.5 py-0 rounded ml-0.5 cursor-help transition-transform hover:scale-110 inline-block ${isUser ? 'text-blue-200 bg-white/20' : 'text-fab-royal bg-blue-50 border border-blue-100'}`}
                             >{subPart.replace(/[\[\]]/g, '')}</sup>
                         );
                     }
@@ -192,7 +192,7 @@ const formatInlineText = (text: string, isUser: boolean) => {
     });
 };
 
-const MessageRenderer = ({ content, role }: { content: string, role: 'user' | 'assistant' }) => {
+const MessageRenderer = ({ content, role, isWelcome }: { content: string, role: 'user' | 'assistant', isWelcome?: boolean }) => {
     const isUser = role === 'user';
     
     // Split content by lines to detect structure (Tables, Lists)
@@ -254,7 +254,7 @@ const MessageRenderer = ({ content, role }: { content: string, role: 'user' | 'a
         // --- Header Detection ---
         if (trimmed.startsWith('### ')) {
             elements.push(
-                <h3 key={i} className={`text-xl font-bold mt-4 mb-2 leading-snug tracking-tight break-words ${isUser ? 'text-white' : 'text-slate-800'}`}>
+                <h3 key={i} className={`font-bold mt-3 mb-2 leading-snug tracking-tight break-words ${isWelcome ? 'text-sm text-fab-navy' : 'text-lg'} ${isUser ? 'text-white' : (isWelcome ? 'text-fab-navy' : 'text-slate-800')}`}>
                     {formatInlineText(trimmed.replace(/^###\s+/, ''), isUser)}
                 </h3>
             );
@@ -265,7 +265,7 @@ const MessageRenderer = ({ content, role }: { content: string, role: 'user' | 'a
         if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
             elements.push(
                 <div key={i} className="flex items-start gap-2 mb-1 pl-1">
-                    <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${isUser ? 'bg-white' : 'bg-blue-500'}`}></span>
+                    <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${isUser ? 'bg-white' : 'bg-fab-royal'}`}></span>
                     <span className={`break-words ${isUser ? 'text-white' : 'text-slate-700'}`}>
                         {formatInlineText(trimmed.substring(2), isUser)}
                     </span>
@@ -290,7 +290,7 @@ const MessageRenderer = ({ content, role }: { content: string, role: 'user' | 'a
 
         // --- Standard Text ---
         if (trimmed === '') {
-            elements.push(<div key={i} className="h-3"></div>);
+            elements.push(<div key={i} className="h-2"></div>);
         } else {
             elements.push(
                 <div key={i} className={`leading-relaxed break-words whitespace-pre-wrap ${isUser ? 'text-white' : 'text-slate-700'}`}>
@@ -301,7 +301,7 @@ const MessageRenderer = ({ content, role }: { content: string, role: 'user' | 'a
     });
 
     return (
-        <div className="text-sm w-full max-w-full overflow-hidden">
+        <div className={`w-full max-w-full overflow-hidden ${isWelcome ? 'text-xs' : 'text-sm'}`}>
             {elements}
         </div>
     );
@@ -344,14 +344,10 @@ Ask your own in the chat.`;
   useEffect(() => {
     const fetchSuggestions = async () => {
         let pool: string[] = [];
-        
-        // The index name to search for
         const targetIndex = productContext?.index_name || (sopData.metadata as any)?.index_name || 'cbgknowledgehub';
 
-        // 1. Fetch from documents API for broader context
         try {
             const docs = await apiService.getDocuments();
-            // Filter docs relevant to this product/index
             const relatedDocs = docs.filter(d => d.indexName === targetIndex || d.rootFolder === productContext?.product_name);
 
             relatedDocs.forEach(d => {
@@ -364,7 +360,6 @@ Ask your own in the chat.`;
             console.error("Failed to fetch document suggestions", err);
         }
 
-        // 2. Also check immediate SOP metadata if api failed or yielded nothing
         if (pool.length === 0) {
             const metaSuggestions = (sopData.metadata as any)?.suggested_questions;
             if (metaSuggestions && Array.isArray(metaSuggestions)) {
@@ -372,13 +367,10 @@ Ask your own in the chat.`;
             }
         }
 
-        // 3. Fallback to defaults
         if (pool.length === 0) pool = DEFAULT_PROMPTS;
         
-        // 4. Shuffle and slice (Pick 4 random)
         const shuffled = Array.from(new Set(pool)).sort(() => 0.5 - Math.random()).slice(0, 4);
         
-        // Update the suggestions in the initial welcome message
         setMessages(prev => prev.map(m => {
             if (m.isWelcome) {
                 return { ...m, suggestions: shuffled };
@@ -387,7 +379,6 @@ Ask your own in the chat.`;
         }));
     }
     
-    // Only fetch if it's a new session without history loaded
     if (!initialSessionId) {
         fetchSuggestions();
     }
@@ -403,14 +394,12 @@ Ask your own in the chat.`;
                 const detail = await apiService.getChatSessionDetails(initialSessionId);
                 if (detail && detail.messages) {
                     const mappedMessages: Message[] = [];
-                    // Add standard welcome message first for context/consistency
                     mappedMessages.push({ 
                         id: WELCOME_MSG_ID, 
                         role: 'assistant', 
                         content: WELCOME_CONTENT, 
                         timestamp: new Date(detail.created_at || Date.now()),
                         isWelcome: true,
-                        // No suggestions needed for history view
                     });
 
                     detail.messages.forEach(m => {
@@ -471,7 +460,6 @@ Ask your own in the chat.`;
     const textToSend = manualInput || input;
     if (!textToSend.trim() || isLoading) return;
 
-    // Ensure no previous message is stuck in typing state
     let newMessages = messages.map(m => ({ ...m, isTyping: false }));
 
     const userMsg: Message = {
@@ -561,23 +549,20 @@ Ask your own in the chat.`;
 
   const handleFeedback = (messageId: string, rating: 'thumbs_up' | 'thumbs_down') => {
       setMessages(prev => prev.map(m => m.id === messageId ? { ...m, feedback: rating } : m));
-      
       apiService.submitFeedback({
           question_id: messageId,
           session_id: sessionId,
           feedback_type: rating,
-      }).then((res) => {
-        console.log("Feedback submitted", res);
       }).catch(err => console.error(err));
   };
 
   return (
     <div className="flex flex-col h-full bg-white relative overflow-hidden">
       
-      {/* Header - Fixed Visibility */}
+      {/* Header - Branded */}
       <div className="p-4 border-b border-slate-100 bg-white flex justify-between items-center shadow-sm z-20 h-16">
         <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white shadow-md">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fab-navy to-fab-royal flex items-center justify-center text-white shadow-md">
                 <GIcon className="w-5 h-5" />
             </div>
             <div>
@@ -588,7 +573,7 @@ Ask your own in the chat.`;
         
         <div className="flex items-center gap-2">
             {onToggleMaximize && (
-                <button onClick={onToggleMaximize} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
+                <button onClick={onToggleMaximize} className="p-1.5 text-slate-400 hover:text-fab-royal hover:bg-blue-50 rounded-md transition-colors">
                     {isMaximized ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
                 </button>
             )}
@@ -604,79 +589,88 @@ Ask your own in the chat.`;
         {/* Messages List */}
         <div className="space-y-6 max-w-4xl mx-auto pb-4">
         {messages.map((msg) => (
-        <div key={msg.id} className={`flex gap-3 relative z-10 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-            
-            {/* Avatar */}
-            <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-1 min-w-[40px]">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-sm border transition-all ${
-                msg.role === 'user' ? 'bg-slate-800 text-white border-slate-700' : 'bg-white border-slate-200 text-slate-900'
-                }`}>
-                    {msg.role === 'user' ? <span className="text-[10px] font-bold">YOU</span> : <GIcon className="w-5 h-5" />}
-                </div>
-            </div>
-            
-            <div className={`flex flex-col max-w-[85%] md:max-w-[90%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-            
-            {/* Message Bubble */}
-            <div className={`relative px-5 py-4 rounded-2xl text-sm leading-relaxed shadow-sm transition-all w-full overflow-hidden ${
-                msg.role === 'user' 
-                ? 'bg-blue-600 text-white rounded-tr-none shadow-md' 
-                : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]'
-            }`}>
-                <div className="relative z-10 w-full">
-                    <MessageRenderer content={msg.content} role={msg.role} />
-                </div>
-            </div>
-
-            {/* Suggested Questions Section (Only for Welcome Message) */}
-            {msg.isWelcome && msg.suggestions && msg.suggestions.length > 0 && (
-                 <div className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
-                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 pl-2">Suggested for you</p>
-                     <div className="flex flex-col gap-2.5">
-                         {msg.suggestions.map((prompt, idx) => (
-                             <button 
-                                 key={idx}
-                                 onClick={() => handleSend(prompt)}
-                                 className="group relative w-full text-left py-3 px-4 pl-10 bg-white border border-slate-200 rounded-2xl hover:border-blue-400 hover:shadow-md hover:bg-blue-50/50 transition-all duration-200"
-                             >
-                                 <Sparkles size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-500/70 group-hover:text-blue-600 transition-colors" />
-                                 <span className="text-sm text-slate-600 group-hover:text-blue-700 font-medium italic break-words leading-snug block pr-2">
-                                     {prompt}
-                                 </span>
-                             </button>
-                         ))}
-                     </div>
-                 </div>
-            )}
-
-            {/* Citations */}
-            {msg.citations && Object.keys(msg.citations).length > 0 && <CitationBlock citations={msg.citations} />}
-
-            {/* Feedback & Actions Toolbar (Exclude from welcome message) */}
-            {msg.role === 'assistant' && !msg.isWelcome && (
-                <div className={`flex items-center gap-3 mt-2 ml-2 transition-all duration-500 ease-in-out ${msg.isTyping ? 'opacity-0 max-h-0 overflow-hidden' : 'opacity-100 max-h-10'}`}>
-                    <button onClick={() => handleCopy(msg.content)} className="text-slate-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-slate-100 rounded-md" title="Copy">
-                        <Copy size={14} />
-                    </button>
-                    <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                    <div className="flex items-center gap-1">
-                        <button 
-                            onClick={() => handleFeedback(msg.id, 'thumbs_up')} 
-                            className={`p-1.5 rounded-md transition-colors flex items-center gap-1 ${msg.feedback === 'thumbs_up' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-slate-100'}`}
-                            title="Helpful"
-                        >
-                            <ThumbsUp size={14} />
-                        </button>
-                        <button 
-                            onClick={() => handleFeedback(msg.id, 'thumbs_down')} 
-                            className={`p-1.5 rounded-md transition-colors flex items-center gap-1 ${msg.feedback === 'thumbs_down' ? 'text-rose-600 bg-rose-50' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'}`}
-                            title="Not Helpful"
-                        >
-                            <ThumbsDown size={14} />
-                        </button>
+        <div key={msg.id} className="flex flex-col gap-1">
+            <div className={`flex gap-3 relative z-10 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                
+                {/* Avatar */}
+                <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-1 min-w-[40px]">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-sm border transition-all ${
+                    msg.role === 'user' ? 'bg-slate-800 text-white border-slate-700' : 'bg-gradient-to-br from-fab-navy to-fab-royal border-transparent text-white'
+                    }`}>
+                        {msg.role === 'user' ? <span className="text-[10px] font-bold">YOU</span> : <GIcon className="w-5 h-5" />}
                     </div>
                 </div>
-            )}
+                
+                <div className={`flex flex-col max-w-[85%] md:max-w-[90%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                
+                {/* Message Bubble */}
+                <div className={`relative px-5 py-4 rounded-2xl leading-relaxed shadow-sm transition-all w-full overflow-hidden ${
+                    msg.role === 'user' 
+                    ? 'bg-fab-royal text-white rounded-tr-none shadow-md' 
+                    : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]'
+                }`}>
+                    <div className="relative z-10 w-full">
+                        <MessageRenderer content={msg.content} role={msg.role} isWelcome={msg.isWelcome} />
+                    </div>
+                </div>
+
+                {/* Suggested Questions Section */}
+                {msg.isWelcome && msg.suggestions && msg.suggestions.length > 0 && (
+                     <div className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
+                         <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 pl-2">Suggested for you</p>
+                         <div className="flex flex-col gap-2.5">
+                             {msg.suggestions.map((prompt, idx) => (
+                                 <button 
+                                     key={idx}
+                                     onClick={() => handleSend(prompt)}
+                                     className="group relative w-full text-left py-3 px-4 pl-10 bg-white border border-slate-200 rounded-3xl hover:border-fab-royal/50 hover:shadow-md hover:bg-fab-royal/5 transition-all duration-200"
+                                 >
+                                     <Sparkles size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fab-royal/70 group-hover:text-fab-royal transition-colors" />
+                                     <span className="text-sm text-slate-600 group-hover:text-fab-royal font-medium italic break-words leading-snug block pr-2">
+                                         {prompt}
+                                     </span>
+                                 </button>
+                             ))}
+                         </div>
+                     </div>
+                )}
+
+                {/* Citations */}
+                {msg.citations && Object.keys(msg.citations).length > 0 && <CitationBlock citations={msg.citations} />}
+
+                {/* Feedback & Actions Toolbar */}
+                {msg.role === 'assistant' && !msg.isWelcome && (
+                    <div className={`flex items-center gap-3 mt-2 ml-2 transition-all duration-500 ease-in-out ${msg.isTyping ? 'opacity-0 max-h-0 overflow-hidden' : 'opacity-100 max-h-10'}`}>
+                        <button onClick={() => handleCopy(msg.content)} className="text-slate-400 hover:text-fab-royal transition-colors p-1.5 hover:bg-slate-100 rounded-md" title="Copy">
+                            <Copy size={14} />
+                        </button>
+                        <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                        <div className="flex items-center gap-1">
+                            <button 
+                                onClick={() => handleFeedback(msg.id, 'thumbs_up')} 
+                                className={`p-1.5 rounded-md transition-colors flex items-center gap-1 ${msg.feedback === 'thumbs_up' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-slate-100'}`}
+                                title="Helpful"
+                            >
+                                <ThumbsUp size={14} />
+                            </button>
+                            <button 
+                                onClick={() => handleFeedback(msg.id, 'thumbs_down')} 
+                                className={`p-1.5 rounded-md transition-colors flex items-center gap-1 ${msg.feedback === 'thumbs_down' ? 'text-rose-600 bg-rose-50' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'}`}
+                                title="Not Helpful"
+                            >
+                                <ThumbsDown size={14} />
+                            </button>
+                        </div>
+                    </div>
+                )}
+                </div>
+            </div>
+            
+            {/* Timestamp Below Bubble */}
+            <div className={`px-12 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <p className="text-[10px] text-slate-400 font-medium opacity-60">
+                    {msg.timestamp.toLocaleDateString()} {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </p>
             </div>
         </div>
         ))}
@@ -685,7 +679,7 @@ Ask your own in the chat.`;
         {isLoading && messages[messages.length - 1].role === 'user' && (
         <div className="flex gap-3">
             <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-900 shadow-sm mt-1">
-                <GIcon className="w-5 h-5 animate-pulse" />
+                <GIcon className="w-5 h-5 animate-pulse text-fab-royal" />
             </div>
             <div className="bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-tl-none shadow-sm flex flex-col gap-2 min-w-[200px] w-full max-w-lg">
                 {/* Line 1 */}
@@ -716,13 +710,13 @@ Ask your own in the chat.`;
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="Ask a question..."
-                className="flex-1 pl-5 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all shadow-inner"
+                className="flex-1 pl-5 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-fab-royal/20 focus:border-fab-royal text-sm transition-all shadow-inner"
                 disabled={isLoading}
             /> 
             <button
                 onClick={() => handleSend()}
                 disabled={!input.trim() || isLoading}
-                className="absolute right-2 top-1.5 bottom-1.5 p-2 bg-slate-900 hover:bg-slate-800 text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                className="absolute right-2 top-1.5 bottom-1.5 p-2 bg-fab-navy hover:bg-fab-royal text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
             >
                 {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
             </button>
