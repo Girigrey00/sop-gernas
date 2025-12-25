@@ -388,12 +388,23 @@ Ask your own in the chat.`;
   useEffect(() => {
     if (initialSessionId && initialSessionId !== sessionId) {
         setSessionId(initialSessionId);
+        
+        // --- CRITICAL FIX: Clear messages immediately to prevent ghosting ---
+        setMessages([{ 
+            id: 'loading-state', 
+            role: 'assistant', 
+            content: '', 
+            timestamp: new Date(), 
+            isTyping: true 
+        }]);
+        
         const loadSession = async () => {
              setIsLoading(true);
              try {
                 const detail = await apiService.getChatSessionDetails(initialSessionId);
                 if (detail && detail.messages) {
                     const mappedMessages: Message[] = [];
+                    // Always add Welcome Message at top for consistency
                     mappedMessages.push({ 
                         id: WELCOME_MSG_ID, 
                         role: 'assistant', 
@@ -419,8 +430,29 @@ Ask your own in the chat.`;
                         });
                     });
                     setMessages(mappedMessages);
+                } else {
+                     // Fallback if session fetch fails but ID changed
+                     setMessages([{ 
+                        id: WELCOME_MSG_ID, 
+                        role: 'assistant', 
+                        content: WELCOME_CONTENT, 
+                        timestamp: new Date(),
+                        isWelcome: true,
+                        suggestions: DEFAULT_PROMPTS 
+                    }]);
                 }
-             } catch(e) { console.error(e); }
+             } catch(e) { 
+                 console.error(e);
+                 // Reset on error
+                 setMessages([{ 
+                    id: WELCOME_MSG_ID, 
+                    role: 'assistant', 
+                    content: WELCOME_CONTENT, 
+                    timestamp: new Date(),
+                    isWelcome: true,
+                    suggestions: DEFAULT_PROMPTS 
+                }]);
+             }
              finally { setIsLoading(false); }
         }
         loadSession();
@@ -453,7 +485,12 @@ Ask your own in the chat.`;
   }, []);
 
   useEffect(() => {
-    if (messages.length > 0) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > 0) {
+        // Small delay to ensure DOM update
+        setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+    }
   }, [messages.length, messages[messages.length-1]?.content]);
 
   const handleSend = async (manualInput?: string) => {
@@ -676,7 +713,7 @@ Ask your own in the chat.`;
         ))}
 
         {/* Skeleton Glare Loader (3 Lines) */}
-        {isLoading && messages[messages.length - 1].role === 'user' && (
+        {isLoading && (
         <div className="flex gap-3">
             <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-900 shadow-sm mt-1">
                 <GIcon className="w-5 h-5 animate-pulse text-fab-royal" />

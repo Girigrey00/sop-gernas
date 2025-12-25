@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import CanvasPage from './pages/CanvasPage';
@@ -11,7 +12,7 @@ import {
     PieChart, TrendingUp, Globe, Building2, Scale, FileSignature, Calculator, 
     Receipt, Gem, Key, Database, Smartphone, Award, Target, BarChart, Stamp, BadgeDollarSign, 
     Vault, ScrollText, Truck, ShoppingCart, Anchor, Gavel, FileCheck, Layers, Trash2,
-    X, CheckCircle, AlertTriangle, MessageSquareText, Calendar, Hash, MessageCircle
+    X, CheckCircle, AlertTriangle, MessageSquareText, Calendar, Hash, MessageCircle, Filter
 } from 'lucide-react';
 
 // --- Icon Helper ---
@@ -480,6 +481,7 @@ const HistoryPage = ({
 }) => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const loadSessions = async () => {
@@ -499,79 +501,112 @@ const HistoryPage = ({
     loadSessions();
   }, []);
 
+  const filtered = sessions.filter(s => 
+      (s.last_message?.question || '').toLowerCase().includes(search.toLowerCase()) || 
+      (s.product || '').toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <div className="h-full flex flex-col bg-slate-50">
       <div className="px-8 pt-8 pb-6 border-b border-slate-200 bg-white">
-        <h2 className="text-2xl font-bold text-fab-navy mb-2">Session History</h2>
-        <p className="text-slate-500 text-sm">Resume previous conversations and view generated insights.</p>
+        <div className="flex justify-between items-center mb-4">
+            <div>
+                <h2 className="text-2xl font-bold text-fab-navy mb-1">Session History</h2>
+                <p className="text-slate-500 text-sm">Review your past conversations and interactions.</p>
+            </div>
+            
+            <div className="relative w-64">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input 
+                    type="text" 
+                    placeholder="Search history..." 
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-fab-royal/50 text-sm"
+                />
+            </div>
+        </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-8 max-w-5xl mx-auto w-full">
+      <div className="flex-1 overflow-y-auto px-8 py-6">
           {loading ? (
-             <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-fab-royal" size={32} /></div>
-          ) : sessions.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-16 text-center flex flex-col items-center gap-4 max-w-xl mx-auto mt-10">
+             <div className="flex flex-col justify-center items-center h-64 gap-3">
+                 <Loader2 className="animate-spin text-fab-royal" size={32} />
+                 <p className="text-sm text-slate-500">Loading history...</p>
+             </div>
+          ) : filtered.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-16 text-center flex flex-col items-center gap-4 max-w-xl mx-auto mt-10">
                 <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300">
                     <Clock size={28} />
                 </div>
                 <div>
-                    <h3 className="text-base font-bold text-slate-700 mb-1">No history found</h3>
-                    <p className="text-slate-500 text-sm">Start a new chat to track your history.</p>
+                    <h3 className="text-base font-bold text-slate-700 mb-1">No sessions found</h3>
+                    <p className="text-slate-500 text-sm">Try adjusting your search or start a new chat.</p>
                 </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-                {sessions.map(item => (
-                    <button
-                        key={item._id}
-                        onClick={() => onOpenSession(item)}
-                        className="group relative w-full bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-lg hover:shadow-fab-royal/5 hover:border-fab-royal/30 transition-all duration-300 text-left flex items-center gap-6 overflow-hidden"
-                    >
-                         {/* Hover Accent Bar */}
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-fab-royal transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
-
-                        {/* Icon */}
-                        <div className="w-12 h-12 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center border border-slate-100 group-hover:bg-fab-royal group-hover:text-white group-hover:border-fab-royal transition-all shrink-0">
-                            <MessageCircle size={22} />
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-base font-bold text-slate-800 group-hover:text-fab-royal truncate pr-4 leading-tight">
-                                   {item.last_message?.question || "New Session"}
-                                </h3>
-                                <div className="flex items-center gap-2 shrink-0">
-                                    <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold uppercase border border-slate-200 group-hover:bg-fab-royal/5 group-hover:text-fab-royal group-hover:border-fab-royal/20 transition-colors flex items-center gap-1.5">
-                                        <Hash size={10} />
-                                        {item.message_count || 0} Q/A
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                        <tr className="text-[10px] uppercase text-slate-500 font-bold tracking-wider">
+                            <th className="p-4 w-12 text-center">#</th>
+                            <th className="p-4">Discussion Topic</th>
+                            <th className="p-4 w-48">Product Context</th>
+                            <th className="p-4 w-40">Last Active</th>
+                            <th className="p-4 w-32 text-center">Interactions</th>
+                            <th className="p-4 w-32 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {filtered.map((item, idx) => (
+                            <tr key={item._id} className="hover:bg-slate-50/80 transition-colors group">
+                                <td className="p-4 text-center">
+                                    <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center mx-auto text-xs font-bold border border-slate-200">
+                                        {(idx + 1)}
+                                    </div>
+                                </td>
+                                <td className="p-4">
+                                    <div className="flex flex-col gap-1 max-w-md">
+                                        <p className="text-sm font-bold text-slate-800 truncate" title={item.last_message?.question}>
+                                            {item.last_message?.question || "Untitled Session"}
+                                        </p>
+                                        <p className="text-[10px] text-slate-400 font-mono">ID: {item._id.substring(0,8)}...</p>
+                                    </div>
+                                </td>
+                                <td className="p-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-1.5 bg-blue-50 text-blue-600 rounded">
+                                            <Briefcase size={12} />
+                                        </div>
+                                        <span className="text-xs font-medium text-slate-700 truncate max-w-[150px]">
+                                            {item.product || 'General'}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td className="p-4">
+                                    <div className="flex flex-col text-xs text-slate-500">
+                                        <span className="font-medium text-slate-700">{new Date(item.last_activity).toLocaleDateString()}</span>
+                                        <span className="text-[10px]">{new Date(item.last_activity).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                                    </div>
+                                </td>
+                                <td className="p-4 text-center">
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">
+                                        <MessageSquareText size={10} />
+                                        {item.message_count || 0}
                                     </span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-4 text-xs text-slate-500">
-                                <span className="flex items-center gap-1.5 font-medium text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
-                                    <Briefcase size={10} className="opacity-70" />
-                                    {item.product || 'General'}
-                                </span>
-                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                <span className="flex items-center gap-1.5 opacity-80">
-                                    <Calendar size={10} />
-                                    {new Date(item.last_activity).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                </span>
-                                <span className="flex items-center gap-1.5 opacity-80">
-                                    <Clock size={10} />
-                                    {new Date(item.last_activity).toLocaleTimeString(undefined, {hour: '2-digit', minute:'2-digit'})}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Arrow */}
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 group-hover:text-fab-royal group-hover:translate-x-1 transition-all">
-                            <ChevronRight size={20} />
-                        </div>
-                    </button>
-                ))}
+                                </td>
+                                <td className="p-4 text-right">
+                                    <button 
+                                        onClick={() => onOpenSession(item)}
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-bold shadow-sm hover:border-fab-royal hover:text-fab-royal hover:shadow-md transition-all group-hover:bg-fab-royal group-hover:text-white group-hover:border-fab-royal"
+                                    >
+                                        Resume <ArrowRight size={14} />
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
           )}
       </div>
