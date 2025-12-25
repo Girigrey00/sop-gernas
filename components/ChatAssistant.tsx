@@ -339,6 +339,9 @@ Ask your own in the chat.`;
   const activeMessageId = useRef<string | null>(null);
   const streamInterval = useRef<any>(null);
   const isGenerationComplete = useRef<boolean>(false);
+  
+  // Track loaded sessions to prevent duplicate calls or missing calls on mount
+  const lastLoadedSessionRef = useRef<string | null>(null);
 
   // --- Fetch Suggested Questions from Documents ---
   useEffect(() => {
@@ -386,7 +389,10 @@ Ask your own in the chat.`;
 
 
   useEffect(() => {
-    if (initialSessionId && initialSessionId !== sessionId) {
+    // Only load if initialSessionId exists and differs from what we last loaded
+    // This ensures it runs on first mount AND when props change
+    if (initialSessionId && lastLoadedSessionRef.current !== initialSessionId) {
+        lastLoadedSessionRef.current = initialSessionId;
         setSessionId(initialSessionId);
         
         // --- CRITICAL FIX: Clear messages immediately to prevent ghosting ---
@@ -401,8 +407,7 @@ Ask your own in the chat.`;
         const loadSession = async () => {
              setIsLoading(true);
              try {
-                // REQUESTED FIX: Call /session (initializeSession) first
-                // This ensures the backend context is set or validated before loading details
+                // 1. Initialize/Validate Session
                 try {
                     await apiService.initializeSession({ 
                         session_id: initialSessionId,
@@ -411,7 +416,7 @@ Ask your own in the chat.`;
                     });
                 } catch(e) { console.warn("Init session failed, proceeding to fetch details", e); }
 
-                // Then Call History Details
+                // 2. Fetch History Details
                 const detail = await apiService.getChatSessionDetails(initialSessionId);
                 
                 if (detail && detail.messages) {
