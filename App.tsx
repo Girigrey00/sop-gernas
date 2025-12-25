@@ -492,7 +492,7 @@ const HistoryPage = ({
         <p className="text-slate-500 text-sm">Resume previous conversations and view generated insights.</p>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-8">
+      <div className="flex-1 overflow-y-auto p-8 max-w-6xl mx-auto w-full">
           {loading ? (
              <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-fab-royal" size={32} /></div>
           ) : sessions.length === 0 ? (
@@ -506,46 +506,46 @@ const HistoryPage = ({
                 </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div className="flex flex-col gap-3">
                 {sessions.map(item => (
                     <button
                         key={item._id}
                         onClick={() => onOpenSession(item)}
-                        className="group bg-white p-0 rounded-2xl border border-slate-200 hover:border-fab-royal/40 hover:shadow-xl hover:shadow-fab-royal/5 transition-all text-left flex flex-col h-full overflow-hidden relative"
+                        className="group w-full bg-white p-4 rounded-xl border border-slate-200 hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all flex items-center justify-between gap-4 text-left"
                     >
-                        <div className="p-6 flex flex-col h-full relative z-10">
-                             <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-fab-royal/5 text-fab-royal flex items-center justify-center border border-fab-royal/10 group-hover:bg-fab-royal group-hover:text-white transition-colors">
-                                        <MessageSquareText size={18} />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-0.5">
-                                            {item.product || 'General'}
-                                        </p>
-                                        <p className="text-[10px] text-slate-400">
-                                            {new Date(item.last_activity).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                        </p>
-                                    </div>
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                             {/* Icon */}
+                            <div className="w-12 h-12 rounded-full bg-fab-royal/5 text-fab-royal flex items-center justify-center border border-fab-royal/10 group-hover:bg-fab-royal group-hover:text-white transition-colors shrink-0">
+                                <MessageSquareText size={20} />
+                            </div>
+                            
+                            {/* Text Info */}
+                            <div className="flex flex-col min-w-0">
+                                <h3 className="text-base font-bold text-slate-800 group-hover:text-fab-royal truncate">
+                                   {item.last_message?.question || "New Session"}
+                                </h3>
+                                <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                                    <span className="font-medium px-2 py-0.5 bg-slate-100 rounded text-slate-600 border border-slate-200 group-hover:bg-fab-royal/5 group-hover:border-fab-royal/20 group-hover:text-fab-royal transition-colors">
+                                        {item.product || 'General'}
+                                    </span>
+                                    <span className="flex items-center gap-1 opacity-60">
+                                        <Clock size={12} />
+                                        {new Date(item.last_activity).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    </span>
                                 </div>
-                             </div>
+                            </div>
+                        </div>
 
-                             <h3 className="text-base font-bold text-slate-800 group-hover:text-fab-royal mb-2 line-clamp-1">
-                                {item.last_message?.question || "New Conversation"}
-                             </h3>
-                             
-                             <p className="text-sm text-slate-500 leading-relaxed line-clamp-3 mb-4 flex-1">
-                                {item.last_message?.answer || "No messages yet."}
-                             </p>
-                             
-                             <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
-                                 <span className="text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-1 rounded">
-                                     {item.message_count || 0} messages
-                                 </span>
-                                 <div className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
-                                     Resume <ChevronRight size={14} />
-                                 </div>
-                             </div>
+                        {/* Right Side Stats & Action */}
+                        <div className="flex items-center gap-6 shrink-0">
+                            <div className="flex flex-col items-end">
+                                <span className="text-sm font-bold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 group-hover:bg-fab-royal/5 group-hover:text-fab-royal group-hover:border-fab-royal/20 transition-colors">
+                                    {item.message_count || 0} Q/A
+                                </span>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-fab-royal group-hover:text-white transition-all border border-transparent group-hover:border-fab-royal/20">
+                                <ChevronRight size={16} />
+                            </div>
                         </div>
                     </button>
                 ))}
