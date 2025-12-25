@@ -42,9 +42,9 @@ const Sidebar = ({
 
   const navItems = [
     { id: 'HOME', label: 'CBG KNOWLEDGE HUB', icon: Compass },
-    { id: 'HISTORY', label: 'History', icon: Clock },
     // Only show Library if a product context is selected
     ...(showLibrary ? [{ id: 'LIBRARY', label: 'Library', icon: BookOpen }] : []),
+    { id: 'HISTORY', label: 'History', icon: Clock },
   ];
 
   return (
@@ -61,8 +61,9 @@ const Sidebar = ({
            </svg>
         </div>
         {!isCollapsed && (
-            <div className="animate-in fade-in duration-300">
+            <div className="animate-in fade-in duration-300 text-center">
               <h1 className="text-white font-bold text-sm tracking-widest leading-none">GERNAS</h1>
+              <p className="text-[10px] text-fab-sky/60 font-medium tracking-wide mt-0.5">SOP Flow</p>
             </div>
         )}
       </div>

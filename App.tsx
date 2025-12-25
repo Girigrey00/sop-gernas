@@ -12,7 +12,7 @@ import {
     PieChart, TrendingUp, Globe, Building2, Scale, FileSignature, Calculator, 
     Receipt, Gem, Key, Database, Smartphone, Award, Target, BarChart, Stamp, BadgeDollarSign, 
     Vault, ScrollText, Truck, ShoppingCart, Anchor, Gavel, FileCheck, Layers, Trash2,
-    X, CheckCircle, AlertTriangle 
+    X, CheckCircle, AlertTriangle, MessageSquareText
 } from 'lucide-react';
 
 // --- Icon Helper ---
@@ -472,9 +472,10 @@ const HistoryPage = ({
         setLoading(true);
         try {
             const data = await apiService.getChatSessions();
-             // Sort sessions by last activity desc
-            data.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
-            setSessions(data);
+            // Ensure array before sorting
+            const list = Array.isArray(data) ? data : [];
+            list.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
+            setSessions(list);
         } catch(e) {
             console.error(e);
         } finally {
@@ -486,51 +487,65 @@ const HistoryPage = ({
 
   return (
     <div className="h-full flex flex-col bg-slate-50">
-      <div className="px-8 py-8 border-b border-slate-200 bg-white">
-        <h2 className="text-2xl font-bold text-fab-navy mb-1">History</h2>
-        <p className="text-slate-500 text-sm">View and manage your previously generated workflows.</p>
+      <div className="px-8 pt-8 pb-6 border-b border-slate-200 bg-white">
+        <h2 className="text-2xl font-bold text-fab-navy mb-2">Session History</h2>
+        <p className="text-slate-500 text-sm">Resume previous conversations and view generated insights.</p>
       </div>
-      <div className="flex-1 overflow-y-auto px-8 py-8">
+      
+      <div className="flex-1 overflow-y-auto p-8">
           {loading ? (
-             <div className="flex justify-center p-10"><Loader2 className="animate-spin text-slate-400" /></div>
+             <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-fab-royal" size={32} /></div>
           ) : sessions.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-16 text-center flex flex-col items-center gap-4 max-w-xl mx-auto mt-10">
                 <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300">
                     <Clock size={28} />
                 </div>
                 <div>
-                    <h3 className="text-base font-bold text-slate-700 mb-1">No history yet</h3>
-                    <p className="text-slate-500 text-sm">Generated flows will appear here automatically.</p>
+                    <h3 className="text-base font-bold text-slate-700 mb-1">No history found</h3>
+                    <p className="text-slate-500 text-sm">Start a new chat to track your history.</p>
                 </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {sessions.map(item => (
                     <button
                         key={item._id}
                         onClick={() => onOpenSession(item)}
-                        className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all text-left flex flex-col h-full relative overflow-hidden"
+                        className="group bg-white p-0 rounded-2xl border border-slate-200 hover:border-fab-royal/40 hover:shadow-xl hover:shadow-fab-royal/5 transition-all text-left flex flex-col h-full overflow-hidden relative"
                     >
-                         <div className="absolute top-0 left-0 w-1 h-full bg-fab-royal opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        
-                        <div className="flex justify-between items-start mb-4 w-full">
-                            <div className="p-2 bg-fab-sky/10 text-fab-royal rounded-lg group-hover:bg-fab-royal group-hover:text-white transition-colors">
-                                <FileText size={20} />
-                            </div>
-                            <span className="text-[10px] font-medium text-slate-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100">
-                                {new Date(item.last_activity).toLocaleDateString()}
-                            </span>
-                        </div>
+                        <div className="p-6 flex flex-col h-full relative z-10">
+                             <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-fab-royal/5 text-fab-royal flex items-center justify-center border border-fab-royal/10 group-hover:bg-fab-royal group-hover:text-white transition-colors">
+                                        <MessageSquareText size={18} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-0.5">
+                                            {item.product || 'General'}
+                                        </p>
+                                        <p className="text-[10px] text-slate-400">
+                                            {new Date(item.last_activity).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    </div>
+                                </div>
+                             </div>
 
-                        <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-1 line-clamp-1">
-                            {item.last_message?.question || item.product || 'Untitled Session'}
-                        </h3>
-                        <p className="text-xs text-slate-500 mb-4 line-clamp-2 flex-1">
-                            {item.last_message?.answer || 'No content'}
-                        </p>
-
-                        <div className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                            Open Chat <ChevronRight size={14} />
+                             <h3 className="text-base font-bold text-slate-800 group-hover:text-fab-royal mb-2 line-clamp-1">
+                                {item.last_message?.question || "New Conversation"}
+                             </h3>
+                             
+                             <p className="text-sm text-slate-500 leading-relaxed line-clamp-3 mb-4 flex-1">
+                                {item.last_message?.answer || "No messages yet."}
+                             </p>
+                             
+                             <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
+                                 <span className="text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-1 rounded">
+                                     {item.message_count || 0} messages
+                                 </span>
+                                 <div className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+                                     Resume <ChevronRight size={14} />
+                                 </div>
+                             </div>
                         </div>
                     </button>
                 ))}
