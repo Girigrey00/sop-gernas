@@ -40,7 +40,8 @@ interface CanvasPageProps {
     initialSessionId?: string;
 }
 
-const CanvasPage: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, onFlowGenerated, onBack, productContext, initialSessionId }) => {
+// Internal component containing the logic that requires the ReactFlow context
+const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, onFlowGenerated, onBack, productContext, initialSessionId }) => {
     // Flow State
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -61,6 +62,7 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, onF
     // Maximized Sidebar State
     const [isSidebarMaximized, setIsSidebarMaximized] = useState(false);
 
+    // This hook requires the component to be wrapped in ReactFlowProvider
     const { fitView, setCenter, getNodes } = useReactFlow();
 
     // Helper to safely load data
@@ -516,5 +518,13 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, onF
     );
 };
 
+// Wrapper Component to provide ReactFlow Context
+const CanvasPage: React.FC<CanvasPageProps> = (props) => {
+    return (
+        <ReactFlowProvider>
+            <CanvasPageContent {...props} />
+        </ReactFlowProvider>
+    );
+};
+
 export default CanvasPage;
-    
