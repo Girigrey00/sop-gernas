@@ -40,7 +40,7 @@ interface CanvasPageProps {
     initialSessionId?: string;
 }
 
-const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, onFlowGenerated, onBack, productContext, initialSessionId }) => {
+const CanvasPage: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, onFlowGenerated, onBack, productContext, initialSessionId }) => {
     // Flow State
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -298,14 +298,13 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
                 {/* Controls Row */}
                 <div className="flex items-center gap-3 pointer-events-auto w-full justify-center relative">
                     
-                    {/* Back Button */}
+                    {/* Back Button (Moved to consistent place but floating) */}
                     <button 
                         onClick={onBack}
-                        className="absolute left-0 bg-white text-slate-600 hover:bg-slate-100 shadow-md border border-slate-200 rounded-full p-2.5 flex items-center gap-2 text-xs font-bold transition-all"
+                        className="absolute left-0 bg-white text-slate-500 hover:text-fab-royal hover:bg-slate-50 shadow-md border border-slate-200 rounded-full p-2.5 flex items-center gap-2 transition-all"
                         title="Back to Hub"
                     >
-                        <ArrowLeft size={16} />
-                        <span className="hidden md:inline">Back to Hub</span>
+                        <ArrowLeft size={20} />
                     </button>
 
                     {/* 1. Layout Switcher */}
@@ -517,26 +516,5 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
     );
 };
 
-const CanvasPage = ({ initialPrompt, initialData, onFlowGenerated, onBack, productContext, initialSessionId }: { 
-    initialPrompt?: string, 
-    initialData?: SopResponse | null,
-    onFlowGenerated?: (data: SopResponse, prompt: string) => void,
-    onBack: () => void,
-    productContext?: Product | null,
-    initialSessionId?: string
-}) => {
-    return (
-        <ReactFlowProvider>
-             <CanvasContent 
-                initialPrompt={initialPrompt} 
-                initialData={initialData} 
-                onFlowGenerated={onFlowGenerated} 
-                onBack={onBack}
-                productContext={productContext}
-                initialSessionId={initialSessionId}
-             />
-        </ReactFlowProvider>
-    );
-};
-
 export default CanvasPage;
+    

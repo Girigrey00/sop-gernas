@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Compass, LogOut, ChevronRight, BookOpen, ChevronLeft, User, Clock, MessageSquare } from 'lucide-react';
-import { View, ChatSession } from '../types';
+import { View, ChatSession, Product } from '../types';
 import { apiService } from '../services/apiService';
 
 export interface SidebarProps {
@@ -10,7 +10,7 @@ export interface SidebarProps {
   onLogout: () => void;
   isCollapsed: boolean;
   onToggle: () => void;
-  showLibrary: boolean;
+  productContext: Product | null;
   onLoadSession: (session: ChatSession) => void;
 }
 
@@ -20,7 +20,7 @@ const Sidebar = ({
   onLogout, 
   isCollapsed, 
   onToggle, 
-  showLibrary, 
+  productContext, 
   onLoadSession 
 }: SidebarProps) => {
   const [recentSessions, setRecentSessions] = useState<ChatSession[]>([]);
@@ -30,21 +30,30 @@ const Sidebar = ({
     const fetchHistory = async () => {
         try {
             const sessions = await apiService.getChatSessions();
+            let filtered = sessions;
+            
+            // Filter by product context if active
+            if (productContext) {
+                filtered = sessions.filter(s => s.product === productContext.product_name);
+            }
+
             // Sort by last activity and take top 5
-            const sorted = sessions.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime()).slice(0, 5);
+            const sorted = filtered.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime()).slice(0, 5);
             setRecentSessions(sorted);
         } catch (e) {
             console.error("Sidebar history fetch error", e);
         }
     };
     fetchHistory();
-  }, [currentView]); // Refresh when view changes (e.g. after a new chat)
+  }, [currentView, productContext]); // Refresh when view changes or product context changes
 
   const navItems = [
-    { id: 'HOME', label: 'CBG KNOWLEDGE HUB', icon: Compass },
-    // Only show Library if a product context is selected
-    ...(showLibrary ? [{ id: 'LIBRARY', label: 'Library', icon: BookOpen }] : []),
-    { id: 'HISTORY', label: 'History', icon: Clock },
+    { id: 'HOME', label: 'CBG Knowledge Hub', icon: Compass },
+    // Only show Library/History if a product context is selected
+    ...(productContext ? [
+        { id: 'LIBRARY', label: 'Library', icon: BookOpen },
+        { id: 'HISTORY', label: 'History', icon: Clock }
+    ] : []),
   ];
 
   return (
@@ -62,8 +71,8 @@ const Sidebar = ({
         </div>
         {!isCollapsed && (
             <div className="animate-in fade-in duration-300 text-center">
-              <h1 className="text-white font-bold text-sm tracking-widest leading-none">GERNAS</h1>
-              <p className="text-[10px] text-fab-sky/60 font-medium tracking-wide mt-0.5">SOP Flow</p>
+              <h1 className="text-white font-bold text-sm tracking-wide leading-none">GERNAS</h1>
+              <p className="text-[10px] text-fab-sky/60 font-medium tracking-wide mt-1">SOP Flow</p>
             </div>
         )}
       </div>
@@ -80,7 +89,7 @@ const Sidebar = ({
       {/* Nav Items */}
       <div className="flex-1 px-3 py-6 space-y-2 overflow-y-auto overflow-x-hidden custom-scrollbar">
         {!isCollapsed && (
-            <p className="px-3 mb-2 text-[10px] font-bold text-fab-sky/50 uppercase tracking-wider animate-in fade-in duration-300">Navigation</p>
+            <p className="px-3 mb-2 text-[10px] font-bold text-fab-sky/50 tracking-wider">Navigation</p>
         )}
         {navItems.map(item => {
             const Icon = item.icon;
@@ -111,10 +120,13 @@ const Sidebar = ({
             );
         })}
 
-        {/* Recent History List */}
-        {!isCollapsed && recentSessions.length > 0 && (
+        {/* Recent History List - Only show if product selected or just show general recent? User said "show history only for selected product" */}
+        {/* We filter above in useEffect. If productContext is null, recentSessions will be empty based on logic or we can show global history. */}
+        {/* Based on prompt: "in initial only show cbg knowledge hub in side bar" implies no history list on home. */}
+        {/* So we only render this block if productContext is not null */}
+        {!isCollapsed && productContext && recentSessions.length > 0 && (
             <div className="mt-8 animate-in fade-in duration-500">
-                <p className="px-3 mb-2 text-[10px] font-bold text-fab-sky/50 uppercase tracking-wider">Recent Chats</p>
+                <p className="px-3 mb-2 text-[10px] font-bold text-fab-sky/50 tracking-wider">Recent Chats</p>
                 <div className="space-y-1">
                     {recentSessions.map(session => (
                         <button
@@ -124,7 +136,7 @@ const Sidebar = ({
                         >
                             <MessageSquare size={14} className="mt-0.5 opacity-60 group-hover:opacity-100 shrink-0" />
                             <div className="overflow-hidden">
-                                <p className="text-[11px] font-medium truncate w-full">{session.last_message?.question || session.product || "New Session"}</p>
+                                <p className="text-[11px] font-medium truncate w-full">{session.session_title || session.last_message?.question || "New Session"}</p>
                                 <p className="text-[9px] opacity-50 truncate">{new Date(session.last_activity).toLocaleDateString()}</p>
                             </div>
                         </button>

@@ -221,34 +221,31 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
             <div className="px-8 pt-8 pb-6 flex flex-col gap-6 bg-white border-b border-slate-200">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                     <div className="flex flex-col gap-4 w-full">
-                        {/* Top Bar with Back Button & Actions */}
-                        <div className="flex items-center justify-between w-full">
-                             {/* Back Button (Canvas Style) */}
-                            {onBack && (
-                                <button 
-                                    onClick={onBack}
-                                    className="bg-white text-slate-600 hover:bg-slate-100 shadow-md border border-slate-200 rounded-full p-2.5 px-4 flex items-center gap-2 text-xs font-bold transition-all"
-                                    title="Back to Hub"
-                                >
-                                    <ArrowLeft size={16} />
-                                    <span>Back to Hub</span>
-                                </button>
-                            )}
+                        
+                        {/* Title Row with Back Icon */}
+                        <div className="flex justify-between items-start w-full">
+                            <div>
+                                <h2 className="text-2xl font-bold text-fab-navy mb-1 flex items-center gap-3">
+                                    {onBack && (
+                                        <button 
+                                            onClick={onBack}
+                                            className="p-1.5 -ml-2 rounded-full hover:bg-slate-100 text-slate-500 hover:text-fab-royal transition-colors"
+                                            title="Back to Hub"
+                                        >
+                                            <ArrowLeft size={24} />
+                                        </button>
+                                    )}
+                                    Document Library
+                                </h2>
+                                <p className="text-slate-500 text-sm ml-1">
+                                    {preselectedProduct 
+                                        ? `Managing documents for: ${preselectedProduct.product_name}` 
+                                        : 'Manage documents and monitor ingestion status.'}
+                                </p>
+                            </div>
 
                              {/* Action Buttons */}
                             <div className="flex gap-2">
-                                {/* View Flow Button */}
-                                {preselectedProduct && onViewFlow && (
-                                    <button
-                                        onClick={onViewFlow}
-                                        className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-200 rounded-full text-xs font-bold transition-all flex items-center gap-2 shadow-sm"
-                                        title="Go to Process Flow"
-                                    >
-                                        <Activity size={16} />
-                                        View Flow
-                                    </button>
-                                )}
-                                
                                 <button 
                                     onClick={() => {
                                         if(!preselectedProduct) setProductName('PIL-CONV-001');
@@ -262,14 +259,6 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                             </div>
                         </div>
 
-                        <div>
-                            <h2 className="text-2xl font-bold text-fab-navy mb-1">Document Library</h2>
-                            <p className="text-slate-500 text-sm">
-                                {preselectedProduct 
-                                    ? `Managing documents for: ${preselectedProduct.product_name}` 
-                                    : 'Manage documents and monitor ingestion status.'}
-                            </p>
-                        </div>
                     </div>
                 </div>
             </div>

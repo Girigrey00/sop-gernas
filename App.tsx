@@ -12,7 +12,7 @@ import {
     PieChart, TrendingUp, Globe, Building2, Scale, FileSignature, Calculator, 
     Receipt, Gem, Key, Database, Smartphone, Award, Target, BarChart, Stamp, BadgeDollarSign, 
     Vault, ScrollText, Truck, ShoppingCart, Anchor, Gavel, FileCheck, Layers, Trash2,
-    X, CheckCircle, AlertTriangle, MessageSquareText, Calendar, Hash, MessageCircle, Filter
+    X, CheckCircle, AlertTriangle, MessageSquareText, Calendar, Hash, MessageCircle, Filter, ArrowLeft
 } from 'lucide-react';
 
 // --- Icon Helper ---
@@ -293,7 +293,7 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
             <div className="px-8 pt-8 pb-6 flex flex-col gap-6 bg-white border-b border-slate-200">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                     <div>
-                        <h2 className="text-2xl font-bold text-fab-navy mb-1">CBG KNOWLEDGE HUB</h2>
+                        <h2 className="text-2xl font-bold text-fab-navy mb-1">CBG Knowledge Hub</h2>
                         <p className="text-slate-500 text-sm">Select a product to view its workflow or upload new documents.</p>
                     </div>
                     
@@ -475,9 +475,13 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
 
 // --- History Page Component (Redesigned) ---
 const HistoryPage = ({ 
-    onOpenSession 
+    onOpenSession,
+    onBack,
+    productContext
 }: { 
-    onOpenSession: (session: ChatSession) => void 
+    onOpenSession: (session: ChatSession) => void,
+    onBack: () => void,
+    productContext?: Product | null
 }) => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -488,7 +492,13 @@ const HistoryPage = ({
         setLoading(true);
         try {
             const data = await apiService.getChatSessions();
-            const list = Array.isArray(data) ? data : [];
+            let list = Array.isArray(data) ? data : [];
+            
+            // Filter if product context is active
+            if (productContext) {
+                list = list.filter(s => s.product === productContext.product_name);
+            }
+
             // Sort by last activity descending
             list.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
             setSessions(list);
@@ -499,7 +509,7 @@ const HistoryPage = ({
         }
     };
     loadSessions();
-  }, []);
+  }, [productContext]);
 
   const filtered = sessions.filter(s => 
       (s.session_title || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -522,11 +532,24 @@ const HistoryPage = ({
 
   return (
     <div className="h-full flex flex-col bg-slate-50/50">
-      {/* Modern Header */}
+      {/* Modern Header (Matched with LibraryPage) */}
       <div className="px-8 py-8 md:px-12 md:py-10 flex flex-col md:flex-row justify-between items-end gap-6 border-b border-slate-100 bg-white">
         <div className="space-y-2">
-            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Activity History</h2>
-            <p className="text-slate-500 font-medium">Resume your previous research sessions and process flows.</p>
+            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
+                <button 
+                    onClick={onBack}
+                    className="p-1.5 -ml-2 rounded-full hover:bg-slate-100 text-slate-500 hover:text-fab-royal transition-colors"
+                    title="Back to Hub"
+                >
+                    <ArrowLeft size={24} />
+                </button>
+                Activity History
+            </h2>
+            <p className="text-slate-500 font-medium ml-1">
+                {productContext 
+                    ? `Sessions for: ${productContext.product_name}` 
+                    : 'Resume your previous research sessions.'}
+            </p>
         </div>
         
         <div className="relative w-full md:w-80 group">
@@ -566,7 +589,7 @@ const HistoryPage = ({
                         <div 
                             key={item._id} 
                             onClick={() => onOpenSession(item)}
-                            className="group relative bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.08)] hover:border-fab-royal/20 transition-all duration-300 cursor-pointer flex flex-col h-[220px]"
+                            className="group relative bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.08)] hover:border-fab-royal/20 transition-all duration-300 cursor-pointer flex flex-col h-[180px]"
                         >
                             {/* Top Row: Date & Context */}
                             <div className="flex justify-between items-start mb-4">
@@ -583,12 +606,9 @@ const HistoryPage = ({
 
                             {/* Main Content */}
                             <div className="flex-1">
-                                <h3 className="text-lg font-bold text-slate-800 leading-snug mb-2 line-clamp-2 group-hover:text-fab-royal transition-colors">
+                                <h3 className="text-lg font-bold text-slate-800 leading-snug line-clamp-3 group-hover:text-fab-royal transition-colors">
                                     {title}
                                 </h3>
-                                <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">
-                                    {item.last_message?.answer || "No response recorded."}
-                                </p>
                             </div>
 
                             {/* Footer */}
@@ -726,9 +746,13 @@ const App: React.FC = () => {
                     setAutoOpenUpload(false);
                 }}
                 preselectedProduct={selectedContextProduct}
-                onBack={() => setCurrentView('HOME')}
+                onBack={() => {
+                    setCurrentView('HOME');
+                    setSelectedContextProduct(null); // Reset context on back to home
+                }}
                 onNotification={showNotification}
                 onViewFlow={async () => {
+                     // This callback is actually removed from UI based on request, but kept for type safety or future use
                      if (selectedContextProduct) {
                          if(selectedContextProduct.flow_status === 'Completed') {
                              try {
@@ -751,13 +775,23 @@ const App: React.FC = () => {
                 initialPrompt={initialPrompt} 
                 initialData={selectedSop}
                 onFlowGenerated={handleFlowGenerated}
-                onBack={() => setCurrentView('HOME')}
+                onBack={() => {
+                    setCurrentView('HOME');
+                    setSelectedContextProduct(null); // Reset context on back to home
+                }}
                 productContext={selectedContextProduct}
                 initialSessionId={currentSessionId}
             />
         );
       case 'HISTORY':
-        return <HistoryPage onOpenSession={handleOpenSession} />;
+        return <HistoryPage 
+                    onOpenSession={handleOpenSession} 
+                    onBack={() => {
+                        setCurrentView('HOME');
+                        setSelectedContextProduct(null); // Reset context on back to home
+                    }}
+                    productContext={selectedContextProduct}
+                />;
       default:
         return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} onNotification={showNotification} />;
     }
@@ -788,7 +822,7 @@ const App: React.FC = () => {
             onLogout={handleLogout}
             isCollapsed={isCollapsed}
             onToggle={() => setIsCollapsed(!isCollapsed)}
-            showLibrary={!!selectedContextProduct}
+            productContext={selectedContextProduct}
             onLoadSession={handleOpenSession}
           />
       </div>

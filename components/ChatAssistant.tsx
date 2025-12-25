@@ -33,7 +33,8 @@ const DEFAULT_PROMPTS = [
     "What is the breakdown of 2024 revenue by geography?",
     "What is the total IT cost in APAC for the full year 2025?",
     "How is group's operating income performing in 2025 vs. last year?",
-    "Analyze the monthly operating income trend in UAE."
+    "Analyze the monthly operating income trend in UAE.",
+    "Show me the key risk factors."
 ];
 
 // Helper to clean messy JSON/Markdown questions from API
@@ -621,8 +622,11 @@ Ask your own in the chat.`;
                 <GIcon className="w-5 h-5" />
             </div>
             <div>
-                <h3 className="font-bold text-slate-900 text-sm">CBG Knowledge Hub AI</h3>
-                <p className="text-[10px] text-slate-500 font-medium">Assistant</p>
+                <h3 className="font-bold text-slate-900 text-sm">CBG Knowledge Hub</h3>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                    <p className="text-[10px] text-slate-500 font-medium">Knowledge Base</p>
+                </div>
             </div>
         </div>
         
@@ -682,11 +686,11 @@ Ask your own in the chat.`;
                                  <button 
                                      key={idx}
                                      onClick={() => handleSend(prompt)}
-                                     className="group relative w-full text-left py-2.5 px-4 pl-9 bg-white border border-slate-200 rounded-3xl hover:border-fab-royal/50 hover:shadow-md hover:bg-fab-royal/5 transition-all duration-200"
+                                     className="group relative w-full text-left py-2 px-4 pl-9 bg-white border border-slate-200 rounded-3xl hover:border-fab-royal/50 hover:shadow-md hover:bg-fab-royal/5 transition-all duration-200"
                                  >
-                                     <Sparkles size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fab-royal/70 group-hover:text-fab-royal transition-colors" />
-                                     {/* CHANGED: Font size to 12px */}
-                                     <span className="text-[12px] text-slate-600 group-hover:text-fab-royal font-medium italic break-words leading-snug block pr-2">
+                                     <Sparkles size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-fab-royal/70 group-hover:text-fab-royal transition-colors" />
+                                     {/* CHANGED: Font size smaller as requested */}
+                                     <span className="text-[11px] text-slate-600 group-hover:text-fab-royal font-medium italic break-words leading-snug block pr-2">
                                          {prompt}
                                      </span>
                                  </button>
