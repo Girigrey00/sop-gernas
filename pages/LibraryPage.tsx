@@ -222,19 +222,24 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                     <div className="flex flex-col gap-4 w-full">
                         
-                        {/* Title Row with Back Icon */}
+                        {/* Title Row with Back Icon Above */}
                         <div className="flex justify-between items-start w-full">
                             <div>
-                                <h2 className="text-2xl font-bold text-fab-navy mb-1 flex items-center gap-3">
-                                    {onBack && (
+                                {onBack && (
+                                    <div className="mb-2">
                                         <button 
                                             onClick={onBack}
-                                            className="p-1.5 -ml-2 rounded-full hover:bg-slate-100 text-slate-500 hover:text-fab-royal transition-colors"
-                                            title="Back to Hub"
+                                            className="flex items-center gap-2 text-slate-500 hover:text-fab-royal transition-colors group"
+                                            title="Back"
                                         >
-                                            <ArrowLeft size={24} />
+                                            <ArrowLeft size={18} />
+                                            <span className="font-bold text-sm group-hover:underline">
+                                                {preselectedProduct ? preselectedProduct.product_name : 'Back'}
+                                            </span>
                                         </button>
-                                    )}
+                                    </div>
+                                )}
+                                <h2 className="text-2xl font-bold text-fab-navy mb-1">
                                     Document Library
                                 </h2>
                                 <p className="text-slate-500 text-sm ml-1">

@@ -33,9 +33,6 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
       return (
         <div className="flex flex-col h-full bg-white">
             <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                <div className="flex items-center gap-2 mb-3">
-                    <span className="px-2 py-1 bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-wider rounded">SOP Overview</span>
-                </div>
                 <h2 className="text-xl font-bold text-slate-900 leading-snug">{processData.processDefinition.title}</h2>
                 <p className="text-xs text-slate-500 mt-2">v{processData.processDefinition.version} • {processData.processDefinition.classification}</p>
             </div>

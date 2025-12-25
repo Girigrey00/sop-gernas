@@ -317,8 +317,8 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
   const WELCOME_CONTENT = `### Welcome to CBG Knowledge Hub!
 Get quick answers, and stay up-to-date with the latest CBG policies, processes, and best practices.
 
-Use suggested questions or
-Ask your own in the chat.`;
+**Use suggested questions** or
+**Ask your own in the chat.**`;
 
   const [messages, setMessages] = useState<Message[]>([
       { 
@@ -679,7 +679,7 @@ Ask your own in the chat.`;
                          {/* CHANGED: New Header with Icon */}
                          <div className="flex items-center gap-2 mb-3 pl-2">
                              <Lightbulb size={12} className="text-slate-500" />
-                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Suggested Questions</p>
+                             <p className="text-[10px] font-bold text-slate-500 tracking-wide">Suggested questions</p>
                          </div>
                          <div className="flex flex-col gap-2.5">
                              {msg.suggestions.map((prompt, idx) => (
