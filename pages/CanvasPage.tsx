@@ -22,7 +22,8 @@ import {
     Download,
     ArrowLeft,
     Users,
-    X
+    X,
+    LayoutDashboard
 } from 'lucide-react';
 
 import FlowDetails from '../components/FlowDetails';
@@ -303,10 +304,11 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                     {/* Back Button (Moved to consistent place but floating) */}
                     <button 
                         onClick={onBack}
-                        className="absolute left-0 bg-white text-slate-500 hover:text-fab-royal hover:bg-slate-50 shadow-md border border-slate-200 rounded-full p-2.5 flex items-center gap-2 transition-all"
+                        className="absolute left-0 bg-white text-slate-500 hover:text-fab-royal hover:bg-slate-50 shadow-md border border-slate-200 rounded-full py-2.5 px-4 flex items-center gap-2 transition-all group"
                         title="Back to Hub"
                     >
-                        <ArrowLeft size={20} />
+                        <LayoutDashboard size={18} className="group-hover:scale-110 transition-transform" />
+                        <span className="text-xs font-bold hidden md:inline">Back to Hub</span>
                     </button>
 
                     {/* 1. Layout Switcher */}
