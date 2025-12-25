@@ -54,7 +54,9 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
     const [activePanel, setActivePanel] = useState<'GUIDE' | 'CHAT'>(initialSessionId ? 'CHAT' : 'GUIDE'); // Default to Chat if session ID provided
     const [isLoading, setIsLoading] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
-    const [isLegendOpen, setIsLegendOpen] = useState(false);
+    
+    // CHANGED: Set to true by default as requested
+    const [isLegendOpen, setIsLegendOpen] = useState(true);
     
     // Maximized Sidebar State
     const [isSidebarMaximized, setIsSidebarMaximized] = useState(false);
@@ -91,7 +93,6 @@ const CanvasContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, 
             // Generate from prompt
             handleGenerateFlow(initialPrompt);
         } 
-        // Removed default MOCK_SOP_DATA fallback to prevent confusion
     }, [initialPrompt, initialData]);
 
     // Re-run layout when layoutMode changes

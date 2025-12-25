@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
   ChevronDown, ChevronUp, FileText, 
-  ThumbsUp, ThumbsDown, Copy, Sparkles
+  ThumbsUp, ThumbsDown, Copy, Sparkles, Lightbulb
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -372,7 +372,8 @@ Ask your own in the chat.`;
 
         if (pool.length === 0) pool = DEFAULT_PROMPTS;
         
-        const shuffled = Array.from(new Set(pool)).sort(() => 0.5 - Math.random()).slice(0, 4);
+        // CHANGED: Increased to 5 suggestions
+        const shuffled = Array.from(new Set(pool)).sort(() => 0.5 - Math.random()).slice(0, 5);
         
         setMessages(prev => prev.map(m => {
             if (m.isWelcome) {
@@ -671,16 +672,21 @@ Ask your own in the chat.`;
                 {/* Suggested Questions Section */}
                 {msg.isWelcome && msg.suggestions && msg.suggestions.length > 0 && (
                      <div className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
-                         <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 pl-2">Suggested for you</p>
+                         {/* CHANGED: New Header with Icon */}
+                         <div className="flex items-center gap-2 mb-3 pl-2">
+                             <Lightbulb size={12} className="text-slate-500" />
+                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Suggested Questions</p>
+                         </div>
                          <div className="flex flex-col gap-2.5">
                              {msg.suggestions.map((prompt, idx) => (
                                  <button 
                                      key={idx}
                                      onClick={() => handleSend(prompt)}
-                                     className="group relative w-full text-left py-3 px-4 pl-10 bg-white border border-slate-200 rounded-3xl hover:border-fab-royal/50 hover:shadow-md hover:bg-fab-royal/5 transition-all duration-200"
+                                     className="group relative w-full text-left py-2.5 px-4 pl-9 bg-white border border-slate-200 rounded-3xl hover:border-fab-royal/50 hover:shadow-md hover:bg-fab-royal/5 transition-all duration-200"
                                  >
-                                     <Sparkles size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fab-royal/70 group-hover:text-fab-royal transition-colors" />
-                                     <span className="text-sm text-slate-600 group-hover:text-fab-royal font-medium italic break-words leading-snug block pr-2">
+                                     <Sparkles size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fab-royal/70 group-hover:text-fab-royal transition-colors" />
+                                     {/* CHANGED: Font size to 12px */}
+                                     <span className="text-[12px] text-slate-600 group-hover:text-fab-royal font-medium italic break-words leading-snug block pr-2">
                                          {prompt}
                                      </span>
                                  </button>
