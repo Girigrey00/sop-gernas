@@ -473,7 +473,7 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
     );
 };
 
-// --- History Page Component ---
+// --- History Page Component (Redesigned) ---
 const HistoryPage = ({ 
     onOpenSession 
 }: { 
@@ -488,8 +488,8 @@ const HistoryPage = ({
         setLoading(true);
         try {
             const data = await apiService.getChatSessions();
-            // Ensure array before sorting
             const list = Array.isArray(data) ? data : [];
+            // Sort by last activity descending
             list.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
             setSessions(list);
         } catch(e) {
@@ -502,111 +502,110 @@ const HistoryPage = ({
   }, []);
 
   const filtered = sessions.filter(s => 
+      (s.session_title || '').toLowerCase().includes(search.toLowerCase()) ||
       (s.last_message?.question || '').toLowerCase().includes(search.toLowerCase()) || 
       (s.product || '').toLowerCase().includes(search.toLowerCase())
   );
 
+  // Helper for formatting date relative
+  const getTimeAgo = (dateStr: string) => {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+      
+      if (diffInSeconds < 60) return 'Just now';
+      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+      if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+      if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+      return date.toLocaleDateString();
+  };
+
   return (
-    <div className="h-full flex flex-col bg-slate-50">
-      <div className="px-8 pt-8 pb-6 border-b border-slate-200 bg-white">
-        <div className="flex justify-between items-center mb-4">
-            <div>
-                <h2 className="text-2xl font-bold text-fab-navy mb-1">Session History</h2>
-                <p className="text-slate-500 text-sm">Review your past conversations and interactions.</p>
-            </div>
-            
-            <div className="relative w-64">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input 
-                    type="text" 
-                    placeholder="Search history..." 
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-fab-royal/50 text-sm"
-                />
-            </div>
+    <div className="h-full flex flex-col bg-slate-50/50">
+      {/* Modern Header */}
+      <div className="px-8 py-8 md:px-12 md:py-10 flex flex-col md:flex-row justify-between items-end gap-6 border-b border-slate-100 bg-white">
+        <div className="space-y-2">
+            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Activity History</h2>
+            <p className="text-slate-500 font-medium">Resume your previous research sessions and process flows.</p>
+        </div>
+        
+        <div className="relative w-full md:w-80 group">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-fab-royal transition-colors" />
+            <input 
+                type="text" 
+                placeholder="Search sessions..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:outline-none focus:border-fab-royal/30 focus:bg-white transition-all text-sm font-medium"
+            />
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto px-8 py-6">
+      <div className="flex-1 overflow-y-auto px-8 py-8 md:px-12 scroll-smooth">
           {loading ? (
-             <div className="flex flex-col justify-center items-center h-64 gap-3">
-                 <Loader2 className="animate-spin text-fab-royal" size={32} />
-                 <p className="text-sm text-slate-500">Loading history...</p>
+             <div className="flex flex-col justify-center items-center h-64 gap-4">
+                 <div className="w-12 h-12 border-4 border-fab-royal/20 border-t-fab-royal rounded-full animate-spin"></div>
+                 <p className="text-sm font-semibold text-slate-400 animate-pulse">Retrieving your history...</p>
              </div>
           ) : filtered.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-16 text-center flex flex-col items-center gap-4 max-w-xl mx-auto mt-10">
-                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300">
-                    <Clock size={28} />
+              <div className="flex flex-col items-center justify-center py-20 opacity-60">
+                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                    <Clock size={32} className="text-slate-400" />
                 </div>
-                <div>
-                    <h3 className="text-base font-bold text-slate-700 mb-1">No sessions found</h3>
-                    <p className="text-slate-500 text-sm">Try adjusting your search or start a new chat.</p>
-                </div>
+                <h3 className="text-lg font-bold text-slate-700">No sessions found</h3>
+                <p className="text-slate-500">Try starting a new chat or adjusting filters.</p>
             </div>
           ) : (
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-50 border-b border-slate-200">
-                        <tr className="text-[10px] uppercase text-slate-500 font-bold tracking-wider">
-                            <th className="p-4 w-12 text-center">#</th>
-                            <th className="p-4">Discussion Topic</th>
-                            <th className="p-4 w-48">Product Context</th>
-                            <th className="p-4 w-40">Last Active</th>
-                            <th className="p-4 w-32 text-center">Interactions</th>
-                            <th className="p-4 w-32 text-right">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                        {filtered.map((item, idx) => (
-                            <tr key={item._id} className="hover:bg-slate-50/80 transition-colors group">
-                                <td className="p-4 text-center">
-                                    <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center mx-auto text-xs font-bold border border-slate-200">
-                                        {(idx + 1)}
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex flex-col gap-1 max-w-md">
-                                        <p className="text-sm font-bold text-slate-800 truncate" title={item.last_message?.question}>
-                                            {item.last_message?.question || "Untitled Session"}
-                                        </p>
-                                        <p className="text-[10px] text-slate-400 font-mono">ID: {item._id.substring(0,8)}...</p>
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="p-1.5 bg-blue-50 text-blue-600 rounded">
-                                            <Briefcase size={12} />
-                                        </div>
-                                        <span className="text-xs font-medium text-slate-700 truncate max-w-[150px]">
-                                            {item.product || 'General'}
-                                        </span>
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex flex-col text-xs text-slate-500">
-                                        <span className="font-medium text-slate-700">{new Date(item.last_activity).toLocaleDateString()}</span>
-                                        <span className="text-[10px]">{new Date(item.last_activity).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                                    </div>
-                                </td>
-                                <td className="p-4 text-center">
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">
-                                        <MessageSquareText size={10} />
-                                        {item.message_count || 0}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filtered.map((item) => {
+                    const title = item.session_title || item.last_message?.question || "Untitled Session";
+                    const product = item.product || "General";
+                    const timeAgo = getTimeAgo(item.last_activity);
+                    
+                    return (
+                        <div 
+                            key={item._id} 
+                            onClick={() => onOpenSession(item)}
+                            className="group relative bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.08)] hover:border-fab-royal/20 transition-all duration-300 cursor-pointer flex flex-col h-[220px]"
+                        >
+                            {/* Top Row: Date & Context */}
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center gap-2">
+                                     <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold uppercase tracking-wide border border-blue-100">
+                                        {product}
+                                     </span>
+                                </div>
+                                <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
+                                    <Clock size={12} />
+                                    <span>{timeAgo}</span>
+                                </div>
+                            </div>
+
+                            {/* Main Content */}
+                            <div className="flex-1">
+                                <h3 className="text-lg font-bold text-slate-800 leading-snug mb-2 line-clamp-2 group-hover:text-fab-royal transition-colors">
+                                    {title}
+                                </h3>
+                                <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">
+                                    {item.last_message?.answer || "No response recorded."}
+                                </p>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+                                <div className="flex items-center gap-4 text-xs font-medium text-slate-500">
+                                    <span className="flex items-center gap-1.5">
+                                        <MessageSquareText size={14} className="text-slate-400" />
+                                        {item.message_count || 0} messages
                                     </span>
-                                </td>
-                                <td className="p-4 text-right">
-                                    <button 
-                                        onClick={() => onOpenSession(item)}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-bold shadow-sm hover:border-fab-royal hover:text-fab-royal hover:shadow-md transition-all group-hover:bg-fab-royal group-hover:text-white group-hover:border-fab-royal"
-                                    >
-                                        Resume <ArrowRight size={14} />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                                </div>
+                                <span className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                                    Resume <ArrowRight size={14} />
+                                </span>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
           )}
       </div>

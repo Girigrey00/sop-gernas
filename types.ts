@@ -107,18 +107,20 @@ export interface ChatSessionDetail {
 
 export interface ChatSession {
     _id: string;
-    user_id: string;
+    session_id?: string;
+    user_id?: string;
     product: string;
     index_name: string;
     created_at: string;
     last_activity: string;
     message_count: number;
     last_message?: {
-        question_id: string;
+        question_id?: string;
         question: string;
         answer: string;
         timestamp: string;
     };
+    session_title?: string;
     // UI Helpers
     title?: string; // Derived from last message or product
 }
