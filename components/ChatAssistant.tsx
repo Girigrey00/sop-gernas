@@ -254,7 +254,7 @@ const MessageRenderer = ({ content, role }: { content: string, role: 'user' | 'a
         // --- Header Detection ---
         if (trimmed.startsWith('### ')) {
             elements.push(
-                <h3 key={i} className={`text-base font-bold mt-4 mb-2 break-words ${isUser ? 'text-white' : 'text-slate-800'}`}>
+                <h3 key={i} className={`text-xl font-bold mt-4 mb-2 leading-snug tracking-tight break-words ${isUser ? 'text-white' : 'text-slate-800'}`}>
                     {formatInlineText(trimmed.replace(/^###\s+/, ''), isUser)}
                 </h3>
             );
@@ -313,7 +313,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, product
   
   // Initial Welcome Message
   const WELCOME_MSG_ID = 'welcome-sys';
-  const WELCOME_CONTENT = `Welcome to CBG Knowledge Hub!
+  const WELCOME_CONTENT = `### Welcome to CBG Knowledge Hub!
 Get quick answers, and stay up-to-date with the latest CBG policies, processes, and best practices.
 
 Use suggested questions or
@@ -637,10 +637,10 @@ Ask your own in the chat.`;
                              <button 
                                  key={idx}
                                  onClick={() => handleSend(prompt)}
-                                 className="group relative w-full text-left py-3 px-4 pl-10 bg-white border border-slate-200 rounded-full hover:border-blue-400 hover:shadow-md hover:bg-blue-50/50 transition-all duration-200"
+                                 className="group relative w-full text-left py-3 px-4 pl-10 bg-white border border-slate-200 rounded-2xl hover:border-blue-400 hover:shadow-md hover:bg-blue-50/50 transition-all duration-200"
                              >
                                  <Sparkles size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-500/70 group-hover:text-blue-600 transition-colors" />
-                                 <span className="text-sm text-slate-600 group-hover:text-blue-700 font-medium italic truncate block pr-2">
+                                 <span className="text-sm text-slate-600 group-hover:text-blue-700 font-medium italic break-words leading-snug block pr-2">
                                      {prompt}
                                  </span>
                              </button>
