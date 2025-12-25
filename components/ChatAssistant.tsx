@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
   ChevronDown, ChevronUp, FileText, 
-  ThumbsUp, ThumbsDown, Copy, MessageSquare
+  ThumbsUp, ThumbsDown, Copy, Sparkles
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -311,10 +311,11 @@ const MessageRenderer = ({ content, role }: { content: string, role: 'user' | 'a
 const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, productContext, onToggleMaximize, isMaximized, initialSessionId }) => {
   const [input, setInput] = useState('');
   
-  // Initial Welcome Message with Suggested Questions embedded
+  // Initial Welcome Message
   const WELCOME_MSG_ID = 'welcome-sys';
   const WELCOME_CONTENT = `Welcome to CBG Knowledge Hub!
 Get quick answers, and stay up-to-date with the latest CBG policies, processes, and best practices.
+
 Use suggested questions or
 Ask your own in the chat.`;
 
@@ -625,25 +626,28 @@ Ask your own in the chat.`;
                 <div className="relative z-10 w-full">
                     <MessageRenderer content={msg.content} role={msg.role} />
                 </div>
-                
-                {/* Suggested Questions Section (Only for Welcome Message) */}
-                {msg.isWelcome && msg.suggestions && msg.suggestions.length > 0 && (
-                     <div className="mt-4 pt-3 border-t border-slate-100">
-                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Suggested Questions</p>
-                         <div className="flex flex-col gap-2">
-                             {msg.suggestions.map((prompt, idx) => (
-                                 <button 
-                                     key={idx}
-                                     onClick={() => handleSend(prompt)}
-                                     className="text-left px-4 py-2 bg-slate-50 border border-slate-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 rounded-full text-slate-600 text-[13px] font-medium italic transition-all duration-200 w-fit max-w-full truncate shadow-sm"
-                                 >
-                                     {prompt}
-                                 </button>
-                             ))}
-                         </div>
-                     </div>
-                )}
             </div>
+
+            {/* Suggested Questions Section (Only for Welcome Message) */}
+            {msg.isWelcome && msg.suggestions && msg.suggestions.length > 0 && (
+                 <div className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
+                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 pl-2">Suggested for you</p>
+                     <div className="flex flex-col gap-2.5">
+                         {msg.suggestions.map((prompt, idx) => (
+                             <button 
+                                 key={idx}
+                                 onClick={() => handleSend(prompt)}
+                                 className="group relative w-full text-left py-3 px-4 pl-10 bg-white border border-slate-200 rounded-full hover:border-blue-400 hover:shadow-md hover:bg-blue-50/50 transition-all duration-200"
+                             >
+                                 <Sparkles size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-500/70 group-hover:text-blue-600 transition-colors" />
+                                 <span className="text-sm text-slate-600 group-hover:text-blue-700 font-medium italic truncate block pr-2">
+                                     {prompt}
+                                 </span>
+                             </button>
+                         ))}
+                     </div>
+                 </div>
+            )}
 
             {/* Citations */}
             {msg.citations && Object.keys(msg.citations).length > 0 && <CitationBlock citations={msg.citations} />}
