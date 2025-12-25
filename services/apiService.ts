@@ -140,7 +140,34 @@ class JsonStreamParser {
     }
 }
 
-export const apiService = {
+// Explicit Interface to fix TypeScript build errors
+export interface ApiServiceInterface {
+    checkHealth(): Promise<boolean>;
+    initializeSession(payload: { session_id?: string, product?: string, index_name?: string }): Promise<any>;
+    chatInference(payload: { 
+        question: string, 
+        index_name?: string, 
+        session_id?: string, 
+        question_id?: string,
+        product?: string,
+        onToken: (token: string) => void,
+        onComplete?: (citations?: any) => void,
+        onError?: (error: string) => void
+    }): Promise<void>;
+    submitFeedback(feedback: FeedbackPayload): Promise<any>;
+    getChatSessions(): Promise<ChatSession[]>;
+    getChatSessionDetails(sessionId: string): Promise<ChatSessionDetail | null>;
+    getProducts(): Promise<Product[]>;
+    createProduct(product: { product_name: string, folder_name: string, product_description: string }): Promise<any>;
+    deleteProduct(productName: string): Promise<any>;
+    getDocuments(): Promise<LibraryDocument[]>;
+    uploadToAzure(file: File): Promise<string>;
+    uploadDocument(file: File, metadata: any): Promise<any>;
+    deleteDocument(docId: string, indexName: string): Promise<any>;
+    getProcessFlow(productName: string): Promise<SopResponse>;
+}
+
+export const apiService: ApiServiceInterface = {
     // Check backend health
     checkHealth: async (): Promise<boolean> => {
         try {
