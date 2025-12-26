@@ -498,9 +498,15 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                 else chunk = streamQueue.current.substring(0, 2);
                 streamQueue.current = streamQueue.current.substring(chunk.length);
 
-                setMessages(prev => prev.map(msg => msg.id === activeMessageId.current ? { ...msg, content: msg.content + chunk, isTyping: true } : msg));
+                // Safe Ref Access: Capture ID in closure
+                const currentId = activeMessageId.current;
+                setMessages(prev => prev.map(msg => msg.id === currentId ? { ...msg, content: msg.content + chunk, isTyping: true } : msg));
             } else if (isGenerationComplete.current) {
-                setMessages(prev => prev.map(msg => msg.id === activeMessageId.current ? { ...msg, isTyping: false } : msg));
+                // Safe Ref Access: Capture ID before nulling ref to ensure state update targets correct message
+                const currentId = activeMessageId.current;
+                
+                setMessages(prev => prev.map(msg => msg.id === currentId ? { ...msg, isTyping: false } : msg));
+                
                 activeMessageId.current = null;
                 isGenerationComplete.current = false;
                 setIsLoading(false);
@@ -582,6 +588,14 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     setIsSuggestionsOpen(true);
                 }
            }
+           
+           // FAILSAFE: If queue is empty, close immediately to avoid interval delay/race conditions
+           if (streamQueue.current.length === 0) {
+               setMessages(prev => prev.map(msg => msg.id === botMsgId ? { ...msg, isTyping: false } : msg));
+               activeMessageId.current = null;
+               isGenerationComplete.current = false;
+               setIsLoading(false);
+           }
         },
         onError: (errMsg) => {
            isGenerationComplete.current = true;
@@ -596,6 +610,13 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                setIsLoading(false);
            } else {
                streamQueue.current += `\n\n[Error: ${errMsg}]`;
+               // Ensure we close if error occurs mid-stream
+               if (streamQueue.current.length === 0) {
+                   setMessages(prev => prev.map(msg => msg.id === botMsgId ? { ...msg, isTyping: false } : msg));
+                   activeMessageId.current = null;
+                   isGenerationComplete.current = false;
+                   setIsLoading(false);
+               }
            }
         }
       });
