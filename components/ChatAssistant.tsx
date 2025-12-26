@@ -817,12 +817,23 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     <ChevronLeft size={14} />
                  </button>
                  
-                 {/* Scroll Container - UPDATED: Strictly hide scrollbar with Tailwind arbitrary values & inline styles for cross-browser safety */}
+                 {/* Scroll Container - UPDATED: Strictly hide scrollbar with style object */}
                  <div 
                     ref={relatedScrollRef} 
-                    className="px-4 overflow-x-auto pb-1 pt-1 flex gap-2 snap-x scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    className="px-4 overflow-x-auto pb-1 pt-1 flex gap-2 snap-x scroll-smooth no-scrollbar"
+                    style={{ 
+                        scrollbarWidth: 'none', 
+                        msOverflowStyle: 'none' 
+                    }}
                  >
+                     {/* Add separate style block for Webkit */}
+                     <style>
+                         {`
+                           .no-scrollbar::-webkit-scrollbar {
+                             display: none;
+                           }
+                         `}
+                     </style>
                     {activeSuggestions.map((prompt, idx) => (
                         <button 
                             key={idx}
@@ -845,24 +856,24 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
             </div>
         </div>
       )}
-      
-      {/* Minimized Suggestion Toggle (Centered) - Positioned relative to input area */}
-      {activeSuggestions.length > 0 && !isSuggestionsOpen && (
-          // UPDATED: z-index increased to 50 to appear above input field
-          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-50 transform transition-all duration-300">
-              <button 
-                onClick={() => setIsSuggestionsOpen(true)}
-                className="bg-white/90 backdrop-blur border border-slate-200 text-fab-navy px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-fab-royal hover:text-white hover:border-fab-royal transition-all animate-in slide-in-from-bottom-2 fade-in"
-              >
-                  <Sparkles size={12} />
-                  Show Related
-                  <ChevronUp size={12} />
-              </button>
-          </div>
-      )}
 
       {/* Input Area */}
       <div className="bg-white border-t border-slate-100 p-4 pb-2 z-40 relative shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.05)]">
+        
+        {/* Minimized Suggestion Toggle - UPDATED: Anchored to Input Container (Top Edge) to follow it vertically */}
+        {activeSuggestions.length > 0 && !isSuggestionsOpen && (
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full z-50 pointer-events-none w-full flex justify-center pb-3">
+                 <button 
+                    onClick={() => setIsSuggestionsOpen(true)}
+                    className="pointer-events-auto bg-white/90 backdrop-blur border border-slate-200 text-fab-navy px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-fab-royal hover:text-white hover:border-fab-royal transition-all animate-in slide-in-from-bottom-2 fade-in"
+                >
+                    <Sparkles size={12} />
+                    Show Related
+                    <ChevronUp size={12} />
+                </button>
+            </div>
+        )}
+
         <div className="relative flex items-center gap-2 max-w-4xl mx-auto w-full">
             <input
                 type="text"
