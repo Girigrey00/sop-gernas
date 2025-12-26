@@ -736,16 +736,16 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     <div className="mt-4 w-full space-y-2">
                         <div className="flex items-center gap-2 mb-2 pl-1">
                              <Lightbulb size={12} className="text-slate-400" />
-                             {/* UPDATED: Normal Case Title */}
-                             <span className="text-sm font-medium text-slate-500">Suggested questions</span>
+                             {/* UPDATED: Normal Case Title 10px */}
+                             <span className="text-[10px] font-medium text-slate-500">Suggested questions</span>
                         </div>
                         <div className="flex flex-col gap-2">
                             {msg.suggestions.map((prompt, idx) => (
                                 <button 
                                     key={idx}
                                     onClick={() => handleSend(prompt)}
-                                    // UPDATED: Rounded-full (pill button), matching image reference
-                                    className="text-left px-5 py-3 bg-white hover:bg-slate-50 border border-slate-200 hover:border-fab-royal/50 rounded-full transition-all text-sm text-slate-600 flex items-center gap-3 group shadow-sm hover:shadow-md w-full"
+                                    // UPDATED: Rounded-full (pill button), 12px text
+                                    className="text-left px-5 py-3 bg-white hover:bg-slate-50 border border-slate-200 hover:border-fab-royal/50 rounded-full transition-all text-xs flex items-center gap-3 group shadow-sm hover:shadow-md w-full"
                                 >
                                     <div className="p-1.5 bg-slate-50 rounded-full text-fab-royal shadow-sm group-hover:scale-110 transition-transform">
                                         <Sparkles size={12} />
@@ -848,7 +848,8 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
       
       {/* Minimized Suggestion Toggle (Centered) - Positioned relative to input area */}
       {activeSuggestions.length > 0 && !isSuggestionsOpen && (
-          <div className="absolute bottom-[90px] left-1/2 -translate-x-1/2 z-30 transform transition-all duration-300">
+          // UPDATED: z-index increased to 50 to appear above input field
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-50 transform transition-all duration-300">
               <button 
                 onClick={() => setIsSuggestionsOpen(true)}
                 className="bg-white/90 backdrop-blur border border-slate-200 text-fab-navy px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-fab-royal hover:text-white hover:border-fab-royal transition-all animate-in slide-in-from-bottom-2 fade-in"
