@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
   ChevronDown, ChevronUp, FileText, 
-  ThumbsUp, ThumbsDown, Copy, Sparkles, Lightbulb
+  ThumbsUp, ThumbsDown, Copy, Sparkles, Lightbulb, ChevronRight
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -331,6 +331,10 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
       }
   ]);
 
+  // Suggestions Bar State
+  const [activeSuggestions, setActiveSuggestions] = useState<string[]>([]);
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(true);
+
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -382,6 +386,8 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
             }
             return m;
         }));
+        // Also set as active suggestions initially
+        setActiveSuggestions(shuffled);
     }
     
     if (!initialSessionId) {
@@ -528,6 +534,9 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
     setMessages([...newMessages, userMsg]);
     setInput('');
     setIsLoading(true);
+    
+    // Clear old suggestions while typing/thinking
+    setActiveSuggestions([]);
 
     const botMsgId = globalThis.crypto?.randomUUID() || `qn-${Date.now()}`;
     let isFirstToken = true;
@@ -561,10 +570,15 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
             }
             streamQueue.current += token; 
         },
-        onComplete: (citations) => {
+        onComplete: (data) => {
            isGenerationComplete.current = true;
-           if (citations) {
-                setMessages(prev => prev.map(msg => msg.id === botMsgId ? { ...msg, citations: citations } : msg));
+           if (data) {
+                setMessages(prev => prev.map(msg => msg.id === botMsgId ? { ...msg, citations: data.citations } : msg));
+                
+                if (data.related_questions && Array.isArray(data.related_questions) && data.related_questions.length > 0) {
+                    setActiveSuggestions(data.related_questions);
+                    setIsSuggestionsOpen(true);
+                }
            }
         },
         onError: (errMsg) => {
@@ -673,32 +687,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     </div>
                 </div>
 
-                {/* Suggested Questions Section */}
-                {msg.isWelcome && msg.suggestions && msg.suggestions.length > 0 && (
-                     <div className="mt-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
-                         {/* CHANGED: New Header with Icon */}
-                         <div className="flex items-center gap-2 mb-3 pl-2">
-                             <Lightbulb size={12} className="text-slate-500" />
-                             <p className="text-[10px] font-bold text-slate-500 tracking-wide">Suggested questions</p>
-                         </div>
-                         <div className="flex flex-col gap-2.5">
-                             {msg.suggestions.map((prompt, idx) => (
-                                 <button 
-                                     key={idx}
-                                     onClick={() => handleSend(prompt)}
-                                     className="group relative w-full text-left py-2 px-4 pl-9 bg-white border border-slate-200 rounded-3xl hover:border-fab-royal/50 hover:shadow-md hover:bg-fab-royal/5 transition-all duration-200"
-                                 >
-                                     <Sparkles size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-fab-royal/70 group-hover:text-fab-royal transition-colors" />
-                                     {/* CHANGED: Font size smaller as requested */}
-                                     <span className="text-[11px] text-slate-600 group-hover:text-fab-royal font-medium italic break-words leading-snug block pr-2">
-                                         {prompt}
-                                     </span>
-                                 </button>
-                             ))}
-                         </div>
-                     </div>
-                )}
-
                 {/* Citations */}
                 {msg.citations && Object.keys(msg.citations).length > 0 && <CitationBlock citations={msg.citations} />}
 
@@ -764,6 +752,47 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
         <div ref={messagesEndRef} />
         </div>
       </div>
+
+      {/* Suggestions Bar */}
+      {activeSuggestions.length > 0 && (
+        <div className={`border-t border-slate-100 bg-slate-50/80 backdrop-blur-sm transition-all duration-300 ${isSuggestionsOpen ? 'max-h-40 py-3' : 'max-h-0 py-0 overflow-hidden'}`}>
+            <div className="px-4 flex justify-between items-center mb-2">
+                <div className="flex items-center gap-2">
+                    <Lightbulb size={12} className="text-fab-royal" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Suggestions</span>
+                </div>
+                <button onClick={() => setIsSuggestionsOpen(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-200 rounded">
+                    <X size={12} />
+                </button>
+            </div>
+            <div className="px-4 overflow-x-auto pb-1 scrollbar-hide flex gap-2">
+                {activeSuggestions.map((prompt, idx) => (
+                    <button 
+                        key={idx}
+                        onClick={() => handleSend(prompt)}
+                        className="flex-shrink-0 px-4 py-2 bg-white border border-slate-200 rounded-full text-xs font-medium text-slate-700 hover:bg-fab-royal hover:text-white hover:border-fab-royal transition-all shadow-sm flex items-center gap-2 group whitespace-nowrap"
+                    >
+                        <Sparkles size={12} className="text-fab-royal group-hover:text-white/80" />
+                        {prompt}
+                    </button>
+                ))}
+            </div>
+        </div>
+      )}
+      
+      {/* Minimized Suggestion Toggle */}
+      {activeSuggestions.length > 0 && !isSuggestionsOpen && (
+          <div className="absolute bottom-20 right-4 z-30">
+              <button 
+                onClick={() => setIsSuggestionsOpen(true)}
+                className="bg-fab-royal text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-fab-blue transition-colors animate-in slide-in-from-bottom-2 fade-in"
+              >
+                  <Lightbulb size={12} />
+                  Suggestions
+                  <ChevronUp size={12} />
+              </button>
+          </div>
+      )}
 
       {/* Input Area */}
       <div className="bg-white border-t border-slate-100 p-4 pb-2 z-20">

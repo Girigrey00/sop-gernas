@@ -29,7 +29,7 @@ class JsonStreamParser {
     
     constructor(
         private onToken: (text: string) => void,
-        private onCitations: (citations: any) => void
+        private onData: (data: { citations?: any, related_questions?: string[] }) => void
     ) {}
 
     process(chunk: string) {
@@ -118,24 +118,40 @@ class JsonStreamParser {
 
     finish() {
         if (this.citationsBuffer) {
+            const result: { citations?: any, related_questions?: string[] } = {};
+            
+            // 1. Try to extract citations
             try {
-                // Try to find the citations object in the remaining buffer
-                // We look for "citations": { ... }
-                const citMatch = this.citationsBuffer.match(/"citations"\s*:\s*(\{[\s\S]*\})/);
+                // Look for "citations": { ... }
+                // Match the object content non-greedily until the next key or end
+                const citMatch = this.citationsBuffer.match(/"citations"\s*:\s*(\{[\s\S]*?\})(\s*,|\s*\})/);
                 if (citMatch && citMatch[1]) {
-                     const citJson = citMatch[1];
-                     // Remove trailing brackets of the outer object if present (like } })
-                     const cleanJson = citJson.replace(/\}?\s*\}?$/, '}');
                      try {
-                        const c = JSON.parse(cleanJson);
-                        this.onCitations(c);
+                        result.citations = JSON.parse(citMatch[1]);
                      } catch(e) {
-                         // Fallback: try simpler parsing or ignore
+                         // Fallback attempt for partial JSON
                      }
                 }
             } catch (e) {
                 console.warn("Failed to parse citations:", e);
             }
+
+            // 2. Try to extract related_questions
+            try {
+                // Look for "related_questions": [ ... ]
+                const rqMatch = this.citationsBuffer.match(/"related_questions"\s*:\s*(\[[^\]]*\])/);
+                if (rqMatch && rqMatch[1]) {
+                    try {
+                        result.related_questions = JSON.parse(rqMatch[1]);
+                    } catch(e) {
+                        console.warn("Failed to parse related_questions JSON:", e);
+                    }
+                }
+            } catch (e) {
+                console.warn("Failed to extract related_questions:", e);
+            }
+
+            this.onData(result);
         }
     }
 }
@@ -151,7 +167,7 @@ export interface ApiServiceInterface {
         question_id?: string,
         product?: string,
         onToken: (token: string) => void,
-        onComplete?: (citations?: any) => void,
+        onComplete?: (data?: { citations?: any, related_questions?: string[] }) => void,
         onError?: (error: string) => void
     }): Promise<void>;
     submitFeedback(feedback: FeedbackPayload): Promise<any>;
@@ -202,7 +218,7 @@ export const apiService: ApiServiceInterface = {
         question_id?: string,
         product?: string,
         onToken: (token: string) => void,
-        onComplete?: (citations?: any) => void,
+        onComplete?: (data?: { citations?: any, related_questions?: string[] }) => void,
         onError?: (error: string) => void
     }): Promise<void> => {
         try {
@@ -239,8 +255,8 @@ export const apiService: ApiServiceInterface = {
             // Instantiate Parser
             const parser = new JsonStreamParser(
                 payload.onToken,
-                (citations) => {
-                    if (payload.onComplete) payload.onComplete(citations);
+                (data) => {
+                    if (payload.onComplete) payload.onComplete(data);
                 }
             );
 
@@ -269,9 +285,14 @@ export const apiService: ApiServiceInterface = {
                                 parser.process(data.token);
                             }
                             
-                            // 2. Direct Citations Handling (if sent separately)
-                            if (data.citations) {
-                                if (payload.onComplete) payload.onComplete(data.citations);
+                            // 2. Direct Citations/Related Handling (if sent separately)
+                            if (data.citations || data.related_questions) {
+                                if (payload.onComplete) {
+                                    payload.onComplete({
+                                        citations: data.citations,
+                                        related_questions: data.related_questions
+                                    });
+                                }
                             }
 
                             // 3. Fallback: Full Answer Block (Legacy non-stream)
