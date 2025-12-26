@@ -706,8 +706,8 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                 {msg.citations && Object.keys(msg.citations).length > 0 && <CitationBlock citations={msg.citations} />}
 
                 {/* Feedback & Actions Toolbar */}
-                {msg.role === 'assistant' && !msg.isWelcome && (
-                    <div className={`flex items-center gap-3 mt-2 ml-2 transition-all duration-500 ease-in-out ${msg.isTyping ? 'opacity-0 max-h-0 overflow-hidden' : 'opacity-100 max-h-10'}`}>
+                {msg.role === 'assistant' && !msg.isWelcome && !msg.isTyping && (
+                    <div className="flex items-center gap-3 mt-2 ml-2 animate-in fade-in duration-300">
                         <button onClick={() => handleCopy(msg.content)} className="text-slate-400 hover:text-fab-royal transition-colors p-1.5 hover:bg-slate-100 rounded-md" title="Copy">
                             <Copy size={14} />
                         </button>
