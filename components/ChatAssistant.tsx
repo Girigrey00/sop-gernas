@@ -331,7 +331,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
       }
   ]);
 
-  // Suggestions Bar State
+  // Suggestions Bar State (Only for Related Questions now)
   const [activeSuggestions, setActiveSuggestions] = useState<string[]>([]);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(true);
 
@@ -377,7 +377,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
 
         if (pool.length === 0) pool = DEFAULT_PROMPTS;
         
-        // CHANGED: Increased to 5 suggestions
+        // Increased to 5 suggestions
         const shuffled = Array.from(new Set(pool)).sort(() => 0.5 - Math.random()).slice(0, 5);
         
         setMessages(prev => prev.map(m => {
@@ -386,8 +386,8 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
             }
             return m;
         }));
-        // Also set as active suggestions initially
-        setActiveSuggestions(shuffled);
+        // NOTE: We do NOT set activeSuggestions here anymore. 
+        // Initial suggestions remain inside the welcome message.
     }
     
     if (!initialSessionId) {
@@ -715,6 +715,29 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                         </div>
                     </div>
                 )}
+                
+                {/* NEW: Inline Suggestions for Welcome Message */}
+                {msg.role === 'assistant' && msg.suggestions && msg.suggestions.length > 0 && (
+                    <div className="mt-4 w-full space-y-2">
+                        <div className="flex items-center gap-2 mb-1 pl-1">
+                             <Sparkles size={12} className="text-fab-royal" />
+                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Suggested Questions</span>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                            {msg.suggestions.map((prompt, idx) => (
+                                <button 
+                                    key={idx}
+                                    onClick={() => handleSend(prompt)}
+                                    className="text-left px-4 py-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-fab-royal hover:shadow-md transition-all text-xs font-medium text-slate-700 flex items-center justify-between group"
+                                >
+                                    {prompt}
+                                    <ChevronRight size={14} className="text-slate-300 group-hover:text-fab-royal transition-colors" />
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 </div>
             </div>
             
@@ -753,13 +776,13 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
         </div>
       </div>
 
-      {/* Suggestions Bar */}
+      {/* Suggestions Bar (Related Questions) */}
       {activeSuggestions.length > 0 && (
         <div className={`border-t border-slate-100 bg-slate-50/80 backdrop-blur-sm transition-all duration-300 ${isSuggestionsOpen ? 'max-h-40 py-3' : 'max-h-0 py-0 overflow-hidden'}`}>
             <div className="px-4 flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
                     <Lightbulb size={12} className="text-fab-royal" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Suggestions</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Related Questions</span>
                 </div>
                 <button onClick={() => setIsSuggestionsOpen(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-200 rounded">
                     <X size={12} />
@@ -788,7 +811,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                 className="bg-fab-royal text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-fab-blue transition-colors animate-in slide-in-from-bottom-2 fade-in"
               >
                   <Lightbulb size={12} />
-                  Suggestions
+                  Related
                   <ChevronUp size={12} />
               </button>
           </div>
