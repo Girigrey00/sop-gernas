@@ -473,181 +473,6 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
     );
 };
 
-// --- History Page Component (Redesigned) ---
-const HistoryPage = ({ 
-    onOpenSession,
-    onBack,
-    productContext
-}: { 
-    onOpenSession: (session: ChatSession) => void,
-    onBack: () => void,
-    productContext?: Product | null
-}) => {
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-
-  useEffect(() => {
-    const loadSessions = async () => {
-        setLoading(true);
-        try {
-            const data = await apiService.getChatSessions();
-            let list = Array.isArray(data) ? data : [];
-            
-            // Filter if product context is active
-            if (productContext) {
-                list = list.filter(s => s.product === productContext.product_name);
-            }
-
-            // Sort by last activity descending
-            list.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
-            setSessions(list);
-        } catch(e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
-    };
-    loadSessions();
-  }, [productContext]);
-
-  const filtered = sessions.filter(s => 
-      (s.session_title || '').toLowerCase().includes(search.toLowerCase()) ||
-      (s.last_message?.question || '').toLowerCase().includes(search.toLowerCase()) || 
-      (s.product || '').toLowerCase().includes(search.toLowerCase())
-  );
-
-  // Helper for formatting date relative
-  const getTimeAgo = (dateStr: string) => {
-      const date = new Date(dateStr);
-      const now = new Date();
-      const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-      
-      if (diffInSeconds < 60) return 'Just now';
-      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-      if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-      if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-      return date.toLocaleDateString();
-  };
-
-  return (
-    <div className="h-full flex flex-col bg-slate-50/50">
-      {/* Header - Updated with Back Icon Row */}
-      <div className="px-8 pt-8 pb-6 flex flex-col gap-6 bg-white border-b border-slate-200">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-            <div className="flex flex-col gap-4 w-full">
-                
-                {/* Title Row with Back Icon Above */}
-                <div className="flex justify-between items-start w-full">
-                    <div>
-                        {onBack && (
-                            <div className="mb-2">
-                                <button 
-                                    onClick={onBack}
-                                    className="flex items-center gap-2 text-slate-500 hover:text-fab-royal transition-colors group"
-                                    title="Back"
-                                >
-                                    <ArrowLeft size={18} />
-                                    <span className="font-bold text-sm group-hover:underline">
-                                        {productContext ? productContext.product_name : 'Back'}
-                                    </span>
-                                </button>
-                            </div>
-                        )}
-                        <h2 className="text-2xl font-bold text-fab-navy mb-1">
-                            Activity History
-                        </h2>
-                        <p className="text-slate-500 text-sm ml-1">
-                            {productContext 
-                                ? `Sessions for: ${productContext.product_name}` 
-                                : 'Resume your previous research sessions.'}
-                        </p>
-                    </div>
-
-                    <div className="relative w-full md:w-80 group">
-                        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-fab-royal transition-colors" />
-                        <input 
-                            type="text" 
-                            placeholder="Search sessions..." 
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-11 pr-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:outline-none focus:border-fab-royal/30 focus:bg-white transition-all text-sm font-medium"
-                        />
-                    </div>
-                </div>
-            </div>
-        </div>
-      </div>
-      
-      <div className="flex-1 overflow-y-auto px-8 py-8 md:px-12 scroll-smooth">
-          {loading ? (
-             <div className="flex flex-col justify-center items-center h-64 gap-4">
-                 <div className="w-12 h-12 border-4 border-fab-royal/20 border-t-fab-royal rounded-full animate-spin"></div>
-                 <p className="text-sm font-semibold text-slate-400 animate-pulse">Retrieving your history...</p>
-             </div>
-          ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 opacity-60">
-                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                    <Clock size={32} className="text-slate-400" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-700">No sessions found</h3>
-                <p className="text-slate-500">Try starting a new chat or adjusting filters.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filtered.map((item) => {
-                    const title = item.session_title || item.last_message?.question || "Untitled Session";
-                    const product = item.product || "General";
-                    const timeAgo = getTimeAgo(item.last_activity);
-                    
-                    return (
-                        <div 
-                            key={item._id} 
-                            onClick={() => onOpenSession(item)}
-                            className="group relative bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.08)] hover:border-fab-royal/20 transition-all duration-300 cursor-pointer flex flex-col h-[180px]"
-                        >
-                            {/* Top Row: Date & Context */}
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center gap-2">
-                                     <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold uppercase tracking-wide border border-blue-100">
-                                        {product}
-                                     </span>
-                                </div>
-                                <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
-                                    <Clock size={12} />
-                                    <span>{timeAgo}</span>
-                                </div>
-                            </div>
-
-                            {/* Main Content */}
-                            <div className="flex-1">
-                                <h3 className="text-lg font-bold text-slate-800 leading-snug line-clamp-3 group-hover:text-fab-royal transition-colors">
-                                    {title}
-                                </h3>
-                            </div>
-
-                            {/* Footer */}
-                            <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
-                                <div className="flex items-center gap-4 text-xs font-medium text-slate-500">
-                                    <span className="flex items-center gap-1.5">
-                                        <MessageSquareText size={14} className="text-slate-400" />
-                                        {item.message_count || 0} messages
-                                    </span>
-                                </div>
-                                <span className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-                                    Resume <ArrowRight size={14} />
-                                </span>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-          )}
-      </div>
-    </div>
-  );
-};
-
 // --- Main App Component ---
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -804,20 +629,7 @@ const App: React.FC = () => {
                 initialSessionId={currentSessionId}
             />
         );
-      case 'HISTORY':
-        return <HistoryPage 
-                    onOpenSession={handleOpenSession} 
-                    onBack={() => {
-                        // Logic: If we have a product context, go back to CANVAS. Else go HOME.
-                        if (selectedContextProduct) {
-                            setCurrentView('CANVAS');
-                        } else {
-                            setCurrentView('HOME');
-                            setSelectedContextProduct(null); 
-                        }
-                    }}
-                    productContext={selectedContextProduct}
-                />;
+      // Removed HISTORY case as it is now sidebar only
       default:
         return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} onNotification={showNotification} />;
     }
@@ -844,7 +656,15 @@ const App: React.FC = () => {
       <div className={`fixed inset-y-0 left-0 z-50 ${isCollapsed ? 'w-20' : 'w-64'} transform lg:relative lg:translate-x-0 transition-all duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <Sidebar 
             currentView={currentView === 'SOPS' ? 'HOME' : currentView} 
-            onNavigate={(view) => { setCurrentView(view); setIsSidebarOpen(false); }} 
+            onNavigate={(view) => { 
+                if (view === 'HISTORY') {
+                    setIsCollapsed(false); // Expand sidebar when History is clicked
+                    // Do not change current view, stay on previous page
+                } else {
+                    setCurrentView(view);
+                    setIsSidebarOpen(false);
+                }
+            }} 
             onLogout={handleLogout}
             isCollapsed={isCollapsed}
             onToggle={() => setIsCollapsed(!isCollapsed)}

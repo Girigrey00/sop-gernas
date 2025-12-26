@@ -23,9 +23,9 @@ const Sidebar = ({
   productContext, 
   onLoadSession 
 }: SidebarProps) => {
-  const [recentSessions, setRecentSessions] = useState<ChatSession[]>([]);
+  const [historySessions, setHistorySessions] = useState<ChatSession[]>([]);
 
-  // Fetch recent history for the sidebar
+  // Fetch full history for the sidebar
   useEffect(() => {
     const fetchHistory = async () => {
         try {
@@ -37,9 +37,9 @@ const Sidebar = ({
                 filtered = sessions.filter(s => s.product === productContext.product_name);
             }
 
-            // Sort by last activity and take top 5
-            const sorted = filtered.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime()).slice(0, 5);
-            setRecentSessions(sorted);
+            // Sort by last activity - SHOW ALL (no slice)
+            const sorted = filtered.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
+            setHistorySessions(sorted);
         } catch (e) {
             console.error("Sidebar history fetch error", e);
         }
@@ -86,64 +86,73 @@ const Sidebar = ({
         {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
       </button>
 
-      {/* Nav Items */}
-      <div className="flex-1 px-3 py-6 space-y-2 overflow-y-auto overflow-x-hidden custom-scrollbar">
-        {!isCollapsed && (
-            <p className="px-3 mb-2 text-[10px] font-bold text-fab-sky/50 tracking-wider">Navigation</p>
-        )}
-        {navItems.map(item => {
-            const Icon = item.icon;
-            // Map CANVAS/SOPS view to HOME for highlighting if no specific match
-            const isActive = currentView === item.id || (item.id === 'HOME' && (currentView === 'CANVAS' || currentView === 'SOPS'));
-            return (
-              <button
-                key={item.id}
-                onClick={() => onNavigate(item.id as View)}
-                title={isCollapsed ? item.label : ''}
-                className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-2.5 rounded-xl transition-all group relative ${
-                  isActive 
-                    ? 'bg-fab-royal text-white shadow-lg shadow-black/20' 
-                    : 'hover:bg-fab-royal/40 text-fab-sky/70 hover:text-white'
-                }`}
-              >
-                <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-                  <Icon size={isCollapsed ? 22 : 18} className={`${isActive ? 'text-white' : 'text-fab-sky/50 group-hover:text-fab-sky'} transition-colors`} />
-                  {!isCollapsed && <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>}
-                </div>
-                {!isCollapsed && isActive && <ChevronRight size={14} className="text-fab-sky" />}
-                
-                {/* Active Bar Indicator for Collapsed Mode */}
-                {isCollapsed && isActive && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-fab-sky rounded-r-full"></div>
-                )}
-              </button>
-            );
-        })}
+      {/* Nav Items & History Container */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+          
+          {/* Main Navigation */}
+          <div className="px-3 py-6 space-y-2 shrink-0">
+            {!isCollapsed && (
+                <p className="px-3 mb-2 text-[10px] font-bold text-fab-sky/50 tracking-wider">Navigation</p>
+            )}
+            {navItems.map(item => {
+                const Icon = item.icon;
+                // Map CANVAS/SOPS view to HOME for highlighting if no specific match
+                // Note: HISTORY is now treated as a toggle/expand action, but we can highlight it if we want to show it's 'active' mode
+                const isActive = currentView === item.id || (item.id === 'HOME' && (currentView === 'CANVAS' || currentView === 'SOPS'));
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onNavigate(item.id as View)}
+                    title={isCollapsed ? item.label : ''}
+                    className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-2.5 rounded-xl transition-all group relative ${
+                      isActive 
+                        ? 'bg-fab-royal text-white shadow-lg shadow-black/20' 
+                        : 'hover:bg-fab-royal/40 text-fab-sky/70 hover:text-white'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                      <Icon size={isCollapsed ? 22 : 18} className={`${isActive ? 'text-white' : 'text-fab-sky/50 group-hover:text-fab-sky'} transition-colors`} />
+                      {!isCollapsed && <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>}
+                    </div>
+                    {!isCollapsed && isActive && <ChevronRight size={14} className="text-fab-sky" />}
+                    
+                    {/* Active Bar Indicator for Collapsed Mode */}
+                    {isCollapsed && isActive && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-fab-sky rounded-r-full"></div>
+                    )}
+                  </button>
+                );
+            })}
+          </div>
 
-        {/* Recent History List - Only show if product selected or just show general recent? User said "show history only for selected product" */}
-        {/* We filter above in useEffect. If productContext is null, recentSessions will be empty based on logic or we can show global history. */}
-        {/* Based on prompt: "in initial only show cbg knowledge hub in side bar" implies no history list on home. */}
-        {/* So we only render this block if productContext is not null */}
-        {!isCollapsed && productContext && recentSessions.length > 0 && (
-            <div className="mt-8 animate-in fade-in duration-500">
-                <p className="px-3 mb-2 text-[10px] font-bold text-fab-sky/50 tracking-wider">Recent Chats</p>
+          {/* Product History List (Scrollable Area) */}
+          {!isCollapsed && productContext && historySessions.length > 0 && (
+            <div className="flex-1 overflow-y-auto px-3 pb-4 custom-scrollbar border-t border-fab-royal/20 pt-4">
+                <p className="px-3 mb-3 text-[10px] font-bold text-fab-sky/50 tracking-wider flex items-center justify-between">
+                    Product History
+                    <span className="bg-fab-royal/30 px-1.5 py-0.5 rounded text-white text-[9px]">{historySessions.length}</span>
+                </p>
                 <div className="space-y-1">
-                    {recentSessions.map(session => (
-                        <button
-                            key={session._id}
-                            onClick={() => onLoadSession(session)}
-                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-fab-royal/30 text-fab-sky/80 hover:text-white transition-colors group flex items-start gap-2"
-                        >
-                            <MessageSquare size={14} className="mt-0.5 opacity-60 group-hover:opacity-100 shrink-0" />
-                            <div className="overflow-hidden">
-                                <p className="text-[11px] font-medium truncate w-full">{session.session_title || session.last_message?.question || "New Session"}</p>
-                                <p className="text-[9px] opacity-50 truncate">{new Date(session.last_activity).toLocaleDateString()}</p>
-                            </div>
-                        </button>
-                    ))}
+                    {historySessions.map(session => {
+                        const title = session.session_title || session.last_message?.question || "New Session";
+                        return (
+                            <button
+                                key={session._id}
+                                onClick={() => onLoadSession(session)}
+                                className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-fab-royal/30 text-fab-sky/80 hover:text-white transition-colors group flex items-start gap-2.5 relative"
+                                title={title} // Tooltip for full title
+                            >
+                                <MessageSquare size={14} className="mt-0.5 opacity-60 group-hover:opacity-100 shrink-0 text-fab-sky" />
+                                <div className="overflow-hidden w-full">
+                                    <p className="text-[11px] font-medium truncate w-full leading-tight">{title}</p>
+                                    <p className="text-[9px] opacity-50 truncate mt-0.5">{new Date(session.last_activity).toLocaleDateString()}</p>
+                                </div>
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
-        )}
+          )}
       </div>
 
       {/* Footer */}
