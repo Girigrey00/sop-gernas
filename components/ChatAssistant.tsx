@@ -736,16 +736,18 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     <div className="mt-4 w-full space-y-2">
                         <div className="flex items-center gap-2 mb-2 pl-1">
                              <Lightbulb size={12} className="text-slate-400" />
-                             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Suggested questions</span>
+                             {/* UPDATED: Normal Case Title */}
+                             <span className="text-sm font-medium text-slate-500">Suggested questions</span>
                         </div>
                         <div className="flex flex-col gap-2">
                             {msg.suggestions.map((prompt, idx) => (
                                 <button 
                                     key={idx}
                                     onClick={() => handleSend(prompt)}
-                                    className="text-left px-4 py-3 bg-slate-50 hover:bg-white border border-transparent hover:border-fab-royal/30 rounded-2xl transition-all text-xs text-slate-700 flex items-center gap-3 group shadow-sm hover:shadow-md"
+                                    // UPDATED: Rounded-full (pill button), matching image reference
+                                    className="text-left px-5 py-3 bg-white hover:bg-slate-50 border border-slate-200 hover:border-fab-royal/50 rounded-full transition-all text-sm text-slate-600 flex items-center gap-3 group shadow-sm hover:shadow-md w-full"
                                 >
-                                    <div className="p-1.5 bg-white rounded-full text-fab-royal shadow-sm group-hover:scale-110 transition-transform">
+                                    <div className="p-1.5 bg-slate-50 rounded-full text-fab-royal shadow-sm group-hover:scale-110 transition-transform">
                                         <Sparkles size={12} />
                                     </div>
                                     <span className="flex-1 font-medium">{prompt}</span>
@@ -793,10 +795,10 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
         </div>
       </div>
 
-      {/* Suggestions Bar (Related Questions) */}
+      {/* Suggestions Bar (Related Questions) - UPDATED: MOVED ABOVE INPUT & NO ABSOLUTE POSITIONING TO PREVENT OVERLAP */}
       {activeSuggestions.length > 0 && (
-        <div className={`border-t border-slate-100 bg-slate-50/95 backdrop-blur-sm transition-all duration-300 absolute bottom-[70px] left-0 right-0 z-30 ${isSuggestionsOpen ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0 pointer-events-none'}`}>
-            <div className="px-4 py-2 flex justify-between items-center border-b border-slate-100/50">
+        <div className={`w-full border-t border-slate-100 bg-white/95 backdrop-blur-xl transition-all duration-300 ease-in-out z-30 ${isSuggestionsOpen ? 'max-h-48 py-2 opacity-100' : 'max-h-0 py-0 opacity-0 overflow-hidden'}`}>
+            <div className="px-4 py-2 flex justify-between items-center border-b border-slate-100/50 mb-2">
                 <div className="flex items-center gap-2">
                     <Sparkles size={12} className="text-fab-royal" />
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Related Questions</span>
@@ -815,13 +817,17 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     <ChevronLeft size={14} />
                  </button>
                  
-                 {/* Scroll Container */}
-                 <div ref={relatedScrollRef} className="px-4 overflow-x-auto pb-3 pt-2 scrollbar-hide flex gap-2 snap-x scroll-smooth">
+                 {/* Scroll Container - UPDATED: Strictly hide scrollbar with Tailwind arbitrary values & inline styles for cross-browser safety */}
+                 <div 
+                    ref={relatedScrollRef} 
+                    className="px-4 overflow-x-auto pb-1 pt-1 flex gap-2 snap-x scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                 >
                     {activeSuggestions.map((prompt, idx) => (
                         <button 
                             key={idx}
                             onClick={() => handleSend(prompt)}
-                            className="flex-shrink-0 px-4 py-2 bg-white border border-slate-200 rounded-full text-xs font-medium text-slate-700 hover:bg-fab-royal hover:text-white hover:border-fab-royal transition-all shadow-sm flex items-center gap-2 group whitespace-nowrap snap-center"
+                            className="flex-shrink-0 px-4 py-2.5 bg-white border border-slate-200 rounded-full text-xs font-medium text-slate-700 hover:bg-fab-royal hover:text-white hover:border-fab-royal transition-all shadow-sm flex items-center gap-2 group whitespace-nowrap snap-center"
                         >
                             <Sparkles size={12} className="text-fab-royal group-hover:text-white/80" />
                             {prompt}
@@ -840,9 +846,9 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
         </div>
       )}
       
-      {/* Minimized Suggestion Toggle (Centered) */}
+      {/* Minimized Suggestion Toggle (Centered) - Positioned relative to input area */}
       {activeSuggestions.length > 0 && !isSuggestionsOpen && (
-          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 transform transition-all duration-300">
+          <div className="absolute bottom-[90px] left-1/2 -translate-x-1/2 z-30 transform transition-all duration-300">
               <button 
                 onClick={() => setIsSuggestionsOpen(true)}
                 className="bg-white/90 backdrop-blur border border-slate-200 text-fab-navy px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-fab-royal hover:text-white hover:border-fab-royal transition-all animate-in slide-in-from-bottom-2 fade-in"
@@ -855,7 +861,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
       )}
 
       {/* Input Area */}
-      <div className="bg-white border-t border-slate-100 p-4 pb-2 z-20">
+      <div className="bg-white border-t border-slate-100 p-4 pb-2 z-40 relative shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.05)]">
         <div className="relative flex items-center gap-2 max-w-4xl mx-auto w-full">
             <input
                 type="text"
