@@ -1,4 +1,5 @@
 
+
 // Enums for clarity
 export enum StepType {
   Start = 'Start',
@@ -172,6 +173,15 @@ export interface LibraryDocument {
   };
 }
 
+// --- Flow Logs ---
+export interface FlowLog {
+    timestamp: string;
+    step: string;
+    message: string;
+    status: string;
+    progress?: number;
+}
+
 // --- Product Interface ---
 export interface Product {
     _id: string;
@@ -190,6 +200,11 @@ export interface Product {
     flow_blob_url?: string;
     flow_error_message?: string | null;
     flow_last_generated?: string;
+    
+    // Live Stats from API
+    flow_logs?: FlowLog[];
+    flow_progress?: number;
+    flow_current_step?: string;
     
     created_at?: string;
     last_updated?: string;

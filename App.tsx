@@ -333,9 +333,15 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                         {filteredProducts.map((item, i) => {
                             const isCompleted = item.flow_status === 'Completed';
-                            const isProcessing = item.flow_status && item.flow_status !== 'Completed';
+                            const isProcessing = item.flow_status && item.flow_status !== 'Completed' && item.flow_status !== 'Failed';
+                            const isFailed = item.flow_status === 'Failed';
                             const isEmpty = !item.flow_status;
                             const DynamicIcon = getProductIcon(item.product_name);
+
+                            // Log Data logic
+                            const latestLog = item.flow_logs && item.flow_logs.length > 0 ? item.flow_logs[item.flow_logs.length - 1] : null;
+                            const progress = item.flow_progress || 0;
+                            const currentStep = item.flow_current_step || (latestLog ? latestLog.step : 'Processing');
 
                             return (
                                 <button 
@@ -363,23 +369,46 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
                                     </div>
                                     
                                     <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-2 pr-6">{item.product_name}</h3>
-                                    <p className="text-xs text-slate-500 leading-relaxed mb-3 flex-1 line-clamp-3" title={item.description}>{item.description || 'No description available'}</p>
+                                    
+                                    {/* Conditional Content: Description vs Processing Logs */}
+                                    {isProcessing ? (
+                                        <div className="mt-2 mb-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 w-full">
+                                            <div className="flex justify-between items-center mb-1.5">
+                                                 <span className="text-[10px] font-bold text-fab-royal uppercase tracking-wider truncate max-w-[70%]">{currentStep}</span>
+                                                 <span className="text-[10px] font-mono text-slate-500 font-bold">{progress}%</span>
+                                            </div>
+                                            <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mb-2">
+                                                 <div className="h-full bg-fab-royal rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
+                                            </div>
+                                            {latestLog && (
+                                                 <div className="flex items-start gap-1.5">
+                                                    <Loader2 size={10} className="animate-spin text-fab-royal mt-0.5 shrink-0" />
+                                                    <p className="text-[10px] text-slate-500 leading-tight line-clamp-2 break-words" title={latestLog.message}>
+                                                        {latestLog.message}
+                                                    </p>
+                                                 </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-slate-500 leading-relaxed mb-3 flex-1 line-clamp-3" title={item.description}>{item.description || 'No description available'}</p>
+                                    )}
 
-                                    <div className="mb-4">
-                                        <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded-full border inline-flex items-center gap-1 ${
-                                            isCompleted ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                            isProcessing ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                                            'bg-slate-50 text-slate-400 border-slate-100'
-                                        }`}>
-                                            {isProcessing && <Loader2 size={8} className="animate-spin" />}
-                                            {isCompleted ? 'Ready' : isProcessing ? 'Processing' : 'Draft'}
-                                        </span>
-                                    </div>
+                                    {!isProcessing && (
+                                        <div className="mb-4">
+                                            <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded-full border inline-flex items-center gap-1 ${
+                                                isCompleted ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                isFailed ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                                'bg-slate-50 text-slate-400 border-slate-100'
+                                            }`}>
+                                                {isCompleted ? 'Ready' : isFailed ? 'Failed' : 'Draft'}
+                                            </span>
+                                        </div>
+                                    )}
 
-                                    <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-auto">
+                                    <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-auto w-full">
                                         <span className="text-[10px] font-medium text-slate-400 truncate max-w-[100px]">Docs: {item.document_count}</span>
                                         <div className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
-                                            {isCompleted ? 'View Flow' : isEmpty ? 'Upload Docs' : 'Wait...'} <ArrowRight size={14} />
+                                            {isCompleted ? 'View Flow' : isEmpty ? 'Upload Docs' : isFailed ? 'Retry' : 'Wait...'} <ArrowRight size={14} />
                                         </div>
                                     </div>
                                 </button>
