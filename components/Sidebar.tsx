@@ -127,7 +127,7 @@ const Sidebar = ({
 
           {/* Product History List (Scrollable Area) */}
           {!isCollapsed && productContext && historySessions.length > 0 && (
-            <div className="flex-1 overflow-y-auto px-3 pb-4 custom-scrollbar border-t border-fab-royal/20 pt-4">
+            <div className="flex-1 overflow-y-auto px-3 pb-4 border-t border-fab-royal/20 pt-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fab-royal/40 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-fab-royal/80">
                 <p className="px-3 mb-3 text-[10px] font-bold text-fab-sky/50 tracking-wider flex items-center justify-between">
                     Product History
                     <span className="bg-fab-royal/30 px-1.5 py-0.5 rounded text-white text-[9px]">{historySessions.length}</span>
