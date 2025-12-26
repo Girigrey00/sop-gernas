@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
   ChevronDown, ChevronUp, FileText, 
-  ThumbsUp, ThumbsDown, Copy, Sparkles, Lightbulb, ChevronRight
+  ThumbsUp, ThumbsDown, Copy, Sparkles, Lightbulb, ChevronRight, ChevronLeft
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -338,6 +338,9 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  // Scroll ref for related questions
+  const relatedScrollRef = useRef<HTMLDivElement>(null);
+
   const [sessionId, setSessionId] = useState<string>(initialSessionId || (globalThis.crypto?.randomUUID() || `sess-${Date.now()}`));
 
   const streamQueue = useRef<string>('');
@@ -386,8 +389,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
             }
             return m;
         }));
-        // NOTE: We do NOT set activeSuggestions here anymore. 
-        // Initial suggestions remain inside the welcome message.
     }
     
     if (!initialSessionId) {
@@ -537,6 +538,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
     
     // Clear old suggestions while typing/thinking
     setActiveSuggestions([]);
+    setIsSuggestionsOpen(true); // Reset open state
 
     const botMsgId = globalThis.crypto?.randomUUID() || `qn-${Date.now()}`;
     let isFirstToken = true;
@@ -624,6 +626,19 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
           session_id: sessionId,
           feedback_type: rating,
       }).catch(err => console.error(err));
+  };
+
+  // --- Scroll Logic for Related Questions ---
+  const scrollRelated = (direction: 'left' | 'right') => {
+      if (relatedScrollRef.current) {
+          const { current } = relatedScrollRef;
+          const scrollAmount = 250;
+          if (direction === 'left') {
+              current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+          } else {
+              current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+          }
+      }
   };
 
   return (
@@ -716,22 +731,24 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     </div>
                 )}
                 
-                {/* NEW: Inline Suggestions for Welcome Message */}
+                {/* Inline Suggestions for Welcome Message */}
                 {msg.role === 'assistant' && msg.suggestions && msg.suggestions.length > 0 && (
                     <div className="mt-4 w-full space-y-2">
-                        <div className="flex items-center gap-2 mb-1 pl-1">
-                             <Sparkles size={12} className="text-fab-royal" />
-                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Suggested Questions</span>
+                        <div className="flex items-center gap-2 mb-2 pl-1">
+                             <Lightbulb size={12} className="text-slate-400" />
+                             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Suggested questions</span>
                         </div>
-                        <div className="grid grid-cols-1 gap-2">
+                        <div className="flex flex-col gap-2">
                             {msg.suggestions.map((prompt, idx) => (
                                 <button 
                                     key={idx}
                                     onClick={() => handleSend(prompt)}
-                                    className="text-left px-4 py-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-fab-royal hover:shadow-md transition-all text-xs font-medium text-slate-700 flex items-center justify-between group"
+                                    className="text-left px-4 py-3 bg-slate-50 hover:bg-white border border-transparent hover:border-fab-royal/30 rounded-2xl transition-all text-xs text-slate-700 flex items-center gap-3 group shadow-sm hover:shadow-md"
                                 >
-                                    {prompt}
-                                    <ChevronRight size={14} className="text-slate-300 group-hover:text-fab-royal transition-colors" />
+                                    <div className="p-1.5 bg-white rounded-full text-fab-royal shadow-sm group-hover:scale-110 transition-transform">
+                                        <Sparkles size={12} />
+                                    </div>
+                                    <span className="flex-1 font-medium">{prompt}</span>
                                 </button>
                             ))}
                         </div>
@@ -778,40 +795,60 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
 
       {/* Suggestions Bar (Related Questions) */}
       {activeSuggestions.length > 0 && (
-        <div className={`border-t border-slate-100 bg-slate-50/80 backdrop-blur-sm transition-all duration-300 ${isSuggestionsOpen ? 'max-h-40 py-3' : 'max-h-0 py-0 overflow-hidden'}`}>
-            <div className="px-4 flex justify-between items-center mb-2">
+        <div className={`border-t border-slate-100 bg-slate-50/95 backdrop-blur-sm transition-all duration-300 absolute bottom-[70px] left-0 right-0 z-30 ${isSuggestionsOpen ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0 pointer-events-none'}`}>
+            <div className="px-4 py-2 flex justify-between items-center border-b border-slate-100/50">
                 <div className="flex items-center gap-2">
-                    <Lightbulb size={12} className="text-fab-royal" />
+                    <Sparkles size={12} className="text-fab-royal" />
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Related Questions</span>
                 </div>
-                <button onClick={() => setIsSuggestionsOpen(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-200 rounded">
-                    <X size={12} />
+                <button onClick={() => setIsSuggestionsOpen(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-200 rounded transition-colors">
+                    <ChevronDown size={14} />
                 </button>
             </div>
-            <div className="px-4 overflow-x-auto pb-1 scrollbar-hide flex gap-2">
-                {activeSuggestions.map((prompt, idx) => (
-                    <button 
-                        key={idx}
-                        onClick={() => handleSend(prompt)}
-                        className="flex-shrink-0 px-4 py-2 bg-white border border-slate-200 rounded-full text-xs font-medium text-slate-700 hover:bg-fab-royal hover:text-white hover:border-fab-royal transition-all shadow-sm flex items-center gap-2 group whitespace-nowrap"
-                    >
-                        <Sparkles size={12} className="text-fab-royal group-hover:text-white/80" />
-                        {prompt}
-                    </button>
-                ))}
+            
+            <div className="relative group/scroll px-1">
+                 {/* Left Arrow */}
+                 <button 
+                    onClick={() => scrollRelated('left')} 
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1.5 bg-white shadow-md border border-slate-100 rounded-full text-slate-500 hover:text-fab-royal opacity-0 group-hover/scroll:opacity-100 transition-opacity disabled:opacity-0 mx-1"
+                 >
+                    <ChevronLeft size={14} />
+                 </button>
+                 
+                 {/* Scroll Container */}
+                 <div ref={relatedScrollRef} className="px-4 overflow-x-auto pb-3 pt-2 scrollbar-hide flex gap-2 snap-x scroll-smooth">
+                    {activeSuggestions.map((prompt, idx) => (
+                        <button 
+                            key={idx}
+                            onClick={() => handleSend(prompt)}
+                            className="flex-shrink-0 px-4 py-2 bg-white border border-slate-200 rounded-full text-xs font-medium text-slate-700 hover:bg-fab-royal hover:text-white hover:border-fab-royal transition-all shadow-sm flex items-center gap-2 group whitespace-nowrap snap-center"
+                        >
+                            <Sparkles size={12} className="text-fab-royal group-hover:text-white/80" />
+                            {prompt}
+                        </button>
+                    ))}
+                 </div>
+
+                 {/* Right Arrow */}
+                 <button 
+                    onClick={() => scrollRelated('right')} 
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1.5 bg-white shadow-md border border-slate-100 rounded-full text-slate-500 hover:text-fab-royal opacity-0 group-hover/scroll:opacity-100 transition-opacity mx-1"
+                 >
+                    <ChevronRight size={14} />
+                 </button>
             </div>
         </div>
       )}
       
-      {/* Minimized Suggestion Toggle */}
+      {/* Minimized Suggestion Toggle (Centered) */}
       {activeSuggestions.length > 0 && !isSuggestionsOpen && (
-          <div className="absolute bottom-20 right-4 z-30">
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 transform transition-all duration-300">
               <button 
                 onClick={() => setIsSuggestionsOpen(true)}
-                className="bg-fab-royal text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-fab-blue transition-colors animate-in slide-in-from-bottom-2 fade-in"
+                className="bg-white/90 backdrop-blur border border-slate-200 text-fab-navy px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-fab-royal hover:text-white hover:border-fab-royal transition-all animate-in slide-in-from-bottom-2 fade-in"
               >
-                  <Lightbulb size={12} />
-                  Related
+                  <Sparkles size={12} />
+                  Show Related
                   <ChevronUp size={12} />
               </button>
           </div>
