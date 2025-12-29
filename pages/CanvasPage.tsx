@@ -29,6 +29,7 @@ import {
 import FlowDetails from '../components/FlowDetails';
 import ChatAssistant from '../components/ChatAssistant';
 import { generateSopFlow } from '../services/geminiService';
+import { apiService } from '../services/apiService';
 import { convertSopToFlowData, getActorTheme } from '../utils/layoutUtils';
 import { SopResponse, ProcessStep, LayoutType, Product } from '../types';
 
@@ -55,6 +56,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
     const [isSidebarOpen, setIsSidebarOpen] = useState(!!initialSessionId); // Open by default if session ID provided
     const [activePanel, setActivePanel] = useState<'GUIDE' | 'CHAT'>(initialSessionId ? 'CHAT' : 'GUIDE'); // Default to Chat if session ID provided
     const [isLoading, setIsLoading] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState<string>('Generating Flow...');
     const [isDownloading, setIsDownloading] = useState(false);
     
     // CHANGED: Set to true by default as requested
@@ -87,16 +89,53 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
         }
     }, [layoutMode, fitView, setNodes, setEdges]);
 
+    // Polling Logic
+    const pollFlowData = useCallback(async (productName: string) => {
+        setIsLoading(true);
+        // Set initial message based on context status if available
+        if (productContext?.flow_status === 'Draft') {
+             setLoadingMessage('Please upload documents to generate flow or wait for flow generated...');
+        } else {
+             setLoadingMessage('Checking flow status...');
+        }
+
+        const poll = async () => {
+             try {
+                 const flowData = await apiService.getProcessFlow(productName);
+                 loadData(flowData);
+                 setIsLoading(false);
+             } catch (e: any) {
+                 if (e.status === 'Processing') {
+                     setLoadingMessage('Flow generation in progress...');
+                     // Keep polling
+                     setTimeout(poll, 3000);
+                 } else if (e.status === 'Failed') {
+                      setIsLoading(false);
+                      console.error("Flow failed to generate");
+                 } else {
+                      // Fallback for 404 (Draft/Missing) or other errors
+                      // Matches requirement: "show loader and message"
+                      setLoadingMessage('Please upload documents to generate flow or wait for flow generated...');
+                      // Continue polling slowly in case user is just waiting for backend to start
+                      setTimeout(poll, 5000);
+                 }
+             }
+        };
+        poll();
+    }, [loadData, productContext]);
+
+
     // Initial Load Effect
     useEffect(() => {
         if (initialData) {
-            // Use real data passed from App/API
             loadData(initialData);
         } else if (initialPrompt) {
-            // Generate from prompt
             handleGenerateFlow(initialPrompt);
-        } 
-    }, [initialPrompt, initialData]);
+        } else if (productContext) {
+            // No data, but we have a product context. Fetch/Poll flow.
+            pollFlowData(productContext.product_name);
+        }
+    }, [initialPrompt, initialData, productContext]);
 
     // Re-run layout when layoutMode changes
     useEffect(() => {
@@ -112,6 +151,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
 
     const handleGenerateFlow = async (prompt: string) => {
         setIsLoading(true);
+        setLoadingMessage('Generating Flow...');
 
         try {
             if (!process.env.API_KEY) {
@@ -432,8 +472,11 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
             <div className="flex-1 h-full relative z-0">
                 {isLoading && (
                     <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center">
-                        <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-                        <p className="text-lg font-medium text-slate-700">Generating Flow...</p>
+                        <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4 shadow-lg"></div>
+                        <p className="text-lg font-medium text-slate-700 text-center px-4 animate-pulse">{loadingMessage}</p>
+                        <div className="mt-4 max-w-xs w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 w-1/3 animate-[shimmer_2s_infinite]"></div>
+                        </div>
                     </div>
                 )}
                 

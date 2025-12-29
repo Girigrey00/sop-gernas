@@ -555,6 +555,12 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
     const textToSend = manualInput || input;
     if (!textToSend.trim() || isLoading) return;
 
+    // Auto Expand on first message interaction
+    // We check if it's the first user message (length is 1 for welcome msg)
+    if (messages.length === 1 && !isMaximized && onToggleMaximize) {
+        onToggleMaximize();
+    }
+
     let newMessages = messages.map(m => ({ ...m, isTyping: false }));
 
     const userMsg: Message = {
