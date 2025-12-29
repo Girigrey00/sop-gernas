@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
   ChevronDown, ChevronUp, FileText, 
-  ThumbsUp, ThumbsDown, Copy, Sparkles, Lightbulb, ChevronRight, ChevronLeft
+  ThumbsUp, ThumbsDown, Copy, Sparkles, Lightbulb, ChevronRight, ChevronLeft, MessageSquare
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -29,12 +29,11 @@ interface Message {
   suggestions?: string[]; // Optional suggestions attached to a message
 }
 
-const DEFAULT_PROMPTS = [
-    "What is the breakdown of 2024 revenue by geography?",
-    "What is the total IT cost in APAC for the full year 2025?",
-    "How is group's operating income performing in 2025 vs. last year?",
-    "Analyze the monthly operating income trend in UAE.",
-    "Show me the key risk factors."
+// Fallback only if API returns absolutely nothing, but generic enough to not be misleading
+const FALLBACK_PROMPTS = [
+    "Summarize the key points of this document.",
+    "What are the main risks identified?",
+    "List the operational steps involved."
 ];
 
 // Helper to clean messy JSON/Markdown questions from API
@@ -327,13 +326,18 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
           content: WELCOME_CONTENT, 
           timestamp: new Date(),
           isWelcome: true,
-          suggestions: DEFAULT_PROMPTS 
+          suggestions: [] // Start empty, will fill from effect
       }
   ]);
 
-  // Suggestions Bar State (Only for Related Questions now)
+  // Suggestions Bar State
   const [activeSuggestions, setActiveSuggestions] = useState<string[]>([]);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(true);
+  
+  // Feedback Logic State
+  const [activeFeedbackId, setActiveFeedbackId] = useState<string | null>(null);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -351,6 +355,21 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
   // Track loaded sessions to prevent duplicate calls or missing calls on mount
   const lastLoadedSessionRef = useRef<string | null>(null);
 
+  // --- Date Formatter (Dubai Timezone) ---
+  const formatTimeDubai = (date: Date) => {
+    return date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        timeZone: 'Asia/Dubai'
+    });
+  };
+  
+  const formatDateDubai = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+        timeZone: 'Asia/Dubai'
+    });
+  };
+
   // --- Fetch Suggested Questions from Documents ---
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -359,7 +378,11 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
 
         try {
             const docs = await apiService.getDocuments();
-            const relatedDocs = docs.filter(d => d.indexName === targetIndex || d.rootFolder === productContext?.product_name);
+            // Strictly match documents related to this product or index
+            const relatedDocs = docs.filter(d => 
+                d.indexName === targetIndex || 
+                (productContext?.product_name && d.rootFolder === productContext.product_name)
+            );
 
             relatedDocs.forEach(d => {
                 if (d.suggested_questions && d.suggested_questions.length > 0) {
@@ -371,6 +394,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
             console.error("Failed to fetch document suggestions", err);
         }
 
+        // If no questions found in docs, check metadata, otherwise use fallback (but avoid default prompts if possible)
         if (pool.length === 0) {
             const metaSuggestions = (sopData.metadata as any)?.suggested_questions;
             if (metaSuggestions && Array.isArray(metaSuggestions)) {
@@ -378,14 +402,16 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
             }
         }
 
-        if (pool.length === 0) pool = DEFAULT_PROMPTS;
+        // If still empty, use minimal fallback
+        if (pool.length === 0) pool = FALLBACK_PROMPTS;
         
-        // Increased to 5 suggestions
-        const shuffled = Array.from(new Set(pool)).sort(() => 0.5 - Math.random()).slice(0, 5);
+        // Strictly get 5 items (or less if pool is smaller, but try to fill)
+        const unique = Array.from(new Set(pool));
+        const finalSuggestions = unique.sort(() => 0.5 - Math.random()).slice(0, 5);
         
         setMessages(prev => prev.map(m => {
             if (m.isWelcome) {
-                return { ...m, suggestions: shuffled };
+                return { ...m, suggestions: finalSuggestions };
             }
             return m;
         }));
@@ -464,7 +490,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                         content: WELCOME_CONTENT, 
                         timestamp: new Date(),
                         isWelcome: true,
-                        suggestions: DEFAULT_PROMPTS 
+                        suggestions: [] 
                     }]);
                 }
              } catch(e) { 
@@ -476,7 +502,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     content: WELCOME_CONTENT, 
                     timestamp: new Date(),
                     isWelcome: true,
-                    suggestions: DEFAULT_PROMPTS 
+                    suggestions: [] 
                 }]);
              }
              finally { setIsLoading(false); }
@@ -640,13 +666,48 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
       navigator.clipboard.writeText(text);
   };
 
-  const handleFeedback = (messageId: string, rating: 'thumbs_up' | 'thumbs_down') => {
-      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, feedback: rating } : m));
-      apiService.submitFeedback({
-          question_id: messageId,
-          session_id: sessionId,
-          feedback_type: rating,
-      }).catch(err => console.error(err));
+  const handleFeedbackStart = (messageId: string, rating: 'thumbs_up' | 'thumbs_down') => {
+      if (rating === 'thumbs_up') {
+          // Positive feedback submits immediately
+          setMessages(prev => prev.map(m => m.id === messageId ? { ...m, feedback: rating } : m));
+          apiService.submitFeedback({
+              question_id: messageId,
+              session_id: sessionId,
+              feedback_type: rating,
+          }).catch(err => console.error(err));
+      } else {
+          // Negative feedback opens input
+          setActiveFeedbackId(messageId);
+          setFeedbackComment('');
+      }
+  };
+
+  const handleSubmitFeedback = async () => {
+      if (!activeFeedbackId) return;
+      
+      setIsSubmittingFeedback(true);
+      try {
+        await apiService.submitFeedback({
+            question_id: activeFeedbackId,
+            session_id: sessionId,
+            feedback_type: 'thumbs_down',
+            comment: feedbackComment
+        });
+        
+        // Update UI
+        setMessages(prev => prev.map(m => m.id === activeFeedbackId ? { ...m, feedback: 'thumbs_down' } : m));
+        setActiveFeedbackId(null);
+        setFeedbackComment('');
+      } catch (err) {
+          console.error("Feedback submit error", err);
+      } finally {
+          setIsSubmittingFeedback(false);
+      }
+  };
+
+  const handleCancelFeedback = () => {
+      setActiveFeedbackId(null);
+      setFeedbackComment('');
   };
 
   // --- Scroll Logic for Related Questions ---
@@ -728,27 +789,58 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
 
                 {/* Feedback & Actions Toolbar */}
                 {msg.role === 'assistant' && !msg.isWelcome && !msg.isTyping && (
-                    <div className="flex items-center gap-3 mt-2 ml-2 animate-in fade-in duration-300">
-                        <button onClick={() => handleCopy(msg.content)} className="text-slate-400 hover:text-fab-royal transition-colors p-1.5 hover:bg-slate-100 rounded-md" title="Copy">
-                            <Copy size={14} />
-                        </button>
-                        <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                        <div className="flex items-center gap-1">
-                            <button 
-                                onClick={() => handleFeedback(msg.id, 'thumbs_up')} 
-                                className={`p-1.5 rounded-md transition-colors flex items-center gap-1 ${msg.feedback === 'thumbs_up' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-slate-100'}`}
-                                title="Helpful"
-                            >
-                                <ThumbsUp size={14} />
+                    <div className="flex flex-col gap-2 mt-2 ml-2 w-full animate-in fade-in duration-300">
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => handleCopy(msg.content)} className="text-slate-400 hover:text-fab-royal transition-colors p-1.5 hover:bg-slate-100 rounded-md" title="Copy">
+                                <Copy size={14} />
                             </button>
-                            <button 
-                                onClick={() => handleFeedback(msg.id, 'thumbs_down')} 
-                                className={`p-1.5 rounded-md transition-colors flex items-center gap-1 ${msg.feedback === 'thumbs_down' ? 'text-rose-600 bg-rose-50' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'}`}
-                                title="Not Helpful"
-                            >
-                                <ThumbsDown size={14} />
-                            </button>
+                            <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                            <div className="flex items-center gap-1">
+                                <button 
+                                    onClick={() => handleFeedbackStart(msg.id, 'thumbs_up')} 
+                                    className={`p-1.5 rounded-md transition-colors flex items-center gap-1 ${msg.feedback === 'thumbs_up' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-slate-100'}`}
+                                    title="Helpful"
+                                >
+                                    <ThumbsUp size={14} />
+                                </button>
+                                <button 
+                                    onClick={() => handleFeedbackStart(msg.id, 'thumbs_down')} 
+                                    className={`p-1.5 rounded-md transition-colors flex items-center gap-1 ${msg.feedback === 'thumbs_down' ? 'text-rose-600 bg-rose-50' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'}`}
+                                    title="Not Helpful"
+                                >
+                                    <ThumbsDown size={14} />
+                                </button>
+                            </div>
                         </div>
+
+                        {/* Negative Feedback Comment Input */}
+                        {activeFeedbackId === msg.id && (
+                             <div className="mt-1 p-3 bg-white border border-rose-100 rounded-xl shadow-sm w-full max-w-sm animate-in slide-in-from-top-2 fade-in">
+                                 <p className="text-xs font-bold text-slate-500 mb-2">How can we improve this answer?</p>
+                                 <textarea
+                                    value={feedbackComment}
+                                    onChange={(e) => setFeedbackComment(e.target.value)}
+                                    className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-200 focus:border-rose-300 min-h-[60px] resize-none"
+                                    placeholder="Tell us what was wrong..."
+                                 />
+                                 <div className="flex justify-end gap-2 mt-2">
+                                     <button 
+                                        onClick={handleCancelFeedback}
+                                        className="text-xs text-slate-500 hover:text-slate-700 px-2 py-1"
+                                     >
+                                        Cancel
+                                     </button>
+                                     <button 
+                                        onClick={handleSubmitFeedback}
+                                        disabled={isSubmittingFeedback || !feedbackComment.trim()}
+                                        className="text-xs bg-rose-600 text-white px-3 py-1.5 rounded-lg hover:bg-rose-700 disabled:opacity-50 flex items-center gap-1 font-medium"
+                                     >
+                                        {isSubmittingFeedback && <Loader2 size={10} className="animate-spin" />}
+                                        Submit
+                                     </button>
+                                 </div>
+                             </div>
+                        )}
                     </div>
                 )}
                 
@@ -781,10 +873,10 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                 </div>
             </div>
             
-            {/* Timestamp Below Bubble */}
+            {/* Timestamp Below Bubble (Dubai Time) */}
             <div className={`px-12 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <p className="text-[10px] text-slate-400 font-medium opacity-60">
-                    {msg.timestamp.toLocaleDateString()} {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    {formatDateDubai(msg.timestamp)} {formatTimeDubai(msg.timestamp)}
                 </p>
             </div>
         </div>
