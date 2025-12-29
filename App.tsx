@@ -514,6 +514,10 @@ const App: React.FC = () => {
   const [autoOpenUpload, setAutoOpenUpload] = useState(false);
   const [selectedContextProduct, setSelectedContextProduct] = useState<Product | null>(null);
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(undefined);
+  
+  // Polling State for Flow Generation
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   const handleLogin = (u: string, p: string) => {
       if (u === 'admin' && p === 'admin') {
@@ -616,17 +620,35 @@ const App: React.FC = () => {
                 }}
                 preselectedProduct={selectedContextProduct}
                 onBack={async () => {
-                    // Updated Back Logic: Fetch correct flow if coming from Library within a product context
                     if (selectedContextProduct) {
-                        try {
-                            showNotification("Syncing flow data...", 'success');
-                            const flowData = await apiService.getProcessFlow(selectedContextProduct.product_name);
-                            handleStartWithData(flowData);
-                        } catch(e) {
-                            console.error(e);
-                            showNotification("Flow not fully ready. Opening canvas.", 'error');
-                            setCurrentView('CANVAS');
-                        }
+                        setIsGlobalLoading(true);
+                        setLoadingMessage("Checking flow status...");
+
+                        const poll = async () => {
+                            try {
+                                const flowData = await apiService.getProcessFlow(selectedContextProduct.product_name);
+                                handleStartWithData(flowData);
+                                setIsGlobalLoading(false);
+                            } catch (e: any) {
+                                if (e.status === 'Processing') {
+                                    setLoadingMessage("Flow is generating... This may take a moment.");
+                                    // Keep polling recursively
+                                    setTimeout(poll, 3000);
+                                } else if (e.status === 'Failed') {
+                                     showNotification("Flow generation failed.", 'error');
+                                     setIsGlobalLoading(false);
+                                     // Fallback to canvas with default/empty state if failed, or stay?
+                                     // Based on typical flow, we go to canvas to show error state there if needed or just empty
+                                     setCurrentView('CANVAS');
+                                } else {
+                                     console.error(e);
+                                     showNotification("Sync error. Opening canvas.", 'error');
+                                     setIsGlobalLoading(false);
+                                     setCurrentView('CANVAS');
+                                }
+                            }
+                        };
+                        poll();
                     } else {
                         setCurrentView('HOME');
                         setSelectedContextProduct(null); 
@@ -677,8 +699,20 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900 relative">
       
+      {/* Global Loading Overlay for Polling */}
+      {isGlobalLoading && (
+        <div className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+            <div className="w-16 h-16 border-4 border-fab-royal/30 border-t-fab-royal rounded-full animate-spin mb-4 shadow-lg"></div>
+            <h3 className="text-xl font-bold text-fab-navy mb-2">Processing Flow</h3>
+            <p className="text-slate-500 font-medium animate-pulse">{loadingMessage}</p>
+            <div className="mt-8 max-w-xs w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div className="h-full bg-fab-royal w-1/3 animate-[shimmer_2s_infinite]"></div>
+            </div>
+        </div>
+      )}
+
       {/* Toast Notification Layer */}
       {notification && (
         <div className={`fixed bottom-6 right-6 px-6 py-4 rounded-xl shadow-2xl text-white font-medium z-[100] flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300 ${notification.type === 'error' ? 'bg-rose-600' : 'bg-emerald-600'}`}>

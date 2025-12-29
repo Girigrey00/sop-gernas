@@ -505,6 +505,16 @@ export const apiService: ApiServiceInterface = {
         console.log("Fetching Flow from:", url);
         
         const json = await handleResponse(await fetch(url));
+
+        // --- NEW: Handle Status Responses ---
+        if (json.status === 'Processing') {
+            throw { status: 'Processing', message: json.message || 'Flow generation in progress...' };
+        }
+        if (json.status === 'Failed') {
+             throw { status: 'Failed', message: json.message || 'Flow generation failed.' };
+        }
+        // ------------------------------------
+        
         const core = json.process_flow || json.processFlow || json;
 
         if (!core) {
