@@ -17,13 +17,13 @@ import {
     Info,
     Layers,
     Maximize,
-    MessageSquareText,
-    FileText,
     Download,
     ArrowLeft,
     Users,
     X,
-    LayoutDashboard
+    LayoutDashboard,
+    Compass,
+    Brain
 } from 'lucide-react';
 
 import FlowDetails from '../components/FlowDetails';
@@ -518,7 +518,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                         }`}
                         title="Process Guide"
                     >
-                        <FileText size={20} />
+                        <Compass size={20} />
                     </button>
                     <button 
                         onClick={() => {
@@ -533,7 +533,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                         }`}
                         title="AI Knowledge Base"
                     >
-                        <MessageSquareText size={20} />
+                        <Brain size={20} />
                     </button>
                 </div>
 

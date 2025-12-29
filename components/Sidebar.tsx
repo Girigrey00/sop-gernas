@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Compass, LogOut, ChevronRight, BookOpen, ChevronLeft, User, Clock, MessageSquare } from 'lucide-react';
+import { Compass, LogOut, ChevronRight, BookOpen, ChevronLeft, User, Clock, MessageSquare, LayoutDashboard } from 'lucide-react';
 import { View, ChatSession, Product } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -48,7 +48,7 @@ const Sidebar = ({
   }, [currentView, productContext]); // Refresh when view changes or product context changes
 
   const navItems = [
-    { id: 'HOME', label: 'CBG Knowledge Hub', icon: Compass },
+    { id: 'HOME', label: 'CBG Knowledge Hub', icon: LayoutDashboard },
     // Only show Library/History if a product context is selected
     ...(productContext ? [
         { id: 'LIBRARY', label: 'Library', icon: BookOpen },
