@@ -4,7 +4,7 @@ import {
     Upload, FileText, Search, Edit3, Trash2, 
     Square, X, FileStack, Plus, Loader2,
     GitMerge, Bot, Calendar, User, RefreshCw, ArrowLeft, Activity,
-    AlertTriangle 
+    AlertTriangle, CheckCircle2, Clock
 } from 'lucide-react';
 import { LibraryDocument, SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -45,6 +45,9 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     // Metadata State
     const [productName, setProductName] = useState('');
 
+    // Live Product Status State
+    const [liveProduct, setLiveProduct] = useState<Product | null>(preselectedProduct || null);
+
     const sopInputRef = useRef<HTMLInputElement>(null);
     const llmInputRef = useRef<HTMLInputElement>(null);
 
@@ -59,10 +62,34 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     useEffect(() => {
         if (preselectedProduct) {
             setProductName(preselectedProduct.product_name);
+            setLiveProduct(preselectedProduct);
         } else {
             if(!isUploadModalOpen) setProductName(''); // Only reset if modal closed
         }
     }, [preselectedProduct, isUploadModalOpen]);
+
+    // Poll for Live Product Status (Logs)
+    useEffect(() => {
+        if (!preselectedProduct) return;
+
+        const fetchProductStatus = async () => {
+            try {
+                // Poll all products to find the updated status/logs for current one
+                // Optimized for MVP; ideal world uses getProduct(id)
+                const allProducts = await apiService.getProducts();
+                const found = allProducts.find(p => p.product_name === preselectedProduct.product_name);
+                if (found) {
+                    setLiveProduct(found);
+                }
+            } catch (e) {
+                console.error("Error polling product status", e);
+            }
+        };
+
+        // Poll frequently to show real-time logs
+        const interval = setInterval(fetchProductStatus, 3000);
+        return () => clearInterval(interval);
+    }, [preselectedProduct]);
 
     // Fetch documents function
     const fetchDocuments = useCallback(async () => {
@@ -79,7 +106,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
         fetchDocuments();
     }, [fetchDocuments]);
 
-    // Automatic Polling System
+    // Automatic Polling System for Documents
     useEffect(() => {
         const hasActiveDocs = documents.some(d => 
             d.status === 'Processing' || d.status === 'Uploading' || d.status === 'Draft'
@@ -214,6 +241,52 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     const isStrictUpload = !hasExistingDocs; 
     const isUploadDisabled = isUploading || (isStrictUpload ? (!sopFile || llmFiles.length === 0) : (!sopFile && llmFiles.length === 0));
 
+    // Helper for Status Card
+    const renderProductStatus = () => {
+        if (!liveProduct) return null;
+        
+        const isProcessing = liveProduct.flow_status === 'Processing';
+        const isCompleted = liveProduct.flow_status === 'Completed';
+        const isFailed = liveProduct.flow_status === 'Failed';
+        const latestLog = liveProduct.flow_logs && liveProduct.flow_logs.length > 0 
+            ? liveProduct.flow_logs[liveProduct.flow_logs.length - 1] 
+            : null;
+
+        return (
+            <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg p-2.5 shadow-sm max-w-lg animate-in fade-in">
+                <div className={`p-2 rounded-lg flex items-center justify-center ${
+                    isProcessing ? 'bg-blue-100 text-blue-600' :
+                    isCompleted ? 'bg-emerald-100 text-emerald-600' :
+                    isFailed ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-500'
+                }`}>
+                    {isProcessing ? <Loader2 size={18} className="animate-spin" /> : 
+                     isCompleted ? <CheckCircle2 size={18} /> : 
+                     isFailed ? <AlertTriangle size={18} /> : <Clock size={18} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-fab-navy uppercase tracking-wide">
+                            Flow Status: {liveProduct.flow_status || 'Draft'}
+                        </span>
+                        {isProcessing && liveProduct.flow_progress !== undefined && (
+                            <span className="text-[9px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-bold">
+                                {liveProduct.flow_progress}%
+                            </span>
+                        )}
+                    </div>
+                    {latestLog && (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            <Activity size={10} className="text-slate-400" />
+                            <p className="text-[10px] text-slate-500 truncate" title={latestLog.message}>
+                                {latestLog.message}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="h-full flex flex-col bg-slate-50 relative overflow-hidden">
             
@@ -242,11 +315,14 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                 <h2 className="text-2xl font-bold text-fab-navy mb-1">
                                     Document Library
                                 </h2>
-                                <p className="text-slate-500 text-sm ml-1">
+                                <p className="text-slate-500 text-sm ml-1 mb-4">
                                     {preselectedProduct 
                                         ? `Managing documents for: ${preselectedProduct.product_name}` 
                                         : 'Manage documents and monitor ingestion status.'}
                                 </p>
+                                
+                                {/* Product Status Card */}
+                                {renderProductStatus()}
                             </div>
 
                              {/* Action Buttons */}
@@ -256,7 +332,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                         if(!preselectedProduct) setProductName('PIL-CONV-001');
                                         setIsUploadModalOpen(true);
                                     }}
-                                    className="px-4 py-2.5 bg-fab-royal text-white rounded-full text-xs font-bold shadow-lg shadow-fab-royal/20 hover:bg-fab-blue transition-all flex items-center gap-2"
+                                    className="px-4 py-2.5 bg-fab-royal text-white rounded-full text-xs font-bold shadow-lg shadow-fab-royal/20 hover:bg-fab-blue transition-all flex items-center gap-2 h-fit"
                                 >
                                     <Upload size={16} />
                                     Upload Docs

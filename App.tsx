@@ -615,10 +615,18 @@ const App: React.FC = () => {
                     setAutoOpenUpload(false);
                 }}
                 preselectedProduct={selectedContextProduct}
-                onBack={() => {
-                    // Logic: If we have a product context, go back to CANVAS. Else go HOME.
+                onBack={async () => {
+                    // Updated Back Logic: Fetch correct flow if coming from Library within a product context
                     if (selectedContextProduct) {
-                        setCurrentView('CANVAS');
+                        try {
+                            showNotification("Syncing flow data...", 'success');
+                            const flowData = await apiService.getProcessFlow(selectedContextProduct.product_name);
+                            handleStartWithData(flowData);
+                        } catch(e) {
+                            console.error(e);
+                            showNotification("Flow not fully ready. Opening canvas.", 'error');
+                            setCurrentView('CANVAS');
+                        }
                     } else {
                         setCurrentView('HOME');
                         setSelectedContextProduct(null); 
