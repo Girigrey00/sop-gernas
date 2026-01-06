@@ -331,7 +331,7 @@ const MessageRenderer = ({ content, role, isWelcome, sopData }: { content: strin
                 // Clean formatting characters from headers before checking logic
                 const isMetricTable = headers.some(h => {
                     const clean = h.toLowerCase().replace(/[^a-z]/g, ''); // Remove non-alpha like *
-                    return ['metric', 'measure', 'kpi', 'metrics', 'indicator'].includes(clean);
+                    return ['metric', 'measure', 'kpi', 'metrics', 'indicator'].some(k => clean.includes(k));
                 });
                 
                 if (isMetricTable && !isUser) {
@@ -404,10 +404,20 @@ const MessageRenderer = ({ content, role, isWelcome, sopData }: { content: strin
         }
 
         // --- AGUI: Step Detection (Only if line is short enough to be a reference) ---
-        // e.g. "S1-2: Review by Admin" or "Step S1-2"
-        const stepMatch = trimmed.match(/^(?:Step\s*)?([S]\d+-\d+)[:\s]+(.*)/i);
-        // Only trigger widget if it looks like a list item or standalone reference
-        if (stepMatch && !isUser && trimmed.length < 100 && (trimmed.startsWith('-') || trimmed.startsWith('*') || !trimmed.includes(' '))) {
+        // Robust regex for steps: Handles "- **S1-1**: Desc", "* S1-1 Desc"
+        // Regex Logic: 
+        // 1. Optional bullet (^[-*]?)
+        // 2. Optional whitespace (\s*)
+        // 3. Optional bold start ((?:\*\*)?)
+        // 4. Optional prefix "Step" ((?:Step\s*)?)
+        // 5. CAPTURE ID: S digit - digit ([S]\d+-\d+)
+        // 6. Optional bold end ((?:\*\*)?)
+        // 7. Separators ([:\s]+)
+        // 8. CAPTURE Desc: (.*)
+        const stepMatch = trimmed.match(/^[-*]?\s*(?:\*\*)?(?:Step\s*)?([S]\d+-\d+)(?:\*\*)?[:\s]+(.*)/i);
+        
+        // Only trigger widget if it matches and line is short
+        if (stepMatch && !isUser && trimmed.length < 150) {
              elements.push(
                 <StepWidget 
                     key={`step-${i}`}

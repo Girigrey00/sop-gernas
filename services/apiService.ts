@@ -45,8 +45,8 @@ class JsonStreamParser {
                 this.isJson = true;
                 this.hasCheckJson = true;
                 this.buffer = trimmed; 
-            } else if (trimmed.length > 20) {
-                // Not JSON (regular text stream), flush buffer
+            } else if (trimmed.length > 50) {
+                // Not JSON (regular text stream), flush buffer as plain text
                 this.isJson = false;
                 this.hasCheckJson = true;
                 this.onToken(this.buffer);
@@ -66,6 +66,7 @@ class JsonStreamParser {
             // 1. Look for "answer": "
             if (!this.inAnswer && !this.answerDone) {
                 this.buffer += chunk;
+                // Robust regex that handles potential spacing or newlines in the key definition
                 const match = this.buffer.match(/"answer"\s*:\s*"/);
                 if (match) {
                     this.inAnswer = true;
@@ -120,31 +121,67 @@ class JsonStreamParser {
         if (this.citationsBuffer) {
             const result: { citations?: any, related_questions?: string[] } = {};
             
-            // 1. Try to extract citations
+            // 1. Extract Citations using Brace Counting (More robust than Regex)
             try {
-                // Look for "citations": { ... }
-                // Match the object content non-greedily until the next key or end
-                const citMatch = this.citationsBuffer.match(/"citations"\s*:\s*(\{[\s\S]*?\})(\s*,|\s*\})/);
-                if (citMatch && citMatch[1]) {
-                     try {
-                        result.citations = JSON.parse(citMatch[1]);
-                     } catch(e) {
-                         // Fallback attempt for partial JSON
-                     }
+                const citKeyIndex = this.citationsBuffer.indexOf('"citations"');
+                if (citKeyIndex !== -1) {
+                    // Find the first '{' after the key
+                    const startBrace = this.citationsBuffer.indexOf('{', citKeyIndex);
+                    if (startBrace !== -1) {
+                        let depth = 0;
+                        let foundEnd = false;
+                        let endIndex = -1;
+
+                        for (let i = startBrace; i < this.citationsBuffer.length; i++) {
+                            const char = this.citationsBuffer[i];
+                            if (char === '{') depth++;
+                            else if (char === '}') {
+                                depth--;
+                                if (depth === 0) {
+                                    endIndex = i;
+                                    foundEnd = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (foundEnd) {
+                            const jsonStr = this.citationsBuffer.substring(startBrace, endIndex + 1);
+                            result.citations = JSON.parse(jsonStr);
+                        }
+                    }
                 }
             } catch (e) {
                 console.warn("Failed to parse citations:", e);
             }
 
-            // 2. Try to extract related_questions
+            // 2. Extract Related Questions using Array Counting
             try {
-                // Look for "related_questions": [ ... ]
-                const rqMatch = this.citationsBuffer.match(/"related_questions"\s*:\s*(\[[^\]]*\])/);
-                if (rqMatch && rqMatch[1]) {
-                    try {
-                        result.related_questions = JSON.parse(rqMatch[1]);
-                    } catch(e) {
-                        console.warn("Failed to parse related_questions JSON:", e);
+                const rqKeyIndex = this.citationsBuffer.indexOf('"related_questions"');
+                if (rqKeyIndex !== -1) {
+                    const startBracket = this.citationsBuffer.indexOf('[', rqKeyIndex);
+                    if (startBracket !== -1) {
+                         let depth = 0;
+                         let foundEnd = false;
+                         let endIndex = -1;
+ 
+                         for (let i = startBracket; i < this.citationsBuffer.length; i++) {
+                             const char = this.citationsBuffer[i];
+                             if (char === '[') depth++;
+                             else if (char === ']') {
+                                 depth--;
+                                 if (depth === 0) {
+                                     endIndex = i;
+                                     foundEnd = true;
+                                     break;
+                                 }
+                             }
+                         }
+ 
+                         if (foundEnd) {
+                             const jsonStr = this.citationsBuffer.substring(startBracket, endIndex + 1);
+                             result.related_questions = JSON.parse(jsonStr);
+                         }
                     }
                 }
             } catch (e) {
