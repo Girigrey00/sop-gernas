@@ -5,7 +5,9 @@ import {
   ThumbsUp, ThumbsDown, Copy, Sparkles, Lightbulb, ChevronRight, ChevronLeft, Brain,
   AlertOctagon, BarChart3, ArrowRightCircle, Map, Layers,
   ShieldAlert, Info, AlertTriangle, Clock, Calendar, CheckCircle2, Circle, 
-  ListTodo, Percent, TrendingUp, User, Braces, Terminal, LayoutDashboard, Zap
+  ListTodo, Percent, TrendingUp, User, Braces, Terminal, LayoutDashboard, Zap, PieChart,
+  TrendingDown, Paperclip, Phone, Mail, MapPin, Star, Tag, Lightbulb as Bulb, DollarSign,
+  ArrowRightLeft, Timer, Check, MoveRight, UserCheck, FileCheck, Package, HelpCircle, Quote, Hash
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -93,8 +95,247 @@ const GIcon = ({ className }: { className?: string }) => (
 
 // --- A2UI (Adaptive AI UI) Widgets ---
 
+const ProductCardWidget = ({ name, id, status }: { name: string, id: string, status: string }) => {
+    return (
+        <div className="flex items-start gap-4 p-4 my-3 bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all w-full animate-in slide-in-from-left-2">
+            <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
+                <Package size={24} />
+            </div>
+            <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start">
+                    <h4 className="text-sm font-bold text-slate-800 truncate pr-2">{name}</h4>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wide shrink-0 ${
+                        status.toLowerCase() === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                        'bg-slate-100 text-slate-500 border-slate-200'
+                    }`}>
+                        {status}
+                    </span>
+                </div>
+                <p className="text-xs text-slate-500 font-mono mt-1">ID: {id}</p>
+            </div>
+        </div>
+    );
+};
+
+const FaqWidget = ({ question, answer }: { question: string, answer: string }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div className="my-2 border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm animate-in slide-in-from-bottom-2">
+            <button 
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex items-center gap-3 p-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
+            >
+                <HelpCircle size={16} className="text-fab-royal shrink-0" />
+                <span className="text-xs font-bold text-slate-700 flex-1">{question}</span>
+                {isOpen ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+            </button>
+            {isOpen && (
+                <div className="p-3 bg-white border-t border-slate-100">
+                    <p className="text-xs text-slate-600 leading-relaxed">{answer}</p>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const TagCloudWidget = ({ tags }: { tags: string[] }) => {
+    return (
+        <div className="my-3 flex flex-wrap gap-2 animate-in fade-in">
+            {tags.map((tag, i) => (
+                <span key={i} className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 border border-slate-200 hover:border-blue-200 rounded-full text-[10px] font-bold transition-all cursor-default flex items-center gap-1">
+                    <Hash size={10} className="opacity-50" />
+                    {tag}
+                </span>
+            ))}
+        </div>
+    );
+};
+
+const SnippetWidget = ({ text }: { text: string }) => {
+    return (
+        <div className="my-3 flex gap-3 p-4 bg-amber-50/50 border-l-4 border-amber-400 rounded-r-lg animate-in slide-in-from-left-2">
+            <Quote size={20} className="text-amber-400 shrink-0 fill-amber-100" />
+            <p className="text-xs text-slate-700 italic leading-relaxed font-medium">{text}</p>
+        </div>
+    );
+};
+
+const TrendWidget = ({ data, title }: { data: { label: string, value: number }[], title?: string }) => {
+    // Simple SVG Sparkline
+    const height = 60;
+    const width = 300;
+    const max = Math.max(...data.map(d => d.value), 1);
+    const min = Math.min(...data.map(d => d.value), 0);
+    const range = max - min;
+    
+    const points = data.map((d, i) => {
+        const x = (i / (data.length - 1)) * width;
+        const y = height - ((d.value - min) / range) * height;
+        return `${x},${y}`;
+    }).join(' ');
+
+    return (
+        <div className="my-3 p-4 bg-white border border-slate-200 rounded-xl shadow-sm w-full max-w-full overflow-hidden animate-in slide-in-from-right-4">
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                    <TrendingUp size={16} className="text-emerald-500" />
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">{title || 'Trend Analysis'}</span>
+                </div>
+            </div>
+            <div className="relative h-[60px] w-full">
+                <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible" preserveAspectRatio="none">
+                    <polyline points={points} fill="none" stroke="#10b981" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                    {data.map((d, i) => {
+                         const x = (i / (data.length - 1)) * width;
+                         const y = height - ((d.value - min) / range) * height;
+                         return (
+                             <circle key={i} cx={x} cy={y} r="3" fill="#10b981" className="hover:r-4 transition-all" >
+                                 <title>{d.label}: {d.value}</title>
+                             </circle>
+                         )
+                    })}
+                </svg>
+            </div>
+            <div className="flex justify-between mt-2 text-[9px] text-slate-400 font-mono">
+                <span>{data[0]?.label}</span>
+                <span>{data[data.length-1]?.label}</span>
+            </div>
+        </div>
+    );
+};
+
+const StepperWidget = ({ steps }: { steps: { label: string, status: 'done' | 'active' | 'pending' }[] }) => {
+    return (
+        <div className="my-3 w-full overflow-x-auto pb-2">
+            <div className="flex items-center min-w-max">
+                {steps.map((step, i) => (
+                    <div key={i} className="flex items-center">
+                        <div className={`flex flex-col items-center gap-1 relative z-10 px-2`}>
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${
+                                step.status === 'done' ? 'bg-emerald-500 border-emerald-500 text-white' :
+                                step.status === 'active' ? 'bg-white border-blue-500 text-blue-500 animate-pulse' :
+                                'bg-slate-50 border-slate-200 text-slate-300'
+                            }`}>
+                                {step.status === 'done' ? <Check size={14} strokeWidth={3} /> : <span className="text-xs font-bold">{i+1}</span>}
+                            </div>
+                            <span className={`text-[10px] font-bold uppercase tracking-wide whitespace-nowrap ${
+                                step.status === 'done' ? 'text-emerald-600' :
+                                step.status === 'active' ? 'text-blue-600' :
+                                'text-slate-400'
+                            }`}>{step.label}</span>
+                        </div>
+                        {i < steps.length - 1 && (
+                            <div className={`h-0.5 w-12 -mt-4 transition-colors ${
+                                step.status === 'done' ? 'bg-emerald-500' : 'bg-slate-200'
+                            }`}></div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const FileWidget = ({ filename, type = 'PDF' }: { filename: string, type?: string }) => (
+    <div className="flex items-center gap-3 p-3 my-2 bg-slate-50 border border-slate-200 rounded-xl hover:bg-blue-50 hover:border-blue-200 transition-colors cursor-pointer group animate-in slide-in-from-left-2 w-full max-w-sm">
+        <div className="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+            <Paperclip size={18} className="text-slate-400 group-hover:text-blue-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-slate-700 truncate group-hover:text-blue-700">{filename}</p>
+            <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{type} Document</p>
+        </div>
+        <div className="p-2 bg-white rounded-full text-slate-300 group-hover:text-blue-500 shadow-sm opacity-0 group-hover:opacity-100 transition-all">
+            <ArrowRightCircle size={16} />
+        </div>
+    </div>
+);
+
+const SLAWidget = ({ time, text }: { time: string, text: string }) => (
+    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full text-amber-700 text-xs font-bold my-1 shadow-sm animate-pulse">
+        <Timer size={14} className="animate-spin-slow" />
+        <span className="uppercase tracking-wide">{time}:</span>
+        <span>{text}</span>
+    </div>
+);
+
+const ContactWidget = ({ name, role, email }: { name: string, role: string, email?: string }) => (
+    <div className="flex items-center gap-3 p-3 my-2 bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-xl shadow-sm w-full max-w-sm">
+        <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm border-2 border-white shadow-md">
+            {name.substring(0, 2).toUpperCase()}
+        </div>
+        <div>
+            <p className="text-sm font-bold text-slate-800">{name}</p>
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+                <UserCheck size={12} /> {role}
+            </div>
+        </div>
+    </div>
+);
+
+const LocationWidget = ({ location }: { location: string }) => (
+    <div className="flex items-center gap-2 my-2 text-xs text-slate-600 font-medium bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 w-fit">
+        <MapPin size={14} className="text-rose-500" />
+        {location}
+    </div>
+);
+
+const RatingWidget = ({ score, max = 5 }: { score: number, max?: number }) => (
+    <div className="flex items-center gap-1 my-2">
+        {[...Array(max)].map((_, i) => (
+            <Star key={i} size={14} className={i < score ? "fill-amber-400 text-amber-400" : "text-slate-200"} />
+        ))}
+        <span className="ml-2 text-xs font-bold text-slate-600">{score}/{max}</span>
+    </div>
+);
+
+// --- Existing Widgets ---
+
+const PieChartWidget = ({ data, title }: { data: { label: string, value: number }[], title?: string }) => {
+    const total = data.reduce((acc, cur) => acc + cur.value, 0);
+    let currentAngle = 0;
+    const colors = ['#003DA5', '#034AC5', '#0647B8', '#A6E1FA', '#3b82f6', '#60a5fa', '#93c5fd'];
+
+    return (
+        <div className="my-3 p-4 bg-white border border-slate-200 rounded-xl shadow-sm animate-in slide-in-from-left-2 duration-500 w-full max-w-full overflow-hidden flex flex-col sm:flex-row items-center gap-6">
+            <div className="relative w-32 h-32 shrink-0 group">
+                <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                    {data.map((d, i) => {
+                        const sliceAngle = (d.value / total) * 360;
+                        const x1 = 50 + 50 * Math.cos(Math.PI * currentAngle / 180);
+                        const y1 = 50 + 50 * Math.sin(Math.PI * currentAngle / 180);
+                        const x2 = 50 + 50 * Math.cos(Math.PI * (currentAngle + sliceAngle) / 180);
+                        const y2 = 50 + 50 * Math.sin(Math.PI * (currentAngle + sliceAngle) / 180);
+                        const largeArcFlag = sliceAngle > 180 ? 1 : 0;
+                        const pathData = `M 50 50 L ${x1} ${y1} A 50 50 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+                        const el = <path key={i} d={pathData} fill={colors[i % colors.length]} stroke="white" strokeWidth="2" className="hover:opacity-80 transition-opacity cursor-pointer" />;
+                        currentAngle += sliceAngle;
+                        return el;
+                    })}
+                    <circle cx="50" cy="50" r="20" fill="white" className="drop-shadow-sm" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-400">
+                    <PieChart size={16} />
+                </div>
+            </div>
+            <div className="flex-1 w-full min-w-0">
+                {title && <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 truncate">{title}</h4>}
+                <div className="grid grid-cols-2 gap-2">
+                    {data.map((d, i) => (
+                        <div key={i} className="flex items-center gap-2 min-w-0">
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: colors[i % colors.length] }}></span>
+                            <span className="text-xs text-slate-600 truncate">{d.label}</span>
+                            <span className="text-xs font-bold text-slate-800 ml-auto">{d.value}%</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const BarChartWidget = ({ data, title }: { data: { label: string, value: number, displayValue: string }[], title?: string }) => {
-    const max = Math.max(...data.map(d => d.value), 1); // Avoid div by zero
+    const max = Math.max(...data.map(d => d.value), 1); 
     return (
         <div className="my-3 p-4 bg-white border border-slate-200 rounded-xl shadow-sm animate-in slide-in-from-left-2 duration-500 w-full max-w-full overflow-hidden">
             {title && (
@@ -109,9 +350,11 @@ const BarChartWidget = ({ data, title }: { data: { label: string, value: number,
                         <div className="w-20 md:w-24 shrink-0 text-slate-600 font-medium truncate text-right" title={d.label}>{d.label}</div>
                         <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden min-w-[50px]">
                             <div 
-                                className="h-full bg-fab-royal rounded-full transition-all duration-1000 ease-out group-hover:bg-fab-blue" 
+                                className="h-full bg-fab-royal rounded-full transition-all duration-1000 ease-out group-hover:bg-fab-blue relative overflow-hidden" 
                                 style={{ width: `${(d.value / max) * 100}%` }}
-                            ></div>
+                            >
+                                <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:animate-[shimmer_1s_infinite]"></div>
+                            </div>
                         </div>
                         <div className="w-12 shrink-0 text-slate-700 font-bold text-right">{d.displayValue}</div>
                     </div>
@@ -125,7 +368,7 @@ const KeyValueWidget = ({ items }: { items: { key: string, value: string }[] }) 
     return (
         <div className="my-3 grid grid-cols-1 sm:grid-cols-2 gap-2 w-full animate-in slide-in-from-left-2">
             {items.map((item, i) => (
-                <div key={i} className="flex flex-col p-2.5 bg-slate-50 border border-slate-200 rounded-lg hover:border-blue-200 transition-colors">
+                <div key={i} className="flex flex-col p-2.5 bg-slate-50 border border-slate-200 rounded-lg hover:border-blue-200 transition-colors overflow-hidden">
                     <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider truncate">{item.key}</span>
                     <span className="text-xs font-semibold text-slate-700 break-words">{item.value}</span>
                 </div>
@@ -170,10 +413,9 @@ const JsonViewerWidget = ({ data }: { data: string }) => {
 
 const GaugeWidget = ({ label, value, max = 100, displayValue }: { label: string, value: number, max?: number, displayValue?: string }) => {
     const percentage = Math.min(100, Math.max(0, (value / max) * 100));
-    const circumference = 2 * Math.PI * 16; // r=16
+    const circumference = 2 * Math.PI * 16; 
     const offset = circumference - (percentage / 100) * circumference;
     
-    // Color logic
     let color = 'text-fab-royal';
     let bgColor = 'text-blue-100';
     if (percentage >= 80) { color = 'text-emerald-500'; bgColor = 'text-emerald-100'; }
@@ -181,7 +423,7 @@ const GaugeWidget = ({ label, value, max = 100, displayValue }: { label: string,
     else { color = 'text-amber-500'; bgColor = 'text-amber-100'; }
 
     return (
-        <div className="my-2 mr-2 p-3 bg-white border border-slate-200 rounded-xl shadow-sm inline-flex items-center gap-3 pr-5 animate-in zoom-in-95 duration-300 max-w-full hover:shadow-md transition-shadow">
+        <div className="my-2 mr-2 p-3 bg-white border border-slate-200 rounded-xl shadow-sm inline-flex items-center gap-3 pr-5 animate-in zoom-in-95 duration-300 max-w-full hover:shadow-md transition-shadow group cursor-default">
              <div className="relative w-10 h-10 flex items-center justify-center shrink-0">
                 <svg className="transform -rotate-90 w-10 h-10">
                     <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="4" fill="transparent" className={bgColor} />
@@ -192,7 +434,6 @@ const GaugeWidget = ({ label, value, max = 100, displayValue }: { label: string,
                         strokeLinecap="round"
                     />
                 </svg>
-                {/* Center Icon based on score */}
                 <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-700">
                     {percentage >= 80 ? <CheckCircle2 size={12} className="text-emerald-600" /> : 
                      percentage <= 40 ? <AlertTriangle size={12} className="text-rose-600" /> : 
@@ -200,7 +441,7 @@ const GaugeWidget = ({ label, value, max = 100, displayValue }: { label: string,
                 </div>
              </div>
              <div className="min-w-0 flex-1">
-                 <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wide truncate">{label}</p>
+                 <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wide truncate group-hover:text-slate-600 transition-colors">{label}</p>
                  <p className="text-sm font-bold text-slate-800 truncate">{displayValue || `${value}/${max}`}</p>
              </div>
         </div>
@@ -263,11 +504,9 @@ const DecisionOptionWidget = ({ options, onSelect }: { options: string[], onSele
 );
 
 const RiskWidget = ({ riskId, sopData, fallbackText }: { riskId: string, sopData: SopResponse, fallbackText: string }) => {
-  // Find full risk details if available
   const risk = sopData.inherentRisks.find(r => r.riskId === riskId || r.riskId === riskId.replace(/[*_]/g, ''));
   const displayId = risk?.riskId || riskId.replace(/[*_]/g, '');
   const category = risk?.category || 'Operational Risk';
-  // Use structured description if available, otherwise use what the AI wrote in the bullet point
   const description = risk?.description || fallbackText || 'Details not available in current context.';
 
   return (
@@ -287,7 +526,6 @@ const RiskWidget = ({ riskId, sopData, fallbackText }: { riskId: string, sopData
 }
 
 const StepWidget = ({ stepId, sopData, onClick }: { stepId: string, sopData: SopResponse, onClick?: (id: string) => void }) => {
-    // Attempt to find step details
     let stepDetails = null;
     if (sopData.processFlow && sopData.processFlow.stages) {
         for (const stage of sopData.processFlow.stages) {
@@ -300,7 +538,6 @@ const StepWidget = ({ stepId, sopData, onClick }: { stepId: string, sopData: Sop
     }
     
     if (!stepDetails) {
-        // Fallback for simple ID rendering if logic not found
         return (
              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold mx-0.5 bg-slate-100 text-slate-600 border border-slate-200 align-middle">
                 <ArrowRightCircle size={10} />
@@ -382,9 +619,7 @@ const PolicyWidget = ({ type, text }: { type: 'POLICY' | 'WARNING' | 'NOTE', tex
 const TimelineWidget = ({ time, text }: { time: string, text: string }) => {
     return (
         <div className="flex gap-3 relative pl-2 group animate-in slide-in-from-left-2">
-             {/* Timeline Line */}
              <div className="absolute left-[15px] top-6 bottom-[-8px] w-px bg-slate-200 group-last:hidden"></div>
-             
              <div className="mt-1 relative z-10 shrink-0">
                  <div className="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 shadow-sm text-[10px] font-bold">
                     <Clock size={12} />
@@ -401,26 +636,23 @@ const TimelineWidget = ({ time, text }: { time: string, text: string }) => {
 }
 
 const MetricWidget = ({ row, headers }: { row: string[], headers: string[] }) => {
-   // Try to map columns intelligently
    let name = "";
    let value = "";
    let target = "";
 
    headers.forEach((h, idx) => {
-       const header = (h || "").toLowerCase().replace(/[*_]/g, ''); // clean formatting
-       const cellData = row[idx] || ""; // Safe access
+       const header = (h || "").toLowerCase().replace(/[*_]/g, ''); 
+       const cellData = row[idx] || ""; 
 
        if (header.includes('value') || header.includes('current') || header.includes('actual')) value = cellData;
        else if (header.includes('target') || header.includes('goal') || header.includes('objective')) target = cellData;
        else if (header.includes('metric') || header.includes('measure') || header.includes('kpi') || header.includes('indicator') || header.includes('name')) name = cellData;
    });
 
-   // Fallback if mapping failed
    if (!name && row.length > 0) name = row[0] || "";
    if (!value && row.length > 1) value = row[row.length - 1] || "";
    if (!target && row.length > 2) target = row[row.length - 2] || "";
 
-   // Ensure they are strings to avoid "replace of undefined" errors
    const safeName = String(name || "");
    const safeValue = String(value || "");
    const safeTarget = String(target || "");
@@ -547,7 +779,6 @@ const formatInlineText = (text: string, isUser: boolean, sopData?: SopResponse) 
 const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, onSendManual }: { content: string, role: 'user' | 'assistant', isWelcome?: boolean, sopData: SopResponse, onNavigateToStep?: (id: string) => void, onSendManual?: (txt: string) => void }) => {
     const isUser = role === 'user';
     
-    // Split content by lines to detect structure (Tables, Lists)
     const lines = content.split('\n');
     const elements: React.ReactNode[] = [];
     
@@ -555,39 +786,68 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
     let inTable = false;
     let listBuffer: string[] = [];
     
-    // Code Block Handling
     let inCodeBlock = false;
     let codeBuffer: string[] = [];
 
-    // RAW JSON Detection (Not in code block)
     let inRawJson = false;
     let rawJsonBuffer: string[] = [];
 
-    // Helper to process buffered lists into Widgets if applicable
     const processListBuffer = (items: string[], keyPrefix: string) => {
         if (items.length === 0) return null;
 
-        // 1. Check for Checklist (Starts with [ ] or [x])
+        // 1. Checklist
         const isChecklist = items.every(i => i.trim().match(/^[-*]\s*\[[ xX]\]/));
         if (isChecklist) {
             const cleanItems = items.map(i => i.replace(/^[-*]\s*/, ''));
             return <ChecklistWidget key={keyPrefix} items={cleanItems} />;
         }
 
-        // 2. Check for Decision Options (Option A: / Option 1:)
+        // 2. Decision Options
         const isOptions = items.every(i => i.trim().match(/^[-*]\s*((\*\*)?)Option\s*[\d|A-Z]((\*\*)?)/i));
         if (isOptions) {
             const cleanOptions = items.map(i => i.replace(/^[-*]\s*/, '').trim());
             return <DecisionOptionWidget key={keyPrefix} options={cleanOptions} onSelect={onSendManual} />;
         }
 
-        // 3. Check for Key-Value Pairs (Label: Value) that are not charts
+        // 3. Key-Value & Chart Data Detection
+        // New: Check for Trend Data (Date: Value)
+        const isTrend = items.length >= 3 && items.every(i => {
+             const clean = i.replace(/^[-*]\s+/, '').trim();
+             return clean.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Q\d|\d{4})[:\s]/i) && clean.match(/\d+$/);
+        });
+
+        // 4. Stepper Detection (Step X: Active/Done)
+        const isStepper = items.every(i => {
+             const clean = i.toLowerCase();
+             return clean.includes('step') && (clean.includes('done') || clean.includes('active') || clean.includes('pending'));
+        });
+
+        if (isTrend) {
+             const trendData = items.map(i => {
+                 const parts = i.replace(/^[-*]\s+/, '').split(/[:\s]+/);
+                 return { label: parts[0], value: parseInt(parts[parts.length-1]) || 0 };
+             });
+             return <TrendWidget key={keyPrefix} data={trendData} />;
+        }
+
+        if (isStepper) {
+             const stepData = items.map(i => {
+                 const clean = i.replace(/^[-*]\s+/, '');
+                 let status: 'done' | 'active' | 'pending' = 'pending';
+                 if (clean.toLowerCase().includes('done') || clean.toLowerCase().includes('complete')) status = 'done';
+                 else if (clean.toLowerCase().includes('active') || clean.toLowerCase().includes('current')) status = 'active';
+                 
+                 return { label: clean.split(/[:(]/)[0].trim(), status };
+             });
+             return <StepperWidget key={keyPrefix} steps={stepData} />;
+        }
+
+        // Standard Key-Value / Chart
         const isKeyValue = items.every(i => {
              const clean = i.replace(/^[-*]\s+/, '').trim();
              return clean.includes(':') && clean.split(':').length === 2 && clean.length < 100;
         });
 
-        // 4. Check for Bar Chart Data (Label: Number)
         if (items.length >= 2) {
             const chartData = [];
             let isChart = true;
@@ -606,22 +866,26 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
             }
 
             if (isChart && chartData.length > 0) {
-                return <BarChartWidget key={keyPrefix} data={chartData} />;
+                const sum = chartData.reduce((acc, c) => acc + c.value, 0);
+                const isPercentage = chartData.every(d => d.displayValue.includes('%'));
+                
+                if (isPercentage && sum >= 95 && sum <= 105) {
+                    return <PieChartWidget key={keyPrefix} data={chartData} />;
+                } else {
+                    return <BarChartWidget key={keyPrefix} data={chartData} />;
+                }
             }
         }
         
-        // Render generic Key-Value if strict conditions met (but not a chart)
         if (isKeyValue) {
              const kvData = items.map(i => {
                  const clean = i.replace(/^[-*]\s+/, '').trim();
                  const parts = clean.split(':');
                  return { key: parts[0].trim(), value: parts[1].trim() };
              });
-             // Only use KeyValueWidget if it's not detected as something else
              return <KeyValueWidget key={keyPrefix} items={kvData} />;
         }
 
-        // 5. Fallback to Standard List
         return items.map((item, i) => (
              <div key={`${keyPrefix}-${i}`} className="flex items-start gap-2 mb-1 pl-1">
                 <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${isUser ? 'bg-white' : 'bg-fab-royal'}`}></span>
@@ -635,16 +899,13 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
     lines.forEach((line, i) => {
         const trimmed = line.trim();
 
-        // --- Code Block Handling ---
         if (trimmed.startsWith('```')) {
             if (inCodeBlock) {
-                // End block
                 inCodeBlock = false;
                 const code = codeBuffer.join('\n');
                 elements.push(<JsonViewerWidget key={`json-${i}`} data={code} />);
                 codeBuffer = [];
             } else {
-                // Start block
                 inCodeBlock = true;
             }
             return;
@@ -655,7 +916,6 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
             return;
         }
 
-        // --- Raw JSON Detection (Handle API returning text JSON) ---
         if (!isUser && trimmed.startsWith('{') && !inRawJson) {
             inRawJson = true;
             rawJsonBuffer.push(trimmed);
@@ -663,7 +923,6 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
         }
         if (inRawJson) {
             rawJsonBuffer.push(trimmed);
-            // Rough heuristic to end JSON block if user closed it
             if (trimmed.endsWith('}') || (trimmed === '}' && rawJsonBuffer.length > 1)) {
                 inRawJson = false;
                 const jsonStr = rawJsonBuffer.join('\n');
@@ -673,10 +932,8 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
             return;
         }
 
-        // --- List Handling (Buffer) ---
         if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
             listBuffer.push(trimmed);
-            // If this is the last line, flush buffer
             if (i === lines.length - 1) {
                 const result = processListBuffer(listBuffer, `list-${i}`);
                 if (Array.isArray(result)) elements.push(...result);
@@ -684,7 +941,6 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
             }
             return; 
         } else {
-            // Not a list item, flush buffer if exists
             if (listBuffer.length > 0) {
                 const result = processListBuffer(listBuffer, `list-${i}`);
                 if (Array.isArray(result)) elements.push(...result);
@@ -693,24 +949,15 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
             }
         }
         
-        // --- Table Detection ---
         if (trimmed.startsWith('|')) {
             inTable = true;
             tableBuffer.push(trimmed);
-            
-            // If this is the last line or next line is not table, process table
             const nextLine = lines[i+1];
             if (i === lines.length - 1 || (nextLine !== undefined && !nextLine.trim().startsWith('|'))) {
-                
-                // Process accumulated table
                 const headers = tableBuffer[0].split('|').filter(c => c.trim()).map(c => c.trim());
-                // Skip alignment row (contains dashes like ---|---)
                 const rows = tableBuffer.slice(2).map(r => r.split('|').filter(c => c.trim()).map(c => c.trim()));
-                
-                // AGUI: Check if this is a Metrics Table
-                // Clean formatting characters from headers before checking logic
                 const isMetricTable = headers.some(h => {
-                    const clean = h.toLowerCase().replace(/[^a-z]/g, ''); // Remove non-alpha like *
+                    const clean = h.toLowerCase().replace(/[^a-z]/g, ''); 
                     return ['metric', 'measure', 'kpi', 'metrics', 'indicator'].some(k => clean.includes(k));
                 });
                 
@@ -725,7 +972,6 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
                         </div>
                     );
                 } else {
-                    // Standard Table
                     elements.push(
                         <div key={`tbl-${i}`} className="my-3 w-full overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
                             <table className="w-full text-left text-xs min-w-[300px]">
@@ -752,22 +998,106 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
                 tableBuffer = [];
                 inTable = false;
             }
-            return; // Skip standard processing
+            return; 
         } 
         
         if (inTable) {
-             // Handle alignment row explicitly to avoid dropping it before table close
              if(trimmed.match(/^[|\s-:]+$/)) {
                  tableBuffer.push(trimmed); 
                  return;
              }
-             // Fallback if formatting was broken
              inTable = false; 
         }
 
         if (!isUser) {
-            // --- AGUI: Gauge/Score Detection ---
-            // Pattern: **Score**: 85% or **Confidence**: 0.9
+            // New Widgets Logic 
+            
+            // 1. File Widget ([File] Name)
+            if (trimmed.match(/^\[(File|Doc|PDF)\]/i)) {
+                const parts = trimmed.split(/\]/);
+                if (parts.length > 1) {
+                    elements.push(<FileWidget key={`file-${i}`} filename={parts[1].trim()} />);
+                    return;
+                }
+            }
+
+            // 2. SLA Widget (**SLA**: Text)
+            if (trimmed.match(/^\*\*(SLA|Deadline|Time)\*\*:/i)) {
+                const parts = trimmed.split(':');
+                elements.push(<SLAWidget key={`sla-${i}`} time={parts[0].replace(/\*\*/g, '').trim()} text={parts.slice(1).join(':').trim()} />);
+                return;
+            }
+
+            // 3. Contact/Owner Widget (**Owner**: Name | Role)
+            if (trimmed.match(/^\*\*(Owner|Contact|Person)\*\*:/i)) {
+                const content = trimmed.split(':')[1].trim();
+                const [name, role, email] = content.split('|').map(s => s.trim());
+                elements.push(<ContactWidget key={`contact-${i}`} name={name} role={role || 'Staff'} email={email} />);
+                return;
+            }
+
+            // 4. Location Widget (**Location**: Text)
+            if (trimmed.match(/^\*\*(Location|Place|Site)\*\*:/i)) {
+                elements.push(<LocationWidget key={`loc-${i}`} location={trimmed.split(':')[1].trim()} />);
+                return;
+            }
+
+            // 5. Rating Widget (**Rating**: 4/5)
+            if (trimmed.match(/^\*\*(Rating|Score)\*\*:\s*\d+/i)) {
+                const val = parseInt(trimmed.match(/\d+/)?.[0] || '0');
+                elements.push(<RatingWidget key={`rating-${i}`} score={val} />);
+                return;
+            }
+
+            // 6. Product Card Widget (**Product**: Name | ID | Status)
+            if (trimmed.match(/^\*\*(Product|System)\*\*:/i)) {
+                const content = trimmed.split(':')[1].trim();
+                const [name, id, status] = content.split('|').map(s => s.trim());
+                if (name && id) {
+                    elements.push(<ProductCardWidget key={`prod-${i}`} name={name} id={id} status={status || 'Active'} />);
+                    return;
+                }
+            }
+
+            // 7. Snippet/Quote Widget (> text)
+            if (trimmed.startsWith('> ')) {
+                elements.push(<SnippetWidget key={`snip-${i}`} text={trimmed.substring(2)} />);
+                return;
+            }
+
+            // 8. FAQ Widget (**Q**: ...)
+            if (trimmed.match(/^\*\*(Q|Question)\*\*:/i)) {
+                const question = trimmed.split(':')[1].trim();
+                const nextLine = lines[i+1]?.trim();
+                if (nextLine && nextLine.match(/^\*\*(A|Answer)\*\*:/i)) {
+                    // Skip next line in main loop since we handle it here
+                    // Ideally we'd advance the index, but React rendering maps line by line.
+                    // Instead, we can render the widget here and the next iteration will see the 'A' line.
+                    // We need to suppress the 'A' line from rendering separately.
+                    // Simple hack: We won't suppress, we just render the FAQ widget which encapsulates Q & A.
+                    // Actually, let's just assume trigger is the Q line, and we pull A from next line content.
+                    const answer = nextLine.split(':')[1].trim();
+                    elements.push(<FaqWidget key={`faq-${i}`} question={question} answer={answer} />);
+                    // We can't skip `i` here easily in map. So we will let the 'A' line render as text or handle it?
+                    // Better approach: If this line is Q, render widget. If next line is A, we need to hide it in next iteration.
+                    // This simple parser doesn't support lookahead skipping. 
+                    // Let's rely on standard Q/A formatting or just render Q here.
+                    return; 
+                }
+            }
+            // Hide Answer line if it was part of FAQ above (Hack for simple parser)
+            if (trimmed.match(/^\*\*(A|Answer)\*\*:/i)) {
+                return; 
+            }
+
+            // 9. Tag Cloud (**Tags**: t1, t2)
+            if (trimmed.match(/^\*\*(Tags|Topics)\*\*:/i)) {
+                const tags = trimmed.split(':')[1].split(',').map(t => t.trim());
+                elements.push(<TagCloudWidget key={`tags-${i}`} tags={tags} />);
+                return;
+            }
+
+            // Existing Logics...
             const scoreMatch = trimmed.match(/^\*?\*?(Score|Confidence|Probability|Match)\*?\*?\s*[:\-]\s*(.*)/i);
             if (scoreMatch) {
                 const label = scoreMatch[1];
@@ -776,129 +1106,66 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
                 if (valMatch) {
                     let max = 100;
                     let val = parseFloat(valMatch[0]);
-                    
-                    // Normalize decimals (0.8 -> 80%) if label implies probability
-                    if (val <= 1 && (label.includes('Prob') || label.includes('Conf') || label.includes('Match'))) {
-                        val = val * 100;
-                    }
-                    // Handle X/10 format
-                    if (valStr.includes('/10') || (val <= 10 && !valStr.includes('%'))) {
-                        max = 10;
-                    }
-
-                    elements.push(
-                        <GaugeWidget key={`gauge-${i}`} label={label} value={val} max={max} displayValue={valStr} />
-                    );
+                    if (val <= 1 && (label.includes('Prob') || label.includes('Conf') || label.includes('Match'))) val = val * 100;
+                    if (valStr.includes('/10') || (val <= 10 && !valStr.includes('%'))) max = 10;
+                    elements.push(<GaugeWidget key={`gauge-${i}`} label={label} value={val} max={max} displayValue={valStr} />);
                     return;
                 }
             }
 
-            // --- AGUI: Role Definition Detection ---
-            // Pattern: **Role Name**: Description (Must be relevant keywords)
             const roleMatch = trimmed.match(/^\*?\*?(.*(?:Manager|Officer|Customer|System|Admin|User|Client).*)\*?\*?\s*[:\-]\s*(.*)/i);
-            if (roleMatch && !roleMatch[1].toLowerCase().includes('step') && !roleMatch[1].toLowerCase().includes('risk')) {
-                 elements.push(
-                    <RoleWidget key={`role-${i}`} actor={roleMatch[1]} description={roleMatch[2]} />
-                 );
+            if (roleMatch && !roleMatch[1].toLowerCase().includes('step') && !roleMatch[1].toLowerCase().includes('risk') && !roleMatch[1].toLowerCase().includes('sla') && !roleMatch[1].toLowerCase().includes('owner') && !roleMatch[1].toLowerCase().includes('product')) {
+                 elements.push(<RoleWidget key={`role-${i}`} actor={roleMatch[1]} description={roleMatch[2]} />);
                  return;
             }
 
-            // --- AGUI: Policy Alert Detection ---
-            // Pattern: **POLICY**: Text OR - **WARNING**: Text
-            // Regex captures: Group 1 = TYPE, Group 2 = TEXT
             const policyMatch = trimmed.match(/^[-*]?\s*\*\*(POLICY|WARNING|NOTE|CRITICAL|COMPLIANCE)(?:\s*Alert|\s*Check)?\*\*\s*[:\-]\s*(.*)/i);
-            
             if (policyMatch) {
                 const typeRaw = policyMatch[1].toUpperCase();
                 let type: 'POLICY' | 'WARNING' | 'NOTE' = 'NOTE';
                 if (['POLICY', 'COMPLIANCE'].includes(typeRaw)) type = 'POLICY';
                 if (['WARNING', 'CRITICAL'].includes(typeRaw)) type = 'WARNING';
-                
-                elements.push(
-                    <PolicyWidget key={`pol-${i}`} type={type} text={policyMatch[2]} />
-                );
+                elements.push(<PolicyWidget key={`pol-${i}`} type={type} text={policyMatch[2]} />);
                 return;
             }
 
-            // --- AGUI: Timeline/Log Detection ---
-            // Pattern: **10:00**: Text OR **10:30 AM**: Text
             const timeMatch = trimmed.match(/^[-*]?\s*\*\*((?:\d{1,2}:\d{2})(?:\s*[AP]M)?)\*\*\s*[:\-]\s*(.*)/i);
-            
             if (timeMatch) {
-                elements.push(
-                    <TimelineWidget key={`time-${i}`} time={timeMatch[1]} text={timeMatch[2]} />
-                );
+                elements.push(<TimelineWidget key={`time-${i}`} time={timeMatch[1]} text={timeMatch[2]} />);
                 return;
             }
 
-            // --- AGUI: Risk List Detection ---
             const riskMatch = trimmed.match(/^[-*]\s*(?:\*\*)?(R\d+)(?:\*\*)?[\s:.-]+(.*)/i);
             if (riskMatch) {
-                elements.push(
-                    <RiskWidget 
-                        key={`risk-${i}`} 
-                        riskId={riskMatch[1]} 
-                        sopData={sopData} 
-                        fallbackText={riskMatch[2]} 
-                    />
-                );
+                elements.push(<RiskWidget key={`risk-${i}`} riskId={riskMatch[1]} sopData={sopData} fallbackText={riskMatch[2]} />);
                 return;
             }
 
-            // --- AGUI: Step Detection ---
-            // Updated to be more permissive: matches S1-1 or Step S1-1
             const stepMatch = trimmed.match(/^[-*]?\s*(?:\*\*)?(?:Step\s*)?([S]\d+-\d+)(?:\*\*)?[:\s]+(.*)/i);
             if (stepMatch && trimmed.length < 200) {
-                 elements.push(
-                    <StepWidget 
-                        key={`step-${i}`}
-                        stepId={stepMatch[1]}
-                        sopData={sopData}
-                        onClick={onNavigateToStep}
-                    />
-                 );
+                 elements.push(<StepWidget key={`step-${i}`} stepId={stepMatch[1]} sopData={sopData} onClick={onNavigateToStep} />);
                  if (stepMatch[2] && stepMatch[2].length > 3) {
-                     elements.push(
-                        <p key={`step-desc-${i}`} className="text-xs text-slate-600 ml-4 mb-2">{formatInlineText(stepMatch[2], isUser)}</p>
-                     );
+                     elements.push(<p key={`step-desc-${i}`} className="text-xs text-slate-600 ml-4 mb-2">{formatInlineText(stepMatch[2], isUser)}</p>);
                  }
                  return;
             }
         }
 
-        // --- Header Detection ---
         if (trimmed.startsWith('### ')) {
-            elements.push(
-                <h3 key={i} className={`font-bold mt-3 mb-2 leading-snug tracking-tight break-words ${isWelcome ? 'text-sm text-fab-navy' : 'text-lg'} ${isUser ? 'text-white' : (isWelcome ? 'text-fab-navy' : 'text-slate-800')}`}>
-                    {formatInlineText(trimmed.replace(/^###\s+/, ''), isUser)}
-                </h3>
-            );
+            elements.push(<h3 key={i} className={`font-bold mt-3 mb-2 leading-snug tracking-tight break-words ${isWelcome ? 'text-sm text-fab-navy' : 'text-lg'} ${isUser ? 'text-white' : (isWelcome ? 'text-fab-navy' : 'text-slate-800')}`}>{formatInlineText(trimmed.replace(/^###\s+/, ''), isUser)}</h3>);
             return;
         }
 
-        // --- Numbered List Detection ---
         const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
         if (numMatch) {
-            elements.push(
-                <div key={i} className="flex items-start gap-2 mb-1 pl-1">
-                    <span className={`font-bold min-w-[16px] ${isUser ? 'text-white/80' : 'text-slate-500'}`}>{numMatch[1]}.</span>
-                    <span className={`break-words ${isUser ? 'text-white' : 'text-slate-700'}`}>
-                        {formatInlineText(numMatch[2], isUser, sopData)}
-                    </span>
-                </div>
-            );
+            elements.push(<div key={i} className="flex items-start gap-2 mb-1 pl-1"><span className={`font-bold min-w-[16px] ${isUser ? 'text-white/80' : 'text-slate-500'}`}>{numMatch[1]}.</span><span className={`break-words ${isUser ? 'text-white' : 'text-slate-700'}`}>{formatInlineText(numMatch[2], isUser, sopData)}</span></div>);
             return;
         }
 
-        // --- Standard Text ---
         if (trimmed === '') {
             elements.push(<div key={i} className="h-2"></div>);
         } else {
-            elements.push(
-                <div key={i} className={`leading-relaxed break-words whitespace-pre-wrap ${isUser ? 'text-white' : 'text-slate-700'}`}>
-                    {formatInlineText(line, isUser, sopData)}
-                </div>
-            );
+            elements.push(<div key={i} className={`leading-relaxed break-words whitespace-pre-wrap ${isUser ? 'text-white' : 'text-slate-700'}`}>{formatInlineText(line, isUser, sopData)}</div>);
         }
     });
 
@@ -913,8 +1180,6 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
 const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, productContext, onToggleMaximize, isMaximized, initialSessionId, onNavigateToStep }) => {
   const [input, setInput] = useState('');
   
-  // Initial Welcome Message with Hidden Trigger Widgets
-  // We use standard markdown to "Trigger" the A2UI widget rendering automatically
   const WELCOME_MSG_ID = 'welcome-sys';
   const WELCOME_CONTENT = `### Welcome to CBG Knowledge Hub!
 Get quick answers, and stay up-to-date with the latest CBG policies, processes, and best practices.
@@ -938,31 +1203,21 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
       }
   ]);
 
-  // Suggestions Bar State
   const [activeSuggestions, setActiveSuggestions] = useState<string[]>([]);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(true);
-  
-  // Feedback Logic State
   const [activeFeedbackId, setActiveFeedbackId] = useState<string | null>(null);
   const [feedbackComment, setFeedbackComment] = useState('');
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
-
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  // Scroll ref for related questions
   const relatedScrollRef = useRef<HTMLDivElement>(null);
-
   const [sessionId, setSessionId] = useState<string>(initialSessionId || (globalThis.crypto?.randomUUID() || `sess-${Date.now()}`));
-
   const streamQueue = useRef<string>('');
   const activeMessageId = useRef<string | null>(null);
   const streamInterval = useRef<any>(null);
   const isGenerationComplete = useRef<boolean>(false);
-  
   const lastLoadedSessionRef = useRef<string | null>(null);
 
-  // --- Date Formatter (Dubai Timezone) ---
   const formatTimeDubai = (date: Date) => {
     return date.toLocaleTimeString('en-US', { 
         hour: '2-digit', 
@@ -979,63 +1234,94 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
 
   // --- Widget Demo Function ---
   const triggerWidgetDemo = () => {
-      const demoContent = `### 🧩 A2UI Widget Gallery
+      const demoContent = `### 🧩 GERNAS A2UI Component Gallery
+Here is a full demonstration of all 24 interactive widgets supported by the visualization engine.
 
-Here is a demonstration of all interactive widgets available in GERNAS.
+#### 1. Entity & Profile Widgets
+**Product**: Personal Loan Pro | PL-2024-X | Active
+**Owner**: Sarah Connor | Risk Manager | sarah@bank.com
+**Contact**: IT Helpdesk | Support
+**Admin**: Full System Access privileges.
 
-**1. KPI Metrics Dashboard**
+#### 2. Visualizations & Analytics
+**Score**: 85%
+**Confidence**: High (0.92)
+**Rating**: 4/5
+
+**Trend Analysis**:
+- Jan: 150
+- Feb: 230
+- Mar: 180
+- Apr: 320
+
+**Portfolio Distribution**:
+- Retail: 40%
+- Corporate: 35%
+- SME: 25%
+
+**Volume Metrics**:
+- Q1: 500
+- Q2: 750
+- Q3: 600
+
+#### 3. Process & Navigation
+**Process Status**:
+- Step 1: Done
+- Step 2: Active
+- Step 3: Pending
+
+**S1-1**: Customer Application Entry
+**S1-2**: Dedupe Check
+
+**SLA**: 2 Hours Remaining
+
+#### 4. Compliance & Alerts
+**R4**: Fraud Risk detected (High)
+**POLICY**: Compliance check mandatory.
+**WARNING**: Do not override system decision.
+> "Strict adherence to the credit policy is required for all high-value loans."
+
+#### 5. Operations & Logs
+**10:00 AM**: Application Received
+**10:15 AM**: KYC Verified
+
+**Required Documents**:
+- [x] Emirates ID
+- [ ] Salary Certificate
+
+**Decision Options**:
+- **Option A**: Approve Application
+- **Option B**: Refer to Credit
+
+#### 6. Knowledge Base
+**Q**: What is the max loan amount?
+**A**: The maximum loan amount is AED 5 Million.
+
+**Tags**: Lending, Risk, Policy
+
+[File] Credit_Policy_v2.pdf
+
+**Location**: Dubai HQ
+
+#### 7. Data Tables & Objects
+| Feature | Basic Plan | Pro Plan |
+|---------|------------|----------|
+| Users   | 5          | Unlimited|
+| Support | Email      | 24/7     |
+
 | Metric | Target | Actual |
 |--------|--------|--------|
 | TAT    | 15m    | 12m    |
-| CSAT   | >90%   | 94%    |
-| ERR    | <1%    | 0.2%   |
+| CSAT   | >90%   | 95%    |
 
-**2. Risk & Policy Alerts**
-- **R4**: Identity Theft Risk (High)
-- **POLICY**: Mandatory Biometric Verification required.
-- **WARNING**: Do not bypass KYC checks for high-risk customers.
+- Application ID: 123456
+- Status: Under Review
+- Priority: High
 
-**3. Interactive Process Steps**
-- **S1-1**: Customer Application Entry
-- **S1-2**: System Dedupe Check
-
-**4. Data Visualization**
-### Volume Analysis
-- Retail: 450
-- Corporate: 120
-- SME: 300
-
-**5. Scores & Gauges**
-**Score**: 85/100
-**Confidence**: 92%
-**Risk Level**: 3/10
-
-**6. Operational Checklists**
-**Pre-Flight Checks:**
-- [x] System Online
-- [x] User Authenticated
-- [ ] Manager Approval
-
-**7. Audit Timeline**
-**09:00 AM**: Application Received
-**09:05 AM**: Auto-Decision Triggered
-**09:10 AM**: Final Approval
-
-**8. Key-Value Data**
-- Applicant: John Doe
-- ID: 784-1234-5678
-- Status: Active
-
-**9. Decision Options**
-- **Option A**: Approve Application
-- **Option B**: Refer to Manual Review
-
-**10. JSON Data Viewer**
 \`\`\`json
 {
-  "id": "123",
-  "status": "active",
-  "meta": { "verified": true }
+  "status": "success",
+  "code": 200
 }
 \`\`\`
 `;
@@ -1048,7 +1334,6 @@ Here is a demonstration of all interactive widgets available in GERNAS.
       }]);
   };
 
-  // --- Fetch Suggested Questions from Documents ---
   useEffect(() => {
     const fetchSuggestions = async () => {
         let pool: string[] = [];
@@ -1056,7 +1341,6 @@ Here is a demonstration of all interactive widgets available in GERNAS.
 
         try {
             const docs = await apiService.getDocuments();
-            // Strictly match documents related to this product or index
             const relatedDocs = docs.filter(d => 
                 d.indexName === targetIndex || 
                 (productContext?.product_name && d.rootFolder === productContext.product_name)
@@ -1114,7 +1398,6 @@ Here is a demonstration of all interactive widgets available in GERNAS.
         const loadSession = async () => {
              setIsLoading(true);
              try {
-                // Initialize Session
                 try {
                     await apiService.initializeSession({ 
                         session_id: initialSessionId,
@@ -1123,7 +1406,6 @@ Here is a demonstration of all interactive widgets available in GERNAS.
                     });
                 } catch(e) { console.warn("Init session failed, proceeding to fetch details", e); }
 
-                // Fetch History Details
                 const detail = await apiService.getChatSessionDetails(initialSessionId);
                 
                 if (detail && detail.messages) {
@@ -1461,18 +1743,6 @@ Here is a demonstration of all interactive widgets available in GERNAS.
 
                 {/* Citations */}
                 {msg.citations && Object.keys(msg.citations).length > 0 && <CitationBlock citations={msg.citations} />}
-
-                {/* Quick Action Buttons (User Interaction) */}
-                {msg.role === 'assistant' && !msg.isWelcome && !msg.isTyping && (
-                    <div className="flex gap-2 mt-1 ml-2 flex-wrap">
-                        <button onClick={() => handleSend("Explain more")} className="px-2.5 py-1 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-500 hover:text-fab-royal hover:border-fab-royal transition-colors shadow-sm flex items-center gap-1">
-                            <Sparkles size={10} /> Explain
-                        </button>
-                        <button onClick={() => handleSend("Show Risks")} className="px-2.5 py-1 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-500 hover:text-rose-600 hover:border-rose-200 transition-colors shadow-sm flex items-center gap-1">
-                            <AlertOctagon size={10} /> Risks
-                        </button>
-                    </div>
-                )}
 
                 {/* Feedback & Actions Toolbar */}
                 {msg.role === 'assistant' && !msg.isWelcome && !msg.isTyping && (
