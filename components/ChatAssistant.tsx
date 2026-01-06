@@ -162,27 +162,34 @@ const MetricWidget = ({ row, headers }: { row: string[], headers: string[] }) =>
    let target = "";
 
    headers.forEach((h, idx) => {
-       const header = h.toLowerCase().replace(/[*_]/g, ''); // clean formatting
-       if (header.includes('value') || header.includes('current') || header.includes('actual')) value = row[idx];
-       else if (header.includes('target') || header.includes('goal') || header.includes('objective')) target = row[idx];
-       else if (header.includes('metric') || header.includes('measure') || header.includes('kpi') || header.includes('indicator') || header.includes('name')) name = row[idx];
+       const header = (h || "").toLowerCase().replace(/[*_]/g, ''); // clean formatting
+       const cellData = row[idx] || ""; // Safe access
+
+       if (header.includes('value') || header.includes('current') || header.includes('actual')) value = cellData;
+       else if (header.includes('target') || header.includes('goal') || header.includes('objective')) target = cellData;
+       else if (header.includes('metric') || header.includes('measure') || header.includes('kpi') || header.includes('indicator') || header.includes('name')) name = cellData;
    });
 
    // Fallback if mapping failed
-   if (!name && row.length > 0) name = row[0];
-   if (!value && row.length > 1) value = row[row.length - 1];
-   if (!target && row.length > 2) target = row[row.length - 2];
+   if (!name && row.length > 0) name = row[0] || "";
+   if (!value && row.length > 1) value = row[row.length - 1] || "";
+   if (!target && row.length > 2) target = row[row.length - 2] || "";
+
+   // Ensure they are strings to avoid "replace of undefined" errors
+   const safeName = String(name || "");
+   const safeValue = String(value || "");
+   const safeTarget = String(target || "");
 
    return (
       <div className="p-4 bg-white border border-slate-200 rounded-xl text-center flex flex-col items-center justify-between min-w-[140px] max-w-[160px] shadow-sm h-full hover:border-fab-royal/30 transition-colors snap-center">
           <div className="p-2 bg-blue-50 text-fab-royal rounded-full mb-2">
               <BarChart3 size={16} />
           </div>
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 w-full line-clamp-2 leading-tight min-h-[2.5em]">{name.replace(/[*_]/g, '')}</p>
-          <div className="text-2xl font-bold text-slate-800 mb-2">{value.replace(/[*_]/g, '')}</div>
-          {target && (
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 w-full line-clamp-2 leading-tight min-h-[2.5em]">{safeName.replace(/[*_]/g, '')}</p>
+          <div className="text-2xl font-bold text-slate-800 mb-2">{safeValue.replace(/[*_]/g, '')}</div>
+          {safeTarget && (
             <div className="text-[9px] text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 w-full truncate">
-                Target: <span className="font-semibold">{target.replace(/[*_]/g, '')}</span>
+                Target: <span className="font-semibold">{safeTarget.replace(/[*_]/g, '')}</span>
             </div>
           )}
       </div>
