@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
@@ -6,7 +5,7 @@ import {
   ThumbsUp, ThumbsDown, Copy, Sparkles, Lightbulb, ChevronRight, ChevronLeft, Brain,
   AlertOctagon, BarChart3, ArrowRightCircle, Map, Layers,
   ShieldAlert, Info, AlertTriangle, Clock, Calendar, CheckCircle2, Circle, 
-  ListTodo, Percent, TrendingUp
+  ListTodo, Percent, TrendingUp, User, Braces, Terminal
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -107,7 +106,7 @@ const BarChartWidget = ({ data, title }: { data: { label: string, value: number,
             <div className="space-y-3">
                 {data.map((d, i) => (
                     <div key={i} className="flex items-center gap-3 text-xs group w-full">
-                        <div className="w-24 shrink-0 text-slate-600 font-medium truncate text-right" title={d.label}>{d.label}</div>
+                        <div className="w-20 md:w-24 shrink-0 text-slate-600 font-medium truncate text-right" title={d.label}>{d.label}</div>
                         <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden min-w-[50px]">
                             <div 
                                 className="h-full bg-fab-royal rounded-full transition-all duration-1000 ease-out group-hover:bg-fab-blue" 
@@ -121,6 +120,53 @@ const BarChartWidget = ({ data, title }: { data: { label: string, value: number,
         </div>
     )
 }
+
+const KeyValueWidget = ({ items }: { items: { key: string, value: string }[] }) => {
+    return (
+        <div className="my-3 grid grid-cols-1 sm:grid-cols-2 gap-2 w-full animate-in slide-in-from-left-2">
+            {items.map((item, i) => (
+                <div key={i} className="flex flex-col p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider truncate">{item.key}</span>
+                    <span className="text-xs font-semibold text-slate-700 break-words">{item.value}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+const JsonViewerWidget = ({ data }: { data: string }) => {
+    let parsed = null;
+    let error = false;
+    try {
+        parsed = JSON.parse(data);
+    } catch {
+        error = true;
+    }
+
+    return (
+        <div className="my-3 w-full bg-[#1e1e1e] rounded-xl overflow-hidden shadow-md animate-in slide-in-from-bottom-2 border border-slate-700">
+            <div className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] border-b border-[#3e3e3e]">
+                <div className="flex items-center gap-2">
+                    <Braces size={14} className="text-yellow-400" />
+                    <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">JSON Data</span>
+                </div>
+                <div className="flex gap-1.5">
+                   <div className="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
+                   <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></div>
+                   <div className="w-2.5 h-2.5 rounded-full bg-green-500/80"></div>
+                </div>
+            </div>
+            <div className="p-4 overflow-x-auto custom-scrollbar">
+                {error ? (
+                    <pre className="text-xs font-mono text-red-300 whitespace-pre-wrap break-all">{data}</pre>
+                ) : (
+                    <pre className="text-xs font-mono text-blue-300 whitespace-pre-wrap">{JSON.stringify(parsed, null, 2)}</pre>
+                )}
+            </div>
+        </div>
+    );
+};
+
 
 const GaugeWidget = ({ label, value, max = 100, displayValue }: { label: string, value: number, max?: number, displayValue?: string }) => {
     const percentage = Math.min(100, Math.max(0, (value / max) * 100));
@@ -153,7 +199,7 @@ const GaugeWidget = ({ label, value, max = 100, displayValue }: { label: string,
                      <span className="text-[9px]">{Math.round(percentage)}%</span>}
                 </div>
              </div>
-             <div className="min-w-0">
+             <div className="min-w-0 flex-1">
                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wide truncate">{label}</p>
                  <p className="text-sm font-bold text-slate-800 truncate">{displayValue || `${value}/${max}`}</p>
              </div>
@@ -187,6 +233,30 @@ const ChecklistWidget = ({ items }: { items: string[] }) => {
         </div>
     )
 }
+
+const RoleWidget = ({ actor, description }: { actor: string, description: string }) => (
+    <div className="flex items-start gap-3 p-3 my-2 bg-indigo-50/50 border border-indigo-100 rounded-xl shadow-sm w-full animate-in slide-in-from-left-2">
+        <div className="mt-0.5 w-8 h-8 rounded-full bg-white border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm shrink-0">
+            <User size={16} />
+        </div>
+        <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-indigo-900 uppercase tracking-wide truncate">{actor}</p>
+            <p className="text-xs text-indigo-700 leading-relaxed break-words">{description}</p>
+        </div>
+    </div>
+);
+
+const DecisionOptionWidget = ({ options }: { options: string[] }) => (
+    <div className="grid grid-cols-1 gap-2 my-3 w-full">
+        {options.map((opt, i) => (
+            <button key={i} className="p-3 text-left text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all flex items-center gap-3 group w-full">
+                <span className="w-6 h-6 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 group-hover:bg-blue-500 group-hover:text-white transition-colors shrink-0">{String.fromCharCode(65+i)}</span>
+                <span className="flex-1 break-words">{opt}</span>
+                <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-500 shrink-0" />
+            </button>
+        ))}
+    </div>
+);
 
 const RiskWidget = ({ riskId, sopData, fallbackText }: { riskId: string, sopData: SopResponse, fallbackText: string }) => {
   // Find full risk details if available
@@ -409,7 +479,7 @@ const CitationBlock = ({ citations }: { citations: Record<string, string> }) => 
                     }
                     return (
                         <div key={key} className="flex gap-3 items-start group/card relative bg-white p-3 rounded-lg border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all">
-                            <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-500 shadow-sm mt-0.5 group-hover/card:bg-blue-50 group-hover/card:text-blue-600 transition-colors">
+                            <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-500 shadow-sm mt-0.5 group-hover/card:bg-blue-50 group-hover:card:text-blue-600 transition-colors">
                                 {key.replace(/[\[\]]/g, '')}
                             </span>
                             <div className="min-w-0 flex-1 space-y-1.5">
@@ -480,6 +550,10 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep }
     let tableBuffer: string[] = [];
     let inTable = false;
     let listBuffer: string[] = [];
+    
+    // Code Block Handling
+    let inCodeBlock = false;
+    let codeBuffer: string[] = [];
 
     // Helper to process buffered lists into Widgets if applicable
     const processListBuffer = (items: string[], keyPrefix: string) => {
@@ -492,8 +566,20 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep }
             return <ChecklistWidget key={keyPrefix} items={cleanItems} />;
         }
 
-        // 2. Check for Bar Chart Data (Label: Number)
-        // Must have at least 2 items to be a chart
+        // 2. Check for Decision Options (Option A: / Option 1:)
+        const isOptions = items.every(i => i.trim().match(/^[-*]\s*((\*\*)?)Option\s*[\d|A-Z]((\*\*)?)/i));
+        if (isOptions) {
+            const cleanOptions = items.map(i => i.replace(/^[-*]\s*/, '').trim());
+            return <DecisionOptionWidget key={keyPrefix} options={cleanOptions} />;
+        }
+
+        // 3. Check for Key-Value Pairs (Label: Value) that are not charts
+        const isKeyValue = items.every(i => {
+             const clean = i.replace(/^[-*]\s+/, '').trim();
+             return clean.includes(':') && clean.split(':').length === 2 && clean.length < 100;
+        });
+
+        // 4. Check for Bar Chart Data (Label: Number)
         if (items.length >= 2) {
             const chartData = [];
             let isChart = true;
@@ -503,8 +589,8 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep }
                 if (parts.length < 2) { isChart = false; break; }
                 
                 const label = parts[0].trim();
-                const valStr = parts.slice(1).join(':').trim(); // Handle 10:00 AM edge case, though regex handles nums better
-                const valMatch = valStr.match(/^[\D]*(\d+(\.\d+)?)[\D]*$/); // Match "10", "$10", "10%", etc.
+                const valStr = parts.slice(1).join(':').trim(); 
+                const valMatch = valStr.match(/^[\D]*(\d+(\.\d+)?)[\D]*$/); 
                 
                 if (!valMatch) { isChart = false; break; }
                 const value = parseFloat(valMatch[1]);
@@ -515,8 +601,19 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep }
                 return <BarChartWidget key={keyPrefix} data={chartData} />;
             }
         }
+        
+        // Render generic Key-Value if strict conditions met (but not a chart)
+        if (isKeyValue) {
+             const kvData = items.map(i => {
+                 const clean = i.replace(/^[-*]\s+/, '').trim();
+                 const parts = clean.split(':');
+                 return { key: parts[0].trim(), value: parts[1].trim() };
+             });
+             // Only use KeyValueWidget if it's not detected as something else
+             return <KeyValueWidget key={keyPrefix} items={kvData} />;
+        }
 
-        // 3. Fallback to Standard List
+        // 5. Fallback to Standard List
         return items.map((item, i) => (
              <div key={`${keyPrefix}-${i}`} className="flex items-start gap-2 mb-1 pl-1">
                 <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${isUser ? 'bg-white' : 'bg-fab-royal'}`}></span>
@@ -529,6 +626,26 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep }
 
     lines.forEach((line, i) => {
         const trimmed = line.trim();
+
+        // --- Code Block Handling ---
+        if (trimmed.startsWith('```')) {
+            if (inCodeBlock) {
+                // End block
+                inCodeBlock = false;
+                const code = codeBuffer.join('\n');
+                elements.push(<JsonViewerWidget key={`json-${i}`} data={code} />);
+                codeBuffer = [];
+            } else {
+                // Start block
+                inCodeBlock = true;
+            }
+            return;
+        }
+
+        if (inCodeBlock) {
+            codeBuffer.push(line);
+            return;
+        }
 
         // --- List Handling (Buffer) ---
         if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
@@ -650,6 +767,16 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep }
                 }
             }
 
+            // --- AGUI: Role Definition Detection ---
+            // Pattern: **Role Name**: Description (Must be relevant keywords)
+            const roleMatch = trimmed.match(/^\*?\*?(.*(?:Manager|Officer|Customer|System|Admin|User|Client).*)\*?\*?\s*[:\-]\s*(.*)/i);
+            if (roleMatch && !roleMatch[1].toLowerCase().includes('step') && !roleMatch[1].toLowerCase().includes('risk')) {
+                 elements.push(
+                    <RoleWidget key={`role-${i}`} actor={roleMatch[1]} description={roleMatch[2]} />
+                 );
+                 return;
+            }
+
             // --- AGUI: Policy Alert Detection ---
             // Pattern: **POLICY**: Text OR - **WARNING**: Text
             // Regex captures: Group 1 = TYPE, Group 2 = TEXT
@@ -693,8 +820,9 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep }
             }
 
             // --- AGUI: Step Detection ---
+            // Updated to be more permissive: matches S1-1 or Step S1-1
             const stepMatch = trimmed.match(/^[-*]?\s*(?:\*\*)?(?:Step\s*)?([S]\d+-\d+)(?:\*\*)?[:\s]+(.*)/i);
-            if (stepMatch && trimmed.length < 150) {
+            if (stepMatch && trimmed.length < 200) {
                  elements.push(
                     <StepWidget 
                         key={`step-${i}`}
@@ -759,10 +887,16 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep }
 const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, productContext, onToggleMaximize, isMaximized, initialSessionId, onNavigateToStep }) => {
   const [input, setInput] = useState('');
   
-  // Initial Welcome Message
+  // Initial Welcome Message with Hidden Trigger Widgets
+  // We use standard markdown to "Trigger" the A2UI widget rendering automatically
   const WELCOME_MSG_ID = 'welcome-sys';
   const WELCOME_CONTENT = `### Welcome to CBG Knowledge Hub!
 Get quick answers, and stay up-to-date with the latest CBG policies, processes, and best practices.
+
+**System Ready:**
+- [x] Knowledge Base Connected
+- [x] Process Flow Loaded
+- [x] A2UI Rendering Engine Active
 
 **Use suggested questions** or
 **Ask your own in the chat.**`;

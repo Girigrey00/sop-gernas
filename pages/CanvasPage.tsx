@@ -500,7 +500,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                 className={`bg-white border-l border-slate-200 shadow-2xl z-30 transition-all duration-300 flex flex-col absolute right-0 top-0 h-full ${
                     isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
                 } ${
-                    isSidebarMaximized ? 'w-full md:w-[95%]' : 'w-full md:w-[420px]'
+                    isSidebarMaximized ? 'w-full md:w-[95%]' : 'w-full md:w-[500px]' // Widened default sidebar
                 }`}
             >
                 {/* Sidebar Toggle Tabs */}
