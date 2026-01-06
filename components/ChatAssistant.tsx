@@ -5,7 +5,7 @@ import {
   ThumbsUp, ThumbsDown, Copy, Sparkles, Lightbulb, ChevronRight, ChevronLeft, Brain,
   AlertOctagon, BarChart3, ArrowRightCircle, Map, Layers,
   ShieldAlert, Info, AlertTriangle, Clock, Calendar, CheckCircle2, Circle, 
-  ListTodo, Percent, TrendingUp, User, Braces, Terminal
+  ListTodo, Percent, TrendingUp, User, Braces, Terminal, LayoutDashboard, Zap
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -125,7 +125,7 @@ const KeyValueWidget = ({ items }: { items: { key: string, value: string }[] }) 
     return (
         <div className="my-3 grid grid-cols-1 sm:grid-cols-2 gap-2 w-full animate-in slide-in-from-left-2">
             {items.map((item, i) => (
-                <div key={i} className="flex flex-col p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                <div key={i} className="flex flex-col p-2.5 bg-slate-50 border border-slate-200 rounded-lg hover:border-blue-200 transition-colors">
                     <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider truncate">{item.key}</span>
                     <span className="text-xs font-semibold text-slate-700 break-words">{item.value}</span>
                 </div>
@@ -144,23 +144,23 @@ const JsonViewerWidget = ({ data }: { data: string }) => {
     }
 
     return (
-        <div className="my-3 w-full bg-[#1e1e1e] rounded-xl overflow-hidden shadow-md animate-in slide-in-from-bottom-2 border border-slate-700">
+        <div className="my-3 w-full bg-[#1e1e1e] rounded-xl overflow-hidden shadow-md animate-in slide-in-from-bottom-2 border border-slate-700 group">
             <div className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] border-b border-[#3e3e3e]">
                 <div className="flex items-center gap-2">
                     <Braces size={14} className="text-yellow-400" />
                     <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">JSON Data</span>
                 </div>
-                <div className="flex gap-1.5">
+                <div className="flex gap-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></div>
                    <div className="w-2.5 h-2.5 rounded-full bg-green-500/80"></div>
                 </div>
             </div>
-            <div className="p-4 overflow-x-auto custom-scrollbar">
+            <div className="p-4 overflow-x-auto custom-scrollbar bg-[#1e1e1e]">
                 {error ? (
                     <pre className="text-xs font-mono text-red-300 whitespace-pre-wrap break-all">{data}</pre>
                 ) : (
-                    <pre className="text-xs font-mono text-blue-300 whitespace-pre-wrap">{JSON.stringify(parsed, null, 2)}</pre>
+                    <pre className="text-xs font-mono text-blue-300 whitespace-pre-wrap leading-relaxed">{JSON.stringify(parsed, null, 2)}</pre>
                 )}
             </div>
         </div>
@@ -181,7 +181,7 @@ const GaugeWidget = ({ label, value, max = 100, displayValue }: { label: string,
     else { color = 'text-amber-500'; bgColor = 'text-amber-100'; }
 
     return (
-        <div className="my-2 mr-2 p-3 bg-white border border-slate-200 rounded-xl shadow-sm inline-flex items-center gap-3 pr-5 animate-in zoom-in-95 duration-300 max-w-full">
+        <div className="my-2 mr-2 p-3 bg-white border border-slate-200 rounded-xl shadow-sm inline-flex items-center gap-3 pr-5 animate-in zoom-in-95 duration-300 max-w-full hover:shadow-md transition-shadow">
              <div className="relative w-10 h-10 flex items-center justify-center shrink-0">
                 <svg className="transform -rotate-90 w-10 h-10">
                     <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="4" fill="transparent" className={bgColor} />
@@ -235,7 +235,7 @@ const ChecklistWidget = ({ items }: { items: string[] }) => {
 }
 
 const RoleWidget = ({ actor, description }: { actor: string, description: string }) => (
-    <div className="flex items-start gap-3 p-3 my-2 bg-indigo-50/50 border border-indigo-100 rounded-xl shadow-sm w-full animate-in slide-in-from-left-2">
+    <div className="flex items-start gap-3 p-3 my-2 bg-indigo-50/50 border border-indigo-100 rounded-xl shadow-sm w-full animate-in slide-in-from-left-2 hover:bg-indigo-50 transition-colors">
         <div className="mt-0.5 w-8 h-8 rounded-full bg-white border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm shrink-0">
             <User size={16} />
         </div>
@@ -246,10 +246,14 @@ const RoleWidget = ({ actor, description }: { actor: string, description: string
     </div>
 );
 
-const DecisionOptionWidget = ({ options }: { options: string[] }) => (
+const DecisionOptionWidget = ({ options, onSelect }: { options: string[], onSelect?: (opt: string) => void }) => (
     <div className="grid grid-cols-1 gap-2 my-3 w-full">
         {options.map((opt, i) => (
-            <button key={i} className="p-3 text-left text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all flex items-center gap-3 group w-full">
+            <button 
+                key={i} 
+                onClick={() => onSelect && onSelect(opt)}
+                className="p-3 text-left text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all flex items-center gap-3 group w-full cursor-pointer"
+            >
                 <span className="w-6 h-6 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 group-hover:bg-blue-500 group-hover:text-white transition-colors shrink-0">{String.fromCharCode(65+i)}</span>
                 <span className="flex-1 break-words">{opt}</span>
                 <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-500 shrink-0" />
@@ -540,7 +544,7 @@ const formatInlineText = (text: string, isUser: boolean, sopData?: SopResponse) 
     });
 };
 
-const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep }: { content: string, role: 'user' | 'assistant', isWelcome?: boolean, sopData: SopResponse, onNavigateToStep?: (id: string) => void }) => {
+const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, onSendManual }: { content: string, role: 'user' | 'assistant', isWelcome?: boolean, sopData: SopResponse, onNavigateToStep?: (id: string) => void, onSendManual?: (txt: string) => void }) => {
     const isUser = role === 'user';
     
     // Split content by lines to detect structure (Tables, Lists)
@@ -554,6 +558,10 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep }
     // Code Block Handling
     let inCodeBlock = false;
     let codeBuffer: string[] = [];
+
+    // RAW JSON Detection (Not in code block)
+    let inRawJson = false;
+    let rawJsonBuffer: string[] = [];
 
     // Helper to process buffered lists into Widgets if applicable
     const processListBuffer = (items: string[], keyPrefix: string) => {
@@ -570,7 +578,7 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep }
         const isOptions = items.every(i => i.trim().match(/^[-*]\s*((\*\*)?)Option\s*[\d|A-Z]((\*\*)?)/i));
         if (isOptions) {
             const cleanOptions = items.map(i => i.replace(/^[-*]\s*/, '').trim());
-            return <DecisionOptionWidget key={keyPrefix} options={cleanOptions} />;
+            return <DecisionOptionWidget key={keyPrefix} options={cleanOptions} onSelect={onSendManual} />;
         }
 
         // 3. Check for Key-Value Pairs (Label: Value) that are not charts
@@ -644,6 +652,24 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep }
 
         if (inCodeBlock) {
             codeBuffer.push(line);
+            return;
+        }
+
+        // --- Raw JSON Detection (Handle API returning text JSON) ---
+        if (!isUser && trimmed.startsWith('{') && !inRawJson) {
+            inRawJson = true;
+            rawJsonBuffer.push(trimmed);
+            return;
+        }
+        if (inRawJson) {
+            rawJsonBuffer.push(trimmed);
+            // Rough heuristic to end JSON block if user closed it
+            if (trimmed.endsWith('}') || (trimmed === '}' && rawJsonBuffer.length > 1)) {
+                inRawJson = false;
+                const jsonStr = rawJsonBuffer.join('\n');
+                elements.push(<JsonViewerWidget key={`raw-json-${i}`} data={jsonStr} />);
+                rawJsonBuffer = [];
+            }
             return;
         }
 
@@ -949,6 +975,77 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
     return date.toLocaleDateString('en-US', { 
         timeZone: 'Asia/Dubai'
     });
+  };
+
+  // --- Widget Demo Function ---
+  const triggerWidgetDemo = () => {
+      const demoContent = `### 🧩 A2UI Widget Gallery
+
+Here is a demonstration of all interactive widgets available in GERNAS.
+
+**1. KPI Metrics Dashboard**
+| Metric | Target | Actual |
+|--------|--------|--------|
+| TAT    | 15m    | 12m    |
+| CSAT   | >90%   | 94%    |
+| ERR    | <1%    | 0.2%   |
+
+**2. Risk & Policy Alerts**
+- **R4**: Identity Theft Risk (High)
+- **POLICY**: Mandatory Biometric Verification required.
+- **WARNING**: Do not bypass KYC checks for high-risk customers.
+
+**3. Interactive Process Steps**
+- **S1-1**: Customer Application Entry
+- **S1-2**: System Dedupe Check
+
+**4. Data Visualization**
+### Volume Analysis
+- Retail: 450
+- Corporate: 120
+- SME: 300
+
+**5. Scores & Gauges**
+**Score**: 85/100
+**Confidence**: 92%
+**Risk Level**: 3/10
+
+**6. Operational Checklists**
+**Pre-Flight Checks:**
+- [x] System Online
+- [x] User Authenticated
+- [ ] Manager Approval
+
+**7. Audit Timeline**
+**09:00 AM**: Application Received
+**09:05 AM**: Auto-Decision Triggered
+**09:10 AM**: Final Approval
+
+**8. Key-Value Data**
+- Applicant: John Doe
+- ID: 784-1234-5678
+- Status: Active
+
+**9. Decision Options**
+- **Option A**: Approve Application
+- **Option B**: Refer to Manual Review
+
+**10. JSON Data Viewer**
+\`\`\`json
+{
+  "id": "123",
+  "status": "active",
+  "meta": { "verified": true }
+}
+\`\`\`
+`;
+      setMessages(prev => [...prev, {
+          id: `demo-${Date.now()}`,
+          role: 'assistant',
+          content: demoContent,
+          timestamp: new Date(),
+          isTyping: false
+      }]);
   };
 
   // --- Fetch Suggested Questions from Documents ---
@@ -1306,6 +1403,13 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
         </div>
         
         <div className="flex items-center gap-2">
+            <button 
+                onClick={triggerWidgetDemo} 
+                className="p-1.5 text-slate-400 hover:text-fab-royal hover:bg-blue-50 rounded-md transition-colors hidden md:block"
+                title="Show Widget Gallery"
+            >
+                <LayoutDashboard size={18} />
+            </button>
             {onToggleMaximize && (
                 <button onClick={onToggleMaximize} className="p-1.5 text-slate-400 hover:text-fab-royal hover:bg-blue-50 rounded-md transition-colors">
                     {isMaximized ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
@@ -1350,12 +1454,25 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                             isWelcome={msg.isWelcome} 
                             sopData={sopData} 
                             onNavigateToStep={onNavigateToStep}
+                            onSendManual={handleSend}
                         />
                     </div>
                 </div>
 
                 {/* Citations */}
                 {msg.citations && Object.keys(msg.citations).length > 0 && <CitationBlock citations={msg.citations} />}
+
+                {/* Quick Action Buttons (User Interaction) */}
+                {msg.role === 'assistant' && !msg.isWelcome && !msg.isTyping && (
+                    <div className="flex gap-2 mt-1 ml-2 flex-wrap">
+                        <button onClick={() => handleSend("Explain more")} className="px-2.5 py-1 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-500 hover:text-fab-royal hover:border-fab-royal transition-colors shadow-sm flex items-center gap-1">
+                            <Sparkles size={10} /> Explain
+                        </button>
+                        <button onClick={() => handleSend("Show Risks")} className="px-2.5 py-1 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-500 hover:text-rose-600 hover:border-rose-200 transition-colors shadow-sm flex items-center gap-1">
+                            <AlertOctagon size={10} /> Risks
+                        </button>
+                    </div>
+                )}
 
                 {/* Feedback & Actions Toolbar */}
                 {msg.role === 'assistant' && !msg.isWelcome && !msg.isTyping && (
