@@ -4,7 +4,7 @@ import {
   Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
   ChevronDown, ChevronUp, FileText, 
   ThumbsUp, ThumbsDown, Copy, Sparkles, Lightbulb, ChevronRight, ChevronLeft, Brain,
-  AlertOctagon, BarChart3, ArrowRightCircle
+  AlertOctagon, BarChart3, ArrowRightCircle, Map, Layers
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -30,7 +30,7 @@ interface Message {
   suggestions?: string[]; // Optional suggestions attached to a message
 }
 
-// Fallback only if API returns absolutely nothing, but generic enough to not be misleading
+// Fallback only if API returns absolutely nothing
 const FALLBACK_PROMPTS = [
     "Summarize the key points of this document.",
     "What are the main risks identified?",
@@ -42,19 +42,14 @@ const cleanQuestions = (raw: any[]): string[] => {
     if (!Array.isArray(raw)) return [];
     
     let candidates: string[] = [];
-    // Filter only strings to be safe
     const rawStrings = raw.filter(i => typeof i === 'string') as string[];
 
     // Strategy 1: The API often splits the markdown block into array elements
-    // e.g. ["```json", "[\"Q1\", \"Q2\"]", "```"]
     const combined = rawStrings.join('\n');
-    
-    // Attempt to find a JSON block in the combined string
     const jsonBlockMatch = combined.match(/```json\s*([\s\S]*?)\s*```/) || combined.match(/\[\s*".*"\s*\]/);
     
     if (jsonBlockMatch) {
         try {
-            // Try to parse the extracted block
             const inner = jsonBlockMatch[1] || jsonBlockMatch[0];
             const parsed = JSON.parse(inner);
             if (Array.isArray(parsed)) {
@@ -63,15 +58,12 @@ const cleanQuestions = (raw: any[]): string[] => {
                 });
                 if (candidates.length > 0) return candidates; 
             }
-        } catch (e) { 
-            // refined parsing failed, fall through to individual item check
-        }
+        } catch (e) { }
     }
 
-    // Strategy 2: Iterate items individually (Fall back)
+    // Strategy 2: Iterate items individually
     rawStrings.forEach(item => {
         const cleanItem = item.trim();
-        // Check for JSON array string inside an element
         if (cleanItem.startsWith('[') && cleanItem.endsWith(']')) {
              try {
                 const parsed = JSON.parse(cleanItem);
@@ -80,16 +72,13 @@ const cleanQuestions = (raw: any[]): string[] => {
                 }
              } catch (e) {}
         } else {
-            // Assume it's a raw question string if it doesn't look like code syntax
             if (!cleanItem.startsWith('```') && !cleanItem.startsWith('//') && cleanItem.length > 10) {
-                // Remove surrounding quotes if present due to bad extraction
                 const text = cleanItem.replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim();
                 candidates.push(text);
             }
         }
     });
 
-    // Deduplicate and return
     return Array.from(new Set(candidates));
 }
 
@@ -100,17 +89,18 @@ const GIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// --- AGUI Widgets ---
+// --- A2UI (Adaptive AI UI) Widgets ---
 
-const RiskWidget = ({ riskId, sopData }: { riskId: string, sopData: SopResponse }) => {
+const RiskWidget = ({ riskId, sopData, fallbackText }: { riskId: string, sopData: SopResponse, fallbackText: string }) => {
   // Find full risk details if available
-  const risk = sopData.inherentRisks.find(r => r.riskId === riskId || r.riskId === riskId.replace('**', ''));
-  const displayId = risk?.riskId || riskId.replace(/\*/g, '');
-  const category = risk?.category || 'Risk';
-  const description = risk?.description || 'Details not available in current context.';
+  const risk = sopData.inherentRisks.find(r => r.riskId === riskId || r.riskId === riskId.replace(/[*_]/g, ''));
+  const displayId = risk?.riskId || riskId.replace(/[*_]/g, '');
+  const category = risk?.category || 'Operational Risk';
+  // Use structured description if available, otherwise use what the AI wrote in the bullet point
+  const description = risk?.description || fallbackText || 'Details not available in current context.';
 
   return (
-    <div className="flex gap-3 items-start p-3 bg-rose-50 border border-rose-100 rounded-xl my-2 shadow-sm hover:shadow-md transition-all cursor-default group">
+    <div className="flex gap-3 items-start p-3 bg-rose-50 border border-rose-100 rounded-xl my-2 shadow-sm hover:shadow-md transition-all cursor-default group animate-in slide-in-from-left-2 duration-300">
        <div className="mt-0.5 p-1.5 bg-white rounded-full text-rose-500 shadow-sm border border-rose-100 group-hover:scale-110 transition-transform">
           <AlertOctagon size={16} />
        </div>
@@ -119,39 +109,80 @@ const RiskWidget = ({ riskId, sopData }: { riskId: string, sopData: SopResponse 
              <span className="text-xs font-bold text-rose-900">{displayId}</span>
              <span className="text-[9px] uppercase bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded font-bold tracking-wider">{category}</span>
           </div>
-          <p className="text-xs text-rose-700 leading-relaxed">{description}</p>
+          <p className="text-xs text-rose-700 leading-relaxed">{description.replace(/[*_]/g, '')}</p>
        </div>
     </div>
   )
 }
 
+const StepWidget = ({ stepId, sopData }: { stepId: string, sopData: SopResponse }) => {
+    // Attempt to find step details
+    let stepDetails = null;
+    if (sopData.processFlow && sopData.processFlow.stages) {
+        for (const stage of sopData.processFlow.stages) {
+            const found = stage.steps.find(s => s.stepId === stepId);
+            if (found) {
+                stepDetails = found;
+                break;
+            }
+        }
+    }
+    
+    if (!stepDetails) {
+        // Fallback for simple ID rendering if logic not found
+        return (
+             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold mx-0.5 bg-slate-100 text-slate-600 border border-slate-200">
+                <ArrowRightCircle size={10} />
+                {stepId}
+            </span>
+        );
+    }
+
+    return (
+        <div className="my-2 p-3 bg-white border border-blue-100 rounded-lg shadow-sm flex items-center gap-3 hover:border-blue-300 transition-colors group cursor-default">
+            <div className="p-1.5 bg-blue-50 text-blue-600 rounded-md group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <Map size={16} />
+            </div>
+            <div className="flex-1 min-w-0">
+                 <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 rounded">{stepDetails.stepId}</span>
+                    <span className="text-[9px] font-medium text-slate-400 uppercase tracking-wider">{stepDetails.actor}</span>
+                 </div>
+                 <p className="text-xs font-medium text-slate-800 truncate">{stepDetails.stepName}</p>
+            </div>
+            <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-500" />
+        </div>
+    );
+}
+
 const MetricWidget = ({ row, headers }: { row: string[], headers: string[] }) => {
    // Try to map columns intelligently
-   let name = row[0];
+   let name = "";
    let value = "";
    let target = "";
 
    headers.forEach((h, idx) => {
-       const header = h.toLowerCase();
-       if (header.includes('value') || header.includes('current')) value = row[idx];
-       else if (header.includes('target') || header.includes('goal')) target = row[idx];
-       else if (header.includes('metric') || header.includes('measure') || header.includes('kpi')) name = row[idx];
+       const header = h.toLowerCase().replace(/[*_]/g, ''); // clean formatting
+       if (header.includes('value') || header.includes('current') || header.includes('actual')) value = row[idx];
+       else if (header.includes('target') || header.includes('goal') || header.includes('objective')) target = row[idx];
+       else if (header.includes('metric') || header.includes('measure') || header.includes('kpi') || header.includes('indicator') || header.includes('name')) name = row[idx];
    });
 
    // Fallback if mapping failed
+   if (!name && row.length > 0) name = row[0];
    if (!value && row.length > 1) value = row[row.length - 1];
    if (!target && row.length > 2) target = row[row.length - 2];
 
    return (
-      <div className="p-4 bg-white border border-slate-200 rounded-xl text-center flex flex-col items-center justify-between min-w-[140px] max-w-[160px] shadow-sm h-full hover:border-fab-royal/30 transition-colors">
+      <div className="p-4 bg-white border border-slate-200 rounded-xl text-center flex flex-col items-center justify-between min-w-[140px] max-w-[160px] shadow-sm h-full hover:border-fab-royal/30 transition-colors snap-center">
           <div className="p-2 bg-blue-50 text-fab-royal rounded-full mb-2">
               <BarChart3 size={16} />
           </div>
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 w-full line-clamp-2 leading-tight min-h-[2.5em]">{name.replace(/\*\*/g, '')}</p>
-          <div className="text-2xl font-bold text-slate-800 mb-2">{value.replace(/\*\*/g, '')}</div>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 w-full line-clamp-2 leading-tight min-h-[2.5em]">{name.replace(/[*_]/g, '')}</p>
+          <div className="text-2xl font-bold text-slate-800 mb-2">{value.replace(/[*_]/g, '')}</div>
           {target && (
             <div className="text-[9px] text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 w-full truncate">
-                Target: <span className="font-semibold">{target.replace(/\*\*/g, '')}</span>
+                Target: <span className="font-semibold">{target.replace(/[*_]/g, '')}</span>
             </div>
           )}
       </div>
@@ -223,8 +254,8 @@ const CitationBlock = ({ citations }: { citations: Record<string, string> }) => 
   );
 };
 
-// --- Rich Text Formatter (Markdown Lite with AGUI) ---
-const formatInlineText = (text: string, isUser: boolean) => {
+// --- Rich Text Formatter ---
+const formatInlineText = (text: string, isUser: boolean, sopData?: SopResponse) => {
     // Handle Bold **text**
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, index) => {
@@ -244,10 +275,11 @@ const formatInlineText = (text: string, isUser: boolean) => {
                             >{subPart.replace(/[\[\]]/g, '')}</sup>
                         );
                     }
-                    // Handle Step References (e.g. S1-1)
-                    if (/\b[S]\d+-\d+\b/.test(subPart)) {
+                    
+                    // Handle Inline Step References (e.g. S1-1) for User Messages (System uses widgets)
+                    if (isUser && /\b[S]\d+-\d+\b/.test(subPart)) {
                         return (
-                            <span key={subIndex} className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold mx-0.5 ${isUser ? 'bg-white/20' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                            <span key={subIndex} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold mx-0.5 bg-white/20">
                                 <ArrowRightCircle size={10} />
                                 {subPart}
                             </span>
@@ -277,23 +309,30 @@ const MessageRenderer = ({ content, role, isWelcome, sopData }: { content: strin
         if (trimmed.startsWith('|')) {
             inTable = true;
             tableBuffer.push(trimmed);
+            
             // If this is the last line or next line is not table, process table
-            if (i === lines.length - 1 || !lines[i+1].trim().startsWith('|')) {
+            // Safe check for next line existence
+            const nextLine = lines[i+1];
+            if (i === lines.length - 1 || (nextLine !== undefined && !nextLine.trim().startsWith('|'))) {
+                
                 // Process accumulated table
                 const headers = tableBuffer[0].split('|').filter(c => c.trim()).map(c => c.trim());
-                const rows = tableBuffer.slice(2).map(r => r.split('|').filter(c => c.trim()).map(c => c.trim())); // Skip alignment row [1]
+                // Skip alignment row (contains dashes like ---|---)
+                const rows = tableBuffer.slice(2).map(r => r.split('|').filter(c => c.trim()).map(c => c.trim()));
                 
                 // AGUI: Check if this is a Metrics Table
-                const isMetricTable = headers.some(h => ['metric', 'measure', 'kpi'].includes(h.toLowerCase()));
+                // Clean formatting characters from headers before checking logic
+                const isMetricTable = headers.some(h => {
+                    const clean = h.toLowerCase().replace(/[^a-z]/g, ''); // Remove non-alpha like *
+                    return ['metric', 'measure', 'kpi', 'metrics', 'indicator'].includes(clean);
+                });
                 
                 if (isMetricTable && !isUser) {
                     elements.push(
                         <div key={`metrics-${i}`} className="my-4 w-full">
-                            <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
+                            <div className="flex gap-3 overflow-x-auto pb-2 snap-x px-1">
                                 {rows.map((row, rIdx) => (
-                                    <div key={rIdx} className="snap-center h-full">
-                                        <MetricWidget row={row} headers={headers} />
-                                    </div>
+                                    <MetricWidget key={rIdx} row={row} headers={headers} />
                                 ))}
                             </div>
                         </div>
@@ -330,21 +369,52 @@ const MessageRenderer = ({ content, role, isWelcome, sopData }: { content: strin
         } 
         
         if (inTable) {
+             // Handle alignment row explicitly to avoid dropping it before table close
              if(trimmed.match(/^[|\s-:]+$/)) {
                  tableBuffer.push(trimmed); 
                  return;
              }
+             // Fallback if formatting was broken
              inTable = false; 
         }
 
         // --- AGUI: Risk List Detection ---
-        // Detects bullet points that start with a Risk ID (e.g. "- **R1**" or "* R5")
-        const riskMatch = trimmed.match(/^[-*]\s+\**([R]\d+)\**[:\s](.*)/);
+        // Robust Regex: Handles "- **R1**: Desc", "- R1 - Desc", "* R1 Desc"
+        // Captures Group 1: Risk ID (R1, R10, etc)
+        // Captures Group 2: Description
+        const riskMatch = trimmed.match(/^[-*]\s*(?:\*\*)?(R\d+)(?:\*\*)?[\s:.-]+(.*)/i);
+        
         if (riskMatch && !isUser) {
             elements.push(
-                <RiskWidget key={`risk-${i}`} riskId={riskMatch[1]} sopData={sopData} />
+                <RiskWidget 
+                    key={`risk-${i}`} 
+                    riskId={riskMatch[1]} 
+                    sopData={sopData} 
+                    fallbackText={riskMatch[2]} 
+                />
             );
             return;
+        }
+
+        // --- AGUI: Step Detection (Only if line is short enough to be a reference) ---
+        // e.g. "S1-2: Review by Admin" or "Step S1-2"
+        const stepMatch = trimmed.match(/^(?:Step\s*)?([S]\d+-\d+)[:\s]+(.*)/i);
+        // Only trigger widget if it looks like a list item or standalone reference
+        if (stepMatch && !isUser && trimmed.length < 100 && (trimmed.startsWith('-') || trimmed.startsWith('*') || !trimmed.includes(' '))) {
+             elements.push(
+                <StepWidget 
+                    key={`step-${i}`}
+                    stepId={stepMatch[1]}
+                    sopData={sopData}
+                />
+             );
+             // Optionally add the description text below if it exists and isn't just the ID
+             if (stepMatch[2] && stepMatch[2].length > 3) {
+                 elements.push(
+                    <p key={`step-desc-${i}`} className="text-xs text-slate-600 ml-4 mb-2">{formatInlineText(stepMatch[2], isUser)}</p>
+                 );
+             }
+             return;
         }
 
         // --- Header Detection ---
@@ -363,7 +433,7 @@ const MessageRenderer = ({ content, role, isWelcome, sopData }: { content: strin
                 <div key={i} className="flex items-start gap-2 mb-1 pl-1">
                     <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${isUser ? 'bg-white' : 'bg-fab-royal'}`}></span>
                     <span className={`break-words ${isUser ? 'text-white' : 'text-slate-700'}`}>
-                        {formatInlineText(trimmed.substring(2), isUser)}
+                        {formatInlineText(trimmed.substring(2), isUser, sopData)}
                     </span>
                 </div>
             );
@@ -377,7 +447,7 @@ const MessageRenderer = ({ content, role, isWelcome, sopData }: { content: strin
                 <div key={i} className="flex items-start gap-2 mb-1 pl-1">
                     <span className={`font-bold min-w-[16px] ${isUser ? 'text-white/80' : 'text-slate-500'}`}>{numMatch[1]}.</span>
                     <span className={`break-words ${isUser ? 'text-white' : 'text-slate-700'}`}>
-                        {formatInlineText(numMatch[2], isUser)}
+                        {formatInlineText(numMatch[2], isUser, sopData)}
                     </span>
                 </div>
             );
@@ -390,7 +460,7 @@ const MessageRenderer = ({ content, role, isWelcome, sopData }: { content: strin
         } else {
             elements.push(
                 <div key={i} className={`leading-relaxed break-words whitespace-pre-wrap ${isUser ? 'text-white' : 'text-slate-700'}`}>
-                    {formatInlineText(line, isUser)}
+                    {formatInlineText(line, isUser, sopData)}
                 </div>
             );
         }
@@ -422,7 +492,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
           content: WELCOME_CONTENT, 
           timestamp: new Date(),
           isWelcome: true,
-          suggestions: [] // Start empty, will fill from effect
+          suggestions: [] 
       }
   ]);
 
@@ -448,7 +518,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
   const streamInterval = useRef<any>(null);
   const isGenerationComplete = useRef<boolean>(false);
   
-  // Track loaded sessions to prevent duplicate calls or missing calls on mount
   const lastLoadedSessionRef = useRef<string | null>(null);
 
   // --- Date Formatter (Dubai Timezone) ---
@@ -490,7 +559,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
             console.error("Failed to fetch document suggestions", err);
         }
 
-        // If no questions found in docs, check metadata, otherwise use fallback (but avoid default prompts if possible)
         if (pool.length === 0) {
             const metaSuggestions = (sopData.metadata as any)?.suggested_questions;
             if (metaSuggestions && Array.isArray(metaSuggestions)) {
@@ -498,10 +566,8 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
             }
         }
 
-        // If still empty, use minimal fallback
         if (pool.length === 0) pool = FALLBACK_PROMPTS;
         
-        // Strictly get 5 items (or less if pool is smaller, but try to fill)
         const unique = Array.from(new Set(pool));
         const finalSuggestions = unique.sort(() => 0.5 - Math.random()).slice(0, 5);
         
@@ -520,13 +586,10 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
 
 
   useEffect(() => {
-    // Only load if initialSessionId exists and differs from what we last loaded
-    // This ensures it runs on first mount AND when props change
     if (initialSessionId && lastLoadedSessionRef.current !== initialSessionId) {
         lastLoadedSessionRef.current = initialSessionId;
         setSessionId(initialSessionId);
         
-        // --- CRITICAL FIX: Clear messages immediately to prevent ghosting ---
         setMessages([{ 
             id: 'loading-state', 
             role: 'assistant', 
@@ -538,7 +601,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
         const loadSession = async () => {
              setIsLoading(true);
              try {
-                // 1. Initialize/Validate Session
+                // Initialize Session
                 try {
                     await apiService.initializeSession({ 
                         session_id: initialSessionId,
@@ -547,12 +610,11 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     });
                 } catch(e) { console.warn("Init session failed, proceeding to fetch details", e); }
 
-                // 2. Fetch History Details
+                // Fetch History Details
                 const detail = await apiService.getChatSessionDetails(initialSessionId);
                 
                 if (detail && detail.messages) {
                     const mappedMessages: Message[] = [];
-                    // Always add Welcome Message at top for consistency
                     mappedMessages.push({ 
                         id: WELCOME_MSG_ID, 
                         role: 'assistant', 
@@ -579,7 +641,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     });
                     setMessages(mappedMessages);
                 } else {
-                     // Fallback if session fetch fails but ID changed
                      setMessages([{ 
                         id: WELCOME_MSG_ID, 
                         role: 'assistant', 
@@ -591,7 +652,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                 }
              } catch(e) { 
                  console.error(e);
-                 // Reset on error
                  setMessages([{ 
                     id: WELCOME_MSG_ID, 
                     role: 'assistant', 
@@ -620,13 +680,10 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                 else chunk = streamQueue.current.substring(0, 2);
                 streamQueue.current = streamQueue.current.substring(chunk.length);
 
-                // Safe Ref Access: Capture ID in closure
                 const currentId = activeMessageId.current;
                 setMessages(prev => prev.map(msg => msg.id === currentId ? { ...msg, content: msg.content + chunk, isTyping: true } : msg));
             } else if (isGenerationComplete.current) {
-                // Safe Ref Access: Capture ID before nulling ref to ensure state update targets correct message
                 const currentId = activeMessageId.current;
-                
                 setMessages(prev => prev.map(msg => msg.id === currentId ? { ...msg, isTyping: false } : msg));
                 
                 activeMessageId.current = null;
@@ -640,7 +697,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
 
   useEffect(() => {
     if (messages.length > 0) {
-        // Small delay to ensure DOM update
         setTimeout(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
@@ -651,8 +707,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
     const textToSend = manualInput || input;
     if (!textToSend.trim() || isLoading) return;
 
-    // Auto Expand on first message interaction
-    // We check if it's the first user message (length is 1 for welcome msg)
     if (messages.length === 1 && !isMaximized && onToggleMaximize) {
         onToggleMaximize();
     }
@@ -669,10 +723,8 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
     setMessages([...newMessages, userMsg]);
     setInput('');
     setIsLoading(true);
-    
-    // Clear old suggestions while typing/thinking
     setActiveSuggestions([]);
-    setIsSuggestionsOpen(true); // Reset open state
+    setIsSuggestionsOpen(true); 
 
     const botMsgId = globalThis.crypto?.randomUUID() || `qn-${Date.now()}`;
     let isFirstToken = true;
@@ -717,7 +769,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                 }
            }
            
-           // FAILSAFE: If queue is empty, close immediately to avoid interval delay/race conditions
            if (streamQueue.current.length === 0) {
                setMessages(prev => prev.map(msg => msg.id === botMsgId ? { ...msg, isTyping: false } : msg));
                activeMessageId.current = null;
@@ -738,7 +789,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                setIsLoading(false);
            } else {
                streamQueue.current += `\n\n[Error: ${errMsg}]`;
-               // Ensure we close if error occurs mid-stream
                if (streamQueue.current.length === 0) {
                    setMessages(prev => prev.map(msg => msg.id === botMsgId ? { ...msg, isTyping: false } : msg));
                    activeMessageId.current = null;
@@ -770,7 +820,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
 
   const handleFeedbackStart = (messageId: string, rating: 'thumbs_up' | 'thumbs_down') => {
       if (rating === 'thumbs_up') {
-          // Positive feedback submits immediately
           setMessages(prev => prev.map(m => m.id === messageId ? { ...m, feedback: rating } : m));
           apiService.submitFeedback({
               question_id: messageId,
@@ -778,7 +827,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
               feedback_type: rating,
           }).catch(err => console.error(err));
       } else {
-          // Negative feedback opens input
           setActiveFeedbackId(messageId);
           setFeedbackComment('');
       }
@@ -796,7 +844,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
             comment: feedbackComment
         });
         
-        // Update UI
         setMessages(prev => prev.map(m => m.id === activeFeedbackId ? { ...m, feedback: 'thumbs_down' } : m));
         setActiveFeedbackId(null);
         setFeedbackComment('');
@@ -812,7 +859,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
       setFeedbackComment('');
   };
 
-  // --- Scroll Logic for Related Questions ---
   const scrollRelated = (direction: 'left' | 'right') => {
       if (relatedScrollRef.current) {
           const { current } = relatedScrollRef;
@@ -828,7 +874,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
   return (
     <div className="flex flex-col h-full bg-white relative overflow-hidden">
       
-      {/* Header - Branded */}
+      {/* Header */}
       <div className="p-4 border-b border-slate-100 bg-white flex justify-between items-center shadow-sm z-20 h-16">
         <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fab-navy to-fab-royal flex items-center justify-center text-white shadow-md">
@@ -951,7 +997,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     <div className="mt-4 w-full space-y-2">
                         <div className="flex items-center gap-2 mb-2 pl-1">
                              <Lightbulb size={12} className="text-slate-400" />
-                             {/* UPDATED: Normal Case Title 10px */}
                              <span className="text-[10px] font-medium text-slate-500">Suggested questions</span>
                         </div>
                         <div className="flex flex-col gap-2">
@@ -959,7 +1004,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                                 <button 
                                     key={idx}
                                     onClick={() => handleSend(prompt)}
-                                    // UPDATED: Rounded-full (pill button), 12px text
                                     className="text-left px-5 py-3 bg-white hover:bg-slate-50 border border-slate-200 hover:border-fab-royal/50 rounded-full transition-all text-xs flex items-center gap-3 group shadow-sm hover:shadow-md w-full"
                                 >
                                     <div className="p-1.5 bg-slate-50 rounded-full text-fab-royal shadow-sm group-hover:scale-110 transition-transform">
@@ -975,7 +1019,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                 </div>
             </div>
             
-            {/* Timestamp Below Bubble (Dubai Time) */}
+            {/* Timestamp */}
             <div className={`px-12 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <p className="text-[10px] text-slate-400 font-medium opacity-60">
                     {formatDateDubai(msg.timestamp)} {formatTimeDubai(msg.timestamp)}
@@ -984,22 +1028,19 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
         </div>
         ))}
 
-        {/* Skeleton Glare Loader (3 Lines) */}
+        {/* Skeleton Glare Loader */}
         {isLoading && (
         <div className="flex gap-3">
             <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-900 shadow-sm mt-1">
                 <GIcon className="w-5 h-5 animate-pulse text-fab-royal" />
             </div>
             <div className="bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-tl-none shadow-sm flex flex-col gap-2 min-w-[200px] w-full max-w-lg">
-                {/* Line 1 */}
                 <div className="relative w-full h-3 bg-slate-100 rounded overflow-hidden">
                     <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
                 </div>
-                {/* Line 2 */}
                 <div className="relative w-3/4 h-3 bg-slate-100 rounded overflow-hidden">
                     <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
                 </div>
-                {/* Line 3 */}
                 <div className="relative w-1/2 h-3 bg-slate-100 rounded overflow-hidden">
                     <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
                 </div>
@@ -1010,7 +1051,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
         </div>
       </div>
 
-      {/* Suggestions Bar (Related Questions) - UPDATED: MOVED ABOVE INPUT & NO ABSOLUTE POSITIONING TO PREVENT OVERLAP */}
+      {/* Suggestions Bar */}
       {activeSuggestions.length > 0 && (
         <div className={`w-full border-t border-slate-100 bg-white/95 backdrop-blur-xl transition-all duration-300 ease-in-out z-30 ${isSuggestionsOpen ? 'max-h-48 py-2 opacity-100' : 'max-h-0 py-0 opacity-0 overflow-hidden'}`}>
             <div className="px-4 py-2 flex justify-between items-center border-b border-slate-100/50 mb-2">
@@ -1024,7 +1065,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
             </div>
             
             <div className="relative group/scroll px-1">
-                 {/* Left Arrow */}
                  <button 
                     onClick={() => scrollRelated('left')} 
                     className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1.5 bg-white shadow-md border border-slate-100 rounded-full text-slate-500 hover:text-fab-royal opacity-0 group-hover/scroll:opacity-100 transition-opacity disabled:opacity-0 mx-1"
@@ -1032,7 +1072,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     <ChevronLeft size={14} />
                  </button>
                  
-                 {/* Scroll Container - UPDATED: Strictly hide scrollbar with style object */}
                  <div 
                     ref={relatedScrollRef} 
                     className="px-4 overflow-x-auto pb-1 pt-1 flex gap-2 snap-x scroll-smooth no-scrollbar"
@@ -1041,7 +1080,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                         msOverflowStyle: 'none' 
                     }}
                  >
-                     {/* Add separate style block for Webkit */}
                      <style>
                          {`
                            .no-scrollbar::-webkit-scrollbar {
@@ -1061,7 +1099,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     ))}
                  </div>
 
-                 {/* Right Arrow */}
                  <button 
                     onClick={() => scrollRelated('right')} 
                     className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1.5 bg-white shadow-md border border-slate-100 rounded-full text-slate-500 hover:text-fab-royal opacity-0 group-hover/scroll:opacity-100 transition-opacity mx-1"
@@ -1075,7 +1112,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
       {/* Input Area */}
       <div className="bg-white border-t border-slate-100 p-4 pb-2 z-40 relative shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.05)]">
         
-        {/* Minimized Suggestion Toggle - UPDATED: Anchored to Input Container (Top Edge) to follow it vertically */}
         {activeSuggestions.length > 0 && !isSuggestionsOpen && (
             <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full z-50 pointer-events-none w-full flex justify-center pb-3">
                  <button 
