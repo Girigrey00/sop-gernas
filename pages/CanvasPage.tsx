@@ -554,6 +554,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                                 onToggleMaximize={() => setIsSidebarMaximized(!isSidebarMaximized)}
                                 isMaximized={isSidebarMaximized}
                                 initialSessionId={initialSessionId}
+                                onNavigateToStep={handleStepNavigation}
                             />
                         )}
                     </>

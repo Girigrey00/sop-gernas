@@ -4,7 +4,9 @@ import {
   Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
   ChevronDown, ChevronUp, FileText, 
   ThumbsUp, ThumbsDown, Copy, Sparkles, Lightbulb, ChevronRight, ChevronLeft, Brain,
-  AlertOctagon, BarChart3, ArrowRightCircle, Map, Layers
+  AlertOctagon, BarChart3, ArrowRightCircle, Map, Layers,
+  ShieldAlert, Info, AlertTriangle, Clock, Calendar, CheckCircle2, Circle, 
+  ListTodo, Percent, TrendingUp
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -16,6 +18,7 @@ interface ChatAssistantProps {
   onToggleMaximize?: () => void;
   isMaximized?: boolean;
   initialSessionId?: string;
+  onNavigateToStep?: (stepId: string) => void;
 }
 
 interface Message {
@@ -91,6 +94,100 @@ const GIcon = ({ className }: { className?: string }) => (
 
 // --- A2UI (Adaptive AI UI) Widgets ---
 
+const BarChartWidget = ({ data, title }: { data: { label: string, value: number, displayValue: string }[], title?: string }) => {
+    const max = Math.max(...data.map(d => d.value), 1); // Avoid div by zero
+    return (
+        <div className="my-3 p-4 bg-white border border-slate-200 rounded-xl shadow-sm animate-in slide-in-from-left-2 duration-500 w-full max-w-full overflow-hidden">
+            {title && (
+                <div className="flex items-center gap-2 mb-3">
+                    <BarChart3 size={14} className="text-fab-royal" />
+                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider truncate">{title}</h4>
+                </div>
+            )}
+            <div className="space-y-3">
+                {data.map((d, i) => (
+                    <div key={i} className="flex items-center gap-3 text-xs group w-full">
+                        <div className="w-24 shrink-0 text-slate-600 font-medium truncate text-right" title={d.label}>{d.label}</div>
+                        <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden min-w-[50px]">
+                            <div 
+                                className="h-full bg-fab-royal rounded-full transition-all duration-1000 ease-out group-hover:bg-fab-blue" 
+                                style={{ width: `${(d.value / max) * 100}%` }}
+                            ></div>
+                        </div>
+                        <div className="w-12 shrink-0 text-slate-700 font-bold text-right">{d.displayValue}</div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+const GaugeWidget = ({ label, value, max = 100, displayValue }: { label: string, value: number, max?: number, displayValue?: string }) => {
+    const percentage = Math.min(100, Math.max(0, (value / max) * 100));
+    const circumference = 2 * Math.PI * 16; // r=16
+    const offset = circumference - (percentage / 100) * circumference;
+    
+    // Color logic
+    let color = 'text-fab-royal';
+    let bgColor = 'text-blue-100';
+    if (percentage >= 80) { color = 'text-emerald-500'; bgColor = 'text-emerald-100'; }
+    else if (percentage <= 40) { color = 'text-rose-500'; bgColor = 'text-rose-100'; }
+    else { color = 'text-amber-500'; bgColor = 'text-amber-100'; }
+
+    return (
+        <div className="my-2 mr-2 p-3 bg-white border border-slate-200 rounded-xl shadow-sm inline-flex items-center gap-3 pr-5 animate-in zoom-in-95 duration-300 max-w-full">
+             <div className="relative w-10 h-10 flex items-center justify-center shrink-0">
+                <svg className="transform -rotate-90 w-10 h-10">
+                    <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="4" fill="transparent" className={bgColor} />
+                    <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="4" fill="transparent" 
+                        strokeDasharray={circumference} 
+                        strokeDashoffset={offset} 
+                        className={`${color} transition-all duration-1000 ease-out`} 
+                        strokeLinecap="round"
+                    />
+                </svg>
+                {/* Center Icon based on score */}
+                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-700">
+                    {percentage >= 80 ? <CheckCircle2 size={12} className="text-emerald-600" /> : 
+                     percentage <= 40 ? <AlertTriangle size={12} className="text-rose-600" /> : 
+                     <span className="text-[9px]">{Math.round(percentage)}%</span>}
+                </div>
+             </div>
+             <div className="min-w-0">
+                 <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wide truncate">{label}</p>
+                 <p className="text-sm font-bold text-slate-800 truncate">{displayValue || `${value}/${max}`}</p>
+             </div>
+        </div>
+    )
+}
+
+const ChecklistWidget = ({ items }: { items: string[] }) => {
+    return (
+        <div className="my-3 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm animate-in slide-in-from-bottom-2 w-full">
+            <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex items-center gap-2">
+                <ListTodo size={14} className="text-slate-500" />
+                <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">Requirements</span>
+            </div>
+            <div className="p-2">
+                {items.map((item, i) => {
+                    const isChecked = item.startsWith('[x]') || item.startsWith('[X]');
+                    const text = item.replace(/^\[[xX ]\]/, '').trim();
+                    return (
+                        <div key={i} className={`flex items-start gap-3 p-2 rounded-lg ${isChecked ? 'bg-emerald-50/50' : 'hover:bg-slate-50'}`}>
+                            <div className={`mt-0.5 shrink-0 ${isChecked ? 'text-emerald-600' : 'text-slate-300'}`}>
+                                {isChecked ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+                            </div>
+                            <span className={`text-xs leading-relaxed ${isChecked ? 'text-emerald-900 line-through decoration-emerald-300 decoration-2' : 'text-slate-700'}`}>
+                                {text}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    )
+}
+
 const RiskWidget = ({ riskId, sopData, fallbackText }: { riskId: string, sopData: SopResponse, fallbackText: string }) => {
   // Find full risk details if available
   const risk = sopData.inherentRisks.find(r => r.riskId === riskId || r.riskId === riskId.replace(/[*_]/g, ''));
@@ -100,22 +197,22 @@ const RiskWidget = ({ riskId, sopData, fallbackText }: { riskId: string, sopData
   const description = risk?.description || fallbackText || 'Details not available in current context.';
 
   return (
-    <div className="flex gap-3 items-start p-3 bg-rose-50 border border-rose-100 rounded-xl my-2 shadow-sm hover:shadow-md transition-all cursor-default group animate-in slide-in-from-left-2 duration-300">
-       <div className="mt-0.5 p-1.5 bg-white rounded-full text-rose-500 shadow-sm border border-rose-100 group-hover:scale-110 transition-transform">
+    <div className="flex gap-3 items-start p-3 bg-rose-50 border border-rose-100 rounded-xl my-2 shadow-sm hover:shadow-md transition-all cursor-default group animate-in slide-in-from-left-2 duration-300 w-full">
+       <div className="mt-0.5 p-1.5 bg-white rounded-full text-rose-500 shadow-sm border border-rose-100 group-hover:scale-110 transition-transform shrink-0">
           <AlertOctagon size={16} />
        </div>
-       <div className="flex-1">
-          <div className="flex items-center justify-between mb-1">
-             <span className="text-xs font-bold text-rose-900">{displayId}</span>
-             <span className="text-[9px] uppercase bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded font-bold tracking-wider">{category}</span>
+       <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-1 gap-2">
+             <span className="text-xs font-bold text-rose-900 truncate">{displayId}</span>
+             <span className="text-[9px] uppercase bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded font-bold tracking-wider shrink-0">{category}</span>
           </div>
-          <p className="text-xs text-rose-700 leading-relaxed">{description.replace(/[*_]/g, '')}</p>
+          <p className="text-xs text-rose-700 leading-relaxed break-words">{description.replace(/[*_]/g, '')}</p>
        </div>
     </div>
   )
 }
 
-const StepWidget = ({ stepId, sopData }: { stepId: string, sopData: SopResponse }) => {
+const StepWidget = ({ stepId, sopData, onClick }: { stepId: string, sopData: SopResponse, onClick?: (id: string) => void }) => {
     // Attempt to find step details
     let stepDetails = null;
     if (sopData.processFlow && sopData.processFlow.stages) {
@@ -131,7 +228,7 @@ const StepWidget = ({ stepId, sopData }: { stepId: string, sopData: SopResponse 
     if (!stepDetails) {
         // Fallback for simple ID rendering if logic not found
         return (
-             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold mx-0.5 bg-slate-100 text-slate-600 border border-slate-200">
+             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold mx-0.5 bg-slate-100 text-slate-600 border border-slate-200 align-middle">
                 <ArrowRightCircle size={10} />
                 {stepId}
             </span>
@@ -139,20 +236,94 @@ const StepWidget = ({ stepId, sopData }: { stepId: string, sopData: SopResponse 
     }
 
     return (
-        <div className="my-2 p-3 bg-white border border-blue-100 rounded-lg shadow-sm flex items-center gap-3 hover:border-blue-300 transition-colors group cursor-default">
-            <div className="p-1.5 bg-blue-50 text-blue-600 rounded-md group-hover:bg-blue-600 group-hover:text-white transition-colors">
+        <button 
+            onClick={() => onClick && onClick(stepId)}
+            className="w-full my-2 p-3 bg-white border border-blue-100 rounded-lg shadow-sm flex items-center gap-3 hover:border-blue-400 hover:shadow-md hover:bg-blue-50/50 transition-all group cursor-pointer text-left"
+            title="Click to view in Flow"
+        >
+            <div className="p-1.5 bg-blue-50 text-blue-600 rounded-md group-hover:bg-blue-600 group-hover:text-white transition-colors relative shrink-0">
                 <Map size={16} />
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-ping opacity-0 group-hover:opacity-100"></div>
             </div>
             <div className="flex-1 min-w-0">
                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 rounded">{stepDetails.stepId}</span>
-                    <span className="text-[9px] font-medium text-slate-400 uppercase tracking-wider">{stepDetails.actor}</span>
+                    <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 rounded border border-slate-200 truncate">{stepDetails.stepId}</span>
+                    <span className="text-[9px] font-medium text-slate-400 uppercase tracking-wider truncate">{stepDetails.actor}</span>
                  </div>
-                 <p className="text-xs font-medium text-slate-800 truncate">{stepDetails.stepName}</p>
+                 <p className="text-xs font-medium text-slate-800 truncate group-hover:text-blue-700 transition-colors">{stepDetails.stepName}</p>
             </div>
-            <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-500" />
+            <div className="flex items-center gap-1 text-slate-300 group-hover:text-blue-500 transition-colors shrink-0">
+                <span className="text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline">LOCATE</span>
+                <ChevronRight size={14} />
+            </div>
+        </button>
+    );
+}
+
+const PolicyWidget = ({ type, text }: { type: 'POLICY' | 'WARNING' | 'NOTE', text: string }) => {
+    let styles = {
+        bg: 'bg-slate-50',
+        border: 'border-slate-200',
+        icon: Info,
+        iconColor: 'text-slate-500',
+        title: 'Note',
+        titleColor: 'text-slate-700'
+    };
+
+    if (type === 'POLICY') {
+        styles = {
+            bg: 'bg-indigo-50',
+            border: 'border-indigo-100',
+            icon: ShieldAlert,
+            iconColor: 'text-indigo-600',
+            title: 'Policy Requirement',
+            titleColor: 'text-indigo-900'
+        };
+    } else if (type === 'WARNING') {
+        styles = {
+            bg: 'bg-rose-50',
+            border: 'border-rose-100',
+            icon: AlertTriangle,
+            iconColor: 'text-rose-600',
+            title: 'Critical Warning',
+            titleColor: 'text-rose-900'
+        };
+    }
+
+    const Icon = styles.icon;
+
+    return (
+        <div className={`my-2 p-3 rounded-lg border flex gap-3 items-start ${styles.bg} ${styles.border} animate-in slide-in-from-left-2 w-full`}>
+            <div className={`mt-0.5 shrink-0 ${styles.iconColor}`}>
+                <Icon size={16} />
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${styles.titleColor}`}>{styles.title}</p>
+                <p className="text-xs text-slate-700 leading-relaxed break-words">{text}</p>
+            </div>
         </div>
     );
+}
+
+const TimelineWidget = ({ time, text }: { time: string, text: string }) => {
+    return (
+        <div className="flex gap-3 relative pl-2 group animate-in slide-in-from-left-2">
+             {/* Timeline Line */}
+             <div className="absolute left-[15px] top-6 bottom-[-8px] w-px bg-slate-200 group-last:hidden"></div>
+             
+             <div className="mt-1 relative z-10 shrink-0">
+                 <div className="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 shadow-sm text-[10px] font-bold">
+                    <Clock size={12} />
+                 </div>
+             </div>
+             <div className="pb-4 pt-1 flex-1 min-w-0">
+                 <span className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold font-mono mb-1 border border-slate-200">
+                    {time}
+                 </span>
+                 <p className="text-xs text-slate-700 leading-relaxed break-words">{text}</p>
+             </div>
+        </div>
+    )
 }
 
 const MetricWidget = ({ row, headers }: { row: string[], headers: string[] }) => {
@@ -186,7 +357,7 @@ const MetricWidget = ({ row, headers }: { row: string[], headers: string[] }) =>
               <BarChart3 size={16} />
           </div>
           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 w-full line-clamp-2 leading-tight min-h-[2.5em]">{safeName.replace(/[*_]/g, '')}</p>
-          <div className="text-2xl font-bold text-slate-800 mb-2">{safeValue.replace(/[*_]/g, '')}</div>
+          <div className="text-2xl font-bold text-slate-800 mb-2 break-all">{safeValue.replace(/[*_]/g, '')}</div>
           {safeTarget && (
             <div className="text-[9px] text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 w-full truncate">
                 Target: <span className="font-semibold">{safeTarget.replace(/[*_]/g, '')}</span>
@@ -299,7 +470,7 @@ const formatInlineText = (text: string, isUser: boolean, sopData?: SopResponse) 
     });
 };
 
-const MessageRenderer = ({ content, role, isWelcome, sopData }: { content: string, role: 'user' | 'assistant', isWelcome?: boolean, sopData: SopResponse }) => {
+const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep }: { content: string, role: 'user' | 'assistant', isWelcome?: boolean, sopData: SopResponse, onNavigateToStep?: (id: string) => void }) => {
     const isUser = role === 'user';
     
     // Split content by lines to detect structure (Tables, Lists)
@@ -308,9 +479,76 @@ const MessageRenderer = ({ content, role, isWelcome, sopData }: { content: strin
     
     let tableBuffer: string[] = [];
     let inTable = false;
+    let listBuffer: string[] = [];
+
+    // Helper to process buffered lists into Widgets if applicable
+    const processListBuffer = (items: string[], keyPrefix: string) => {
+        if (items.length === 0) return null;
+
+        // 1. Check for Checklist (Starts with [ ] or [x])
+        const isChecklist = items.every(i => i.trim().match(/^[-*]\s*\[[ xX]\]/));
+        if (isChecklist) {
+            const cleanItems = items.map(i => i.replace(/^[-*]\s*/, ''));
+            return <ChecklistWidget key={keyPrefix} items={cleanItems} />;
+        }
+
+        // 2. Check for Bar Chart Data (Label: Number)
+        // Must have at least 2 items to be a chart
+        if (items.length >= 2) {
+            const chartData = [];
+            let isChart = true;
+            for (const item of items) {
+                const clean = item.replace(/^[-*]\s+/, '').trim();
+                const parts = clean.split(':');
+                if (parts.length < 2) { isChart = false; break; }
+                
+                const label = parts[0].trim();
+                const valStr = parts.slice(1).join(':').trim(); // Handle 10:00 AM edge case, though regex handles nums better
+                const valMatch = valStr.match(/^[\D]*(\d+(\.\d+)?)[\D]*$/); // Match "10", "$10", "10%", etc.
+                
+                if (!valMatch) { isChart = false; break; }
+                const value = parseFloat(valMatch[1]);
+                chartData.push({ label, value, displayValue: valStr });
+            }
+
+            if (isChart && chartData.length > 0) {
+                return <BarChartWidget key={keyPrefix} data={chartData} />;
+            }
+        }
+
+        // 3. Fallback to Standard List
+        return items.map((item, i) => (
+             <div key={`${keyPrefix}-${i}`} className="flex items-start gap-2 mb-1 pl-1">
+                <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${isUser ? 'bg-white' : 'bg-fab-royal'}`}></span>
+                <span className={`break-words ${isUser ? 'text-white' : 'text-slate-700'}`}>
+                    {formatInlineText(item.replace(/^[-*]\s+/, ''), isUser, sopData)}
+                </span>
+            </div>
+        ));
+    };
 
     lines.forEach((line, i) => {
         const trimmed = line.trim();
+
+        // --- List Handling (Buffer) ---
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+            listBuffer.push(trimmed);
+            // If this is the last line, flush buffer
+            if (i === lines.length - 1) {
+                const result = processListBuffer(listBuffer, `list-${i}`);
+                if (Array.isArray(result)) elements.push(...result);
+                else if (result) elements.push(result);
+            }
+            return; 
+        } else {
+            // Not a list item, flush buffer if exists
+            if (listBuffer.length > 0) {
+                const result = processListBuffer(listBuffer, `list-${i}`);
+                if (Array.isArray(result)) elements.push(...result);
+                else if (result) elements.push(result);
+                listBuffer = [];
+            }
+        }
         
         // --- Table Detection ---
         if (trimmed.startsWith('|')) {
@@ -318,7 +556,6 @@ const MessageRenderer = ({ content, role, isWelcome, sopData }: { content: strin
             tableBuffer.push(trimmed);
             
             // If this is the last line or next line is not table, process table
-            // Safe check for next line existence
             const nextLine = lines[i+1];
             if (i === lines.length - 1 || (nextLine !== undefined && !nextLine.trim().startsWith('|'))) {
                 
@@ -385,53 +622,94 @@ const MessageRenderer = ({ content, role, isWelcome, sopData }: { content: strin
              inTable = false; 
         }
 
-        // --- AGUI: Risk List Detection ---
-        // Robust Regex: Handles "- **R1**: Desc", "- R1 - Desc", "* R1 Desc"
-        // Captures Group 1: Risk ID (R1, R10, etc)
-        // Captures Group 2: Description
-        const riskMatch = trimmed.match(/^[-*]\s*(?:\*\*)?(R\d+)(?:\*\*)?[\s:.-]+(.*)/i);
-        
-        if (riskMatch && !isUser) {
-            elements.push(
-                <RiskWidget 
-                    key={`risk-${i}`} 
-                    riskId={riskMatch[1]} 
-                    sopData={sopData} 
-                    fallbackText={riskMatch[2]} 
-                />
-            );
-            return;
-        }
+        if (!isUser) {
+            // --- AGUI: Gauge/Score Detection ---
+            // Pattern: **Score**: 85% or **Confidence**: 0.9
+            const scoreMatch = trimmed.match(/^\*?\*?(Score|Confidence|Probability|Match)\*?\*?\s*[:\-]\s*(.*)/i);
+            if (scoreMatch) {
+                const label = scoreMatch[1];
+                const valStr = scoreMatch[2].trim();
+                const valMatch = valStr.match(/(\d+(\.\d+)?)/);
+                if (valMatch) {
+                    let max = 100;
+                    let val = parseFloat(valMatch[0]);
+                    
+                    // Normalize decimals (0.8 -> 80%) if label implies probability
+                    if (val <= 1 && (label.includes('Prob') || label.includes('Conf') || label.includes('Match'))) {
+                        val = val * 100;
+                    }
+                    // Handle X/10 format
+                    if (valStr.includes('/10') || (val <= 10 && !valStr.includes('%'))) {
+                        max = 10;
+                    }
 
-        // --- AGUI: Step Detection (Only if line is short enough to be a reference) ---
-        // Robust regex for steps: Handles "- **S1-1**: Desc", "* S1-1 Desc"
-        // Regex Logic: 
-        // 1. Optional bullet (^[-*]?)
-        // 2. Optional whitespace (\s*)
-        // 3. Optional bold start ((?:\*\*)?)
-        // 4. Optional prefix "Step" ((?:Step\s*)?)
-        // 5. CAPTURE ID: S digit - digit ([S]\d+-\d+)
-        // 6. Optional bold end ((?:\*\*)?)
-        // 7. Separators ([:\s]+)
-        // 8. CAPTURE Desc: (.*)
-        const stepMatch = trimmed.match(/^[-*]?\s*(?:\*\*)?(?:Step\s*)?([S]\d+-\d+)(?:\*\*)?[:\s]+(.*)/i);
-        
-        // Only trigger widget if it matches and line is short
-        if (stepMatch && !isUser && trimmed.length < 150) {
-             elements.push(
-                <StepWidget 
-                    key={`step-${i}`}
-                    stepId={stepMatch[1]}
-                    sopData={sopData}
-                />
-             );
-             // Optionally add the description text below if it exists and isn't just the ID
-             if (stepMatch[2] && stepMatch[2].length > 3) {
+                    elements.push(
+                        <GaugeWidget key={`gauge-${i}`} label={label} value={val} max={max} displayValue={valStr} />
+                    );
+                    return;
+                }
+            }
+
+            // --- AGUI: Policy Alert Detection ---
+            // Pattern: **POLICY**: Text OR - **WARNING**: Text
+            // Regex captures: Group 1 = TYPE, Group 2 = TEXT
+            const policyMatch = trimmed.match(/^[-*]?\s*\*\*(POLICY|WARNING|NOTE|CRITICAL|COMPLIANCE)(?:\s*Alert|\s*Check)?\*\*\s*[:\-]\s*(.*)/i);
+            
+            if (policyMatch) {
+                const typeRaw = policyMatch[1].toUpperCase();
+                let type: 'POLICY' | 'WARNING' | 'NOTE' = 'NOTE';
+                if (['POLICY', 'COMPLIANCE'].includes(typeRaw)) type = 'POLICY';
+                if (['WARNING', 'CRITICAL'].includes(typeRaw)) type = 'WARNING';
+                
+                elements.push(
+                    <PolicyWidget key={`pol-${i}`} type={type} text={policyMatch[2]} />
+                );
+                return;
+            }
+
+            // --- AGUI: Timeline/Log Detection ---
+            // Pattern: **10:00**: Text OR **10:30 AM**: Text
+            const timeMatch = trimmed.match(/^[-*]?\s*\*\*((?:\d{1,2}:\d{2})(?:\s*[AP]M)?)\*\*\s*[:\-]\s*(.*)/i);
+            
+            if (timeMatch) {
+                elements.push(
+                    <TimelineWidget key={`time-${i}`} time={timeMatch[1]} text={timeMatch[2]} />
+                );
+                return;
+            }
+
+            // --- AGUI: Risk List Detection ---
+            const riskMatch = trimmed.match(/^[-*]\s*(?:\*\*)?(R\d+)(?:\*\*)?[\s:.-]+(.*)/i);
+            if (riskMatch) {
+                elements.push(
+                    <RiskWidget 
+                        key={`risk-${i}`} 
+                        riskId={riskMatch[1]} 
+                        sopData={sopData} 
+                        fallbackText={riskMatch[2]} 
+                    />
+                );
+                return;
+            }
+
+            // --- AGUI: Step Detection ---
+            const stepMatch = trimmed.match(/^[-*]?\s*(?:\*\*)?(?:Step\s*)?([S]\d+-\d+)(?:\*\*)?[:\s]+(.*)/i);
+            if (stepMatch && trimmed.length < 150) {
                  elements.push(
-                    <p key={`step-desc-${i}`} className="text-xs text-slate-600 ml-4 mb-2">{formatInlineText(stepMatch[2], isUser)}</p>
+                    <StepWidget 
+                        key={`step-${i}`}
+                        stepId={stepMatch[1]}
+                        sopData={sopData}
+                        onClick={onNavigateToStep}
+                    />
                  );
-             }
-             return;
+                 if (stepMatch[2] && stepMatch[2].length > 3) {
+                     elements.push(
+                        <p key={`step-desc-${i}`} className="text-xs text-slate-600 ml-4 mb-2">{formatInlineText(stepMatch[2], isUser)}</p>
+                     );
+                 }
+                 return;
+            }
         }
 
         // --- Header Detection ---
@@ -440,19 +718,6 @@ const MessageRenderer = ({ content, role, isWelcome, sopData }: { content: strin
                 <h3 key={i} className={`font-bold mt-3 mb-2 leading-snug tracking-tight break-words ${isWelcome ? 'text-sm text-fab-navy' : 'text-lg'} ${isUser ? 'text-white' : (isWelcome ? 'text-fab-navy' : 'text-slate-800')}`}>
                     {formatInlineText(trimmed.replace(/^###\s+/, ''), isUser)}
                 </h3>
-            );
-            return;
-        }
-
-        // --- List Detection ---
-        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-            elements.push(
-                <div key={i} className="flex items-start gap-2 mb-1 pl-1">
-                    <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${isUser ? 'bg-white' : 'bg-fab-royal'}`}></span>
-                    <span className={`break-words ${isUser ? 'text-white' : 'text-slate-700'}`}>
-                        {formatInlineText(trimmed.substring(2), isUser, sopData)}
-                    </span>
-                </div>
             );
             return;
         }
@@ -491,7 +756,7 @@ const MessageRenderer = ({ content, role, isWelcome, sopData }: { content: strin
 };
 
 // --- Main Chat Component ---
-const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, productContext, onToggleMaximize, isMaximized, initialSessionId }) => {
+const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, productContext, onToggleMaximize, isMaximized, initialSessionId, onNavigateToStep }) => {
   const [input, setInput] = useState('');
   
   // Initial Welcome Message
@@ -945,7 +1210,13 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]'
                 }`}>
                     <div className="relative z-10 w-full">
-                        <MessageRenderer content={msg.content} role={msg.role} isWelcome={msg.isWelcome} sopData={sopData} />
+                        <MessageRenderer 
+                            content={msg.content} 
+                            role={msg.role} 
+                            isWelcome={msg.isWelcome} 
+                            sopData={sopData} 
+                            onNavigateToStep={onNavigateToStep}
+                        />
                     </div>
                 </div>
 
