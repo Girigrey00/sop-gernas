@@ -1,11 +1,11 @@
 // Manually defined environment types to replace missing vite/client types
 
 interface ImportMetaEnv {
-  readonly MODE: string;
-  readonly BASE_URL: string;
-  readonly PROD: boolean;
-  readonly DEV: boolean;
-  readonly SSR: boolean;
+  MODE: string;
+  BASE_URL: string;
+  PROD: boolean;
+  DEV: boolean;
+  SSR: boolean;
   [key: string]: any;
 }
 

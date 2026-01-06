@@ -3,7 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
   ChevronDown, ChevronUp, FileText, 
-  ThumbsUp, ThumbsDown, Copy, Sparkles, Lightbulb, ChevronRight, ChevronLeft, Brain
+  ThumbsUp, ThumbsDown, Copy, Sparkles, Lightbulb, ChevronRight, ChevronLeft, Brain,
+  AlertOctagon, BarChart3, ArrowRightCircle
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -99,6 +100,64 @@ const GIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+// --- AGUI Widgets ---
+
+const RiskWidget = ({ riskId, sopData }: { riskId: string, sopData: SopResponse }) => {
+  // Find full risk details if available
+  const risk = sopData.inherentRisks.find(r => r.riskId === riskId || r.riskId === riskId.replace('**', ''));
+  const displayId = risk?.riskId || riskId.replace(/\*/g, '');
+  const category = risk?.category || 'Risk';
+  const description = risk?.description || 'Details not available in current context.';
+
+  return (
+    <div className="flex gap-3 items-start p-3 bg-rose-50 border border-rose-100 rounded-xl my-2 shadow-sm hover:shadow-md transition-all cursor-default group">
+       <div className="mt-0.5 p-1.5 bg-white rounded-full text-rose-500 shadow-sm border border-rose-100 group-hover:scale-110 transition-transform">
+          <AlertOctagon size={16} />
+       </div>
+       <div className="flex-1">
+          <div className="flex items-center justify-between mb-1">
+             <span className="text-xs font-bold text-rose-900">{displayId}</span>
+             <span className="text-[9px] uppercase bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded font-bold tracking-wider">{category}</span>
+          </div>
+          <p className="text-xs text-rose-700 leading-relaxed">{description}</p>
+       </div>
+    </div>
+  )
+}
+
+const MetricWidget = ({ row, headers }: { row: string[], headers: string[] }) => {
+   // Try to map columns intelligently
+   let name = row[0];
+   let value = "";
+   let target = "";
+
+   headers.forEach((h, idx) => {
+       const header = h.toLowerCase();
+       if (header.includes('value') || header.includes('current')) value = row[idx];
+       else if (header.includes('target') || header.includes('goal')) target = row[idx];
+       else if (header.includes('metric') || header.includes('measure') || header.includes('kpi')) name = row[idx];
+   });
+
+   // Fallback if mapping failed
+   if (!value && row.length > 1) value = row[row.length - 1];
+   if (!target && row.length > 2) target = row[row.length - 2];
+
+   return (
+      <div className="p-4 bg-white border border-slate-200 rounded-xl text-center flex flex-col items-center justify-between min-w-[140px] max-w-[160px] shadow-sm h-full hover:border-fab-royal/30 transition-colors">
+          <div className="p-2 bg-blue-50 text-fab-royal rounded-full mb-2">
+              <BarChart3 size={16} />
+          </div>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 w-full line-clamp-2 leading-tight min-h-[2.5em]">{name.replace(/\*\*/g, '')}</p>
+          <div className="text-2xl font-bold text-slate-800 mb-2">{value.replace(/\*\*/g, '')}</div>
+          {target && (
+            <div className="text-[9px] text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 w-full truncate">
+                Target: <span className="font-semibold">{target.replace(/\*\*/g, '')}</span>
+            </div>
+          )}
+      </div>
+   )
+}
+
 // --- Citation Block ---
 const CitationBlock = ({ citations }: { citations: Record<string, string> }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -164,7 +223,7 @@ const CitationBlock = ({ citations }: { citations: Record<string, string> }) => 
   );
 };
 
-// --- Rich Text Formatter (Markdown Lite) ---
+// --- Rich Text Formatter (Markdown Lite with AGUI) ---
 const formatInlineText = (text: string, isUser: boolean) => {
     // Handle Bold **text**
     const parts = text.split(/(\*\*.*?\*\*)/g);
@@ -185,6 +244,15 @@ const formatInlineText = (text: string, isUser: boolean) => {
                             >{subPart.replace(/[\[\]]/g, '')}</sup>
                         );
                     }
+                    // Handle Step References (e.g. S1-1)
+                    if (/\b[S]\d+-\d+\b/.test(subPart)) {
+                        return (
+                            <span key={subIndex} className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold mx-0.5 ${isUser ? 'bg-white/20' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                                <ArrowRightCircle size={10} />
+                                {subPart}
+                            </span>
+                        )
+                    }
                     return <span key={subIndex}>{subPart}</span>;
                 })}
             </span>
@@ -192,7 +260,7 @@ const formatInlineText = (text: string, isUser: boolean) => {
     });
 };
 
-const MessageRenderer = ({ content, role, isWelcome }: { content: string, role: 'user' | 'assistant', isWelcome?: boolean }) => {
+const MessageRenderer = ({ content, role, isWelcome, sopData }: { content: string, role: 'user' | 'assistant', isWelcome?: boolean, sopData: SopResponse }) => {
     const isUser = role === 'user';
     
     // Split content by lines to detect structure (Tables, Lists)
@@ -215,28 +283,46 @@ const MessageRenderer = ({ content, role, isWelcome }: { content: string, role: 
                 const headers = tableBuffer[0].split('|').filter(c => c.trim()).map(c => c.trim());
                 const rows = tableBuffer.slice(2).map(r => r.split('|').filter(c => c.trim()).map(c => c.trim())); // Skip alignment row [1]
                 
-                elements.push(
-                    <div key={`tbl-${i}`} className="my-3 w-full overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
-                        <table className="w-full text-left text-xs min-w-[300px]">
-                            <thead className="bg-slate-50 border-b border-slate-200">
-                                <tr>
-                                    {headers.map((h, hIdx) => (
-                                        <th key={hIdx} className="p-2 font-bold text-slate-700 whitespace-nowrap">{formatInlineText(h, isUser)}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
+                // AGUI: Check if this is a Metrics Table
+                const isMetricTable = headers.some(h => ['metric', 'measure', 'kpi'].includes(h.toLowerCase()));
+                
+                if (isMetricTable && !isUser) {
+                    elements.push(
+                        <div key={`metrics-${i}`} className="my-4 w-full">
+                            <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
                                 {rows.map((row, rIdx) => (
-                                    <tr key={rIdx} className="hover:bg-slate-50/50">
-                                        {row.map((cell, cIdx) => (
-                                            <td key={cIdx} className="p-2 text-slate-600 min-w-[80px] break-words">{formatInlineText(cell, isUser)}</td>
+                                    <div key={rIdx} className="snap-center h-full">
+                                        <MetricWidget row={row} headers={headers} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                } else {
+                    // Standard Table
+                    elements.push(
+                        <div key={`tbl-${i}`} className="my-3 w-full overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+                            <table className="w-full text-left text-xs min-w-[300px]">
+                                <thead className="bg-slate-50 border-b border-slate-200">
+                                    <tr>
+                                        {headers.map((h, hIdx) => (
+                                            <th key={hIdx} className="p-2 font-bold text-slate-700 whitespace-nowrap">{formatInlineText(h, isUser)}</th>
                                         ))}
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                );
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {rows.map((row, rIdx) => (
+                                        <tr key={rIdx} className="hover:bg-slate-50/50">
+                                            {row.map((cell, cIdx) => (
+                                                <td key={cIdx} className="p-2 text-slate-600 min-w-[80px] break-words">{formatInlineText(cell, isUser)}</td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    );
+                }
                 tableBuffer = [];
                 inTable = false;
             }
@@ -249,6 +335,16 @@ const MessageRenderer = ({ content, role, isWelcome }: { content: string, role: 
                  return;
              }
              inTable = false; 
+        }
+
+        // --- AGUI: Risk List Detection ---
+        // Detects bullet points that start with a Risk ID (e.g. "- **R1**" or "* R5")
+        const riskMatch = trimmed.match(/^[-*]\s+\**([R]\d+)\**[:\s](.*)/);
+        if (riskMatch && !isUser) {
+            elements.push(
+                <RiskWidget key={`risk-${i}`} riskId={riskMatch[1]} sopData={sopData} />
+            );
+            return;
         }
 
         // --- Header Detection ---
@@ -786,7 +882,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]'
                 }`}>
                     <div className="relative z-10 w-full">
-                        <MessageRenderer content={msg.content} role={msg.role} isWelcome={msg.isWelcome} />
+                        <MessageRenderer content={msg.content} role={msg.role} isWelcome={msg.isWelcome} sopData={sopData} />
                     </div>
                 </div>
 
