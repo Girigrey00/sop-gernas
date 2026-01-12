@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
+import { WIDGET_DEMO_DATA } from '../constants';
 
 interface ChatAssistantProps {
   sopData: SopResponse;
@@ -95,7 +96,7 @@ const GIcon = ({ className }: { className?: string }) => (
 
 // --- A2UI (Adaptive AI UI) Widgets ---
 
-const ProductCardWidget = ({ name, id, status }: { name: string, id: string, status: string }) => {
+const ProductCardWidget: React.FC<{ name: string, id: string, status: string }> = ({ name, id, status }) => {
     return (
         <div className="flex items-start gap-4 p-4 my-3 bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all w-full animate-in slide-in-from-left-2">
             <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
@@ -117,7 +118,7 @@ const ProductCardWidget = ({ name, id, status }: { name: string, id: string, sta
     );
 };
 
-const FaqWidget = ({ question, answer }: { question: string, answer: string }) => {
+const FaqWidget: React.FC<{ question: string, answer: string }> = ({ question, answer }) => {
     const [isOpen, setIsOpen] = useState(false);
     return (
         <div className="my-2 border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm animate-in slide-in-from-bottom-2">
@@ -138,7 +139,7 @@ const FaqWidget = ({ question, answer }: { question: string, answer: string }) =
     );
 };
 
-const TagCloudWidget = ({ tags }: { tags: string[] }) => {
+const TagCloudWidget: React.FC<{ tags: string[] }> = ({ tags }) => {
     return (
         <div className="my-3 flex flex-wrap gap-2 animate-in fade-in">
             {tags.map((tag, i) => (
@@ -151,7 +152,7 @@ const TagCloudWidget = ({ tags }: { tags: string[] }) => {
     );
 };
 
-const SnippetWidget = ({ text }: { text: string }) => {
+const SnippetWidget: React.FC<{ text: string }> = ({ text }) => {
     return (
         <div className="my-3 flex gap-3 p-4 bg-amber-50/50 border-l-4 border-amber-400 rounded-r-lg animate-in slide-in-from-left-2">
             <Quote size={20} className="text-amber-400 shrink-0 fill-amber-100" />
@@ -160,7 +161,7 @@ const SnippetWidget = ({ text }: { text: string }) => {
     );
 };
 
-const TrendWidget = ({ data, title }: { data: { label: string, value: number }[], title?: string }) => {
+const TrendWidget: React.FC<{ data: { label: string, value: number }[], title?: string }> = ({ data, title }) => {
     // Simple SVG Sparkline
     const height = 60;
     const width = 300;
@@ -204,7 +205,7 @@ const TrendWidget = ({ data, title }: { data: { label: string, value: number }[]
     );
 };
 
-const StepperWidget = ({ steps }: { steps: { label: string, status: 'done' | 'active' | 'pending' }[] }) => {
+const StepperWidget: React.FC<{ steps: { label: string, status: 'done' | 'active' | 'pending' }[] }> = ({ steps }) => {
     return (
         <div className="my-3 w-full overflow-x-auto pb-2">
             <div className="flex items-center min-w-max">
@@ -236,7 +237,7 @@ const StepperWidget = ({ steps }: { steps: { label: string, status: 'done' | 'ac
     );
 };
 
-const FileWidget = ({ filename, type = 'PDF' }: { filename: string, type?: string }) => (
+const FileWidget: React.FC<{ filename: string, type?: string }> = ({ filename, type = 'PDF' }) => (
     <div className="flex items-center gap-3 p-3 my-2 bg-slate-50 border border-slate-200 rounded-xl hover:bg-blue-50 hover:border-blue-200 transition-colors cursor-pointer group animate-in slide-in-from-left-2 w-full max-w-sm">
         <div className="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
             <Paperclip size={18} className="text-slate-400 group-hover:text-blue-500" />
@@ -251,7 +252,7 @@ const FileWidget = ({ filename, type = 'PDF' }: { filename: string, type?: strin
     </div>
 );
 
-const SLAWidget = ({ time, text }: { time: string, text: string }) => (
+const SLAWidget: React.FC<{ time: string, text: string }> = ({ time, text }) => (
     <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full text-amber-700 text-xs font-bold my-1 shadow-sm animate-pulse">
         <Timer size={14} className="animate-spin-slow" />
         <span className="uppercase tracking-wide">{time}:</span>
@@ -259,7 +260,7 @@ const SLAWidget = ({ time, text }: { time: string, text: string }) => (
     </div>
 );
 
-const ContactWidget = ({ name, role, email }: { name: string, role: string, email?: string }) => (
+const ContactWidget: React.FC<{ name: string, role: string, email?: string }> = ({ name, role, email }) => (
     <div className="flex items-center gap-3 p-3 my-2 bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-xl shadow-sm w-full max-w-sm">
         <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm border-2 border-white shadow-md">
             {name.substring(0, 2).toUpperCase()}
@@ -273,14 +274,14 @@ const ContactWidget = ({ name, role, email }: { name: string, role: string, emai
     </div>
 );
 
-const LocationWidget = ({ location }: { location: string }) => (
+const LocationWidget: React.FC<{ location: string }> = ({ location }) => (
     <div className="flex items-center gap-2 my-2 text-xs text-slate-600 font-medium bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 w-fit">
         <MapPin size={14} className="text-rose-500" />
         {location}
     </div>
 );
 
-const RatingWidget = ({ score, max = 5 }: { score: number, max?: number }) => (
+const RatingWidget: React.FC<{ score: number, max?: number }> = ({ score, max = 5 }) => (
     <div className="flex items-center gap-1 my-2">
         {[...Array(max)].map((_, i) => (
             <Star key={i} size={14} className={i < score ? "fill-amber-400 text-amber-400" : "text-slate-200"} />
@@ -291,7 +292,7 @@ const RatingWidget = ({ score, max = 5 }: { score: number, max?: number }) => (
 
 // --- Existing Widgets ---
 
-const PieChartWidget = ({ data, title }: { data: { label: string, value: number }[], title?: string }) => {
+const PieChartWidget: React.FC<{ data: { label: string, value: number }[], title?: string }> = ({ data, title }) => {
     const total = data.reduce((acc, cur) => acc + cur.value, 0);
     let currentAngle = 0;
     const colors = ['#003DA5', '#034AC5', '#0647B8', '#A6E1FA', '#3b82f6', '#60a5fa', '#93c5fd'];
@@ -334,7 +335,7 @@ const PieChartWidget = ({ data, title }: { data: { label: string, value: number 
     );
 };
 
-const BarChartWidget = ({ data, title }: { data: { label: string, value: number, displayValue: string }[], title?: string }) => {
+const BarChartWidget: React.FC<{ data: { label: string, value: number, displayValue: string }[], title?: string }> = ({ data, title }) => {
     const max = Math.max(...data.map(d => d.value), 1); 
     return (
         <div className="my-3 p-4 bg-white border border-slate-200 rounded-xl shadow-sm animate-in slide-in-from-left-2 duration-500 w-full max-w-full overflow-hidden">
@@ -364,7 +365,7 @@ const BarChartWidget = ({ data, title }: { data: { label: string, value: number,
     )
 }
 
-const KeyValueWidget = ({ items }: { items: { key: string, value: string }[] }) => {
+const KeyValueWidget: React.FC<{ items: { key: string, value: string }[] }> = ({ items }) => {
     return (
         <div className="my-3 grid grid-cols-1 sm:grid-cols-2 gap-2 w-full animate-in slide-in-from-left-2">
             {items.map((item, i) => (
@@ -377,7 +378,7 @@ const KeyValueWidget = ({ items }: { items: { key: string, value: string }[] }) 
     );
 };
 
-const JsonViewerWidget = ({ data }: { data: string }) => {
+const JsonViewerWidget: React.FC<{ data: string }> = ({ data }) => {
     let parsed = null;
     let error = false;
     try {
@@ -411,7 +412,7 @@ const JsonViewerWidget = ({ data }: { data: string }) => {
 };
 
 
-const GaugeWidget = ({ label, value, max = 100, displayValue }: { label: string, value: number, max?: number, displayValue?: string }) => {
+const GaugeWidget: React.FC<{ label: string, value: number, max?: number, displayValue?: string }> = ({ label, value, max = 100, displayValue }) => {
     const percentage = Math.min(100, Math.max(0, (value / max) * 100));
     const circumference = 2 * Math.PI * 16; 
     const offset = circumference - (percentage / 100) * circumference;
@@ -448,7 +449,7 @@ const GaugeWidget = ({ label, value, max = 100, displayValue }: { label: string,
     )
 }
 
-const ChecklistWidget = ({ items }: { items: string[] }) => {
+const ChecklistWidget: React.FC<{ items: string[] }> = ({ items }) => {
     return (
         <div className="my-3 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm animate-in slide-in-from-bottom-2 w-full">
             <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex items-center gap-2">
@@ -475,7 +476,7 @@ const ChecklistWidget = ({ items }: { items: string[] }) => {
     )
 }
 
-const RoleWidget = ({ actor, description }: { actor: string, description: string }) => (
+const RoleWidget: React.FC<{ actor: string, description: string }> = ({ actor, description }) => (
     <div className="flex items-start gap-3 p-3 my-2 bg-indigo-50/50 border border-indigo-100 rounded-xl shadow-sm w-full animate-in slide-in-from-left-2 hover:bg-indigo-50 transition-colors">
         <div className="mt-0.5 w-8 h-8 rounded-full bg-white border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm shrink-0">
             <User size={16} />
@@ -487,7 +488,7 @@ const RoleWidget = ({ actor, description }: { actor: string, description: string
     </div>
 );
 
-const DecisionOptionWidget = ({ options, onSelect }: { options: string[], onSelect?: (opt: string) => void }) => (
+const DecisionOptionWidget: React.FC<{ options: string[], onSelect?: (opt: string) => void }> = ({ options, onSelect }) => (
     <div className="grid grid-cols-1 gap-2 my-3 w-full">
         {options.map((opt, i) => (
             <button 
@@ -503,7 +504,7 @@ const DecisionOptionWidget = ({ options, onSelect }: { options: string[], onSele
     </div>
 );
 
-const RiskWidget = ({ riskId, sopData, fallbackText }: { riskId: string, sopData: SopResponse, fallbackText: string }) => {
+const RiskWidget: React.FC<{ riskId: string, sopData: SopResponse, fallbackText: string }> = ({ riskId, sopData, fallbackText }) => {
   const risk = sopData.inherentRisks.find(r => r.riskId === riskId || r.riskId === riskId.replace(/[*_]/g, ''));
   const displayId = risk?.riskId || riskId.replace(/[*_]/g, '');
   const category = risk?.category || 'Operational Risk';
@@ -525,7 +526,7 @@ const RiskWidget = ({ riskId, sopData, fallbackText }: { riskId: string, sopData
   )
 }
 
-const StepWidget = ({ stepId, sopData, onClick }: { stepId: string, sopData: SopResponse, onClick?: (id: string) => void }) => {
+const StepWidget: React.FC<{ stepId: string, sopData: SopResponse, onClick?: (id: string) => void }> = ({ stepId, sopData, onClick }) => {
     let stepDetails = null;
     if (sopData.processFlow && sopData.processFlow.stages) {
         for (const stage of sopData.processFlow.stages) {
@@ -571,7 +572,7 @@ const StepWidget = ({ stepId, sopData, onClick }: { stepId: string, sopData: Sop
     );
 }
 
-const PolicyWidget = ({ type, text }: { type: 'POLICY' | 'WARNING' | 'NOTE', text: string }) => {
+const PolicyWidget: React.FC<{ type: 'POLICY' | 'WARNING' | 'NOTE', text: string }> = ({ type, text }) => {
     let styles = {
         bg: 'bg-slate-50',
         border: 'border-slate-200',
@@ -616,7 +617,7 @@ const PolicyWidget = ({ type, text }: { type: 'POLICY' | 'WARNING' | 'NOTE', tex
     );
 }
 
-const TimelineWidget = ({ time, text }: { time: string, text: string }) => {
+const TimelineWidget: React.FC<{ time: string, text: string }> = ({ time, text }) => {
     return (
         <div className="flex gap-3 relative pl-2 group animate-in slide-in-from-left-2">
              <div className="absolute left-[15px] top-6 bottom-[-8px] w-px bg-slate-200 group-last:hidden"></div>
@@ -635,7 +636,7 @@ const TimelineWidget = ({ time, text }: { time: string, text: string }) => {
     )
 }
 
-const MetricWidget = ({ row, headers }: { row: string[], headers: string[] }) => {
+const MetricWidget: React.FC<{ row: string[], headers: string[] }> = ({ row, headers }) => {
    let name = "";
    let value = "";
    let target = "";
@@ -1217,6 +1218,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
   const streamInterval = useRef<any>(null);
   const isGenerationComplete = useRef<boolean>(false);
   const lastLoadedSessionRef = useRef<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const formatTimeDubai = (date: Date) => {
     return date.toLocaleTimeString('en-US', { 
@@ -1234,104 +1236,24 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
 
   // --- Widget Demo Function ---
   const triggerWidgetDemo = () => {
-      const demoContent = `### 🧩 GERNAS A2UI Component Gallery
-Here is a full demonstration of all 24 interactive widgets supported by the visualization engine.
-
-#### 1. Entity & Profile Widgets
-**Product**: Personal Loan Pro | PL-2024-X | Active
-**Owner**: Sarah Connor | Risk Manager | sarah@bank.com
-**Contact**: IT Helpdesk | Support
-**Admin**: Full System Access privileges.
-
-#### 2. Visualizations & Analytics
-**Score**: 85%
-**Confidence**: High (0.92)
-**Rating**: 4/5
-
-**Trend Analysis**:
-- Jan: 150
-- Feb: 230
-- Mar: 180
-- Apr: 320
-
-**Portfolio Distribution**:
-- Retail: 40%
-- Corporate: 35%
-- SME: 25%
-
-**Volume Metrics**:
-- Q1: 500
-- Q2: 750
-- Q3: 600
-
-#### 3. Process & Navigation
-**Process Status**:
-- Step 1: Done
-- Step 2: Active
-- Step 3: Pending
-
-**S1-1**: Customer Application Entry
-**S1-2**: Dedupe Check
-
-**SLA**: 2 Hours Remaining
-
-#### 4. Compliance & Alerts
-**R4**: Fraud Risk detected (High)
-**POLICY**: Compliance check mandatory.
-**WARNING**: Do not override system decision.
-> "Strict adherence to the credit policy is required for all high-value loans."
-
-#### 5. Operations & Logs
-**10:00 AM**: Application Received
-**10:15 AM**: KYC Verified
-
-**Required Documents**:
-- [x] Emirates ID
-- [ ] Salary Certificate
-
-**Decision Options**:
-- **Option A**: Approve Application
-- **Option B**: Refer to Credit
-
-#### 6. Knowledge Base
-**Q**: What is the max loan amount?
-**A**: The maximum loan amount is AED 5 Million.
-
-**Tags**: Lending, Risk, Policy
-
-[File] Credit_Policy_v2.pdf
-
-**Location**: Dubai HQ
-
-#### 7. Data Tables & Objects
-| Feature | Basic Plan | Pro Plan |
-|---------|------------|----------|
-| Users   | 5          | Unlimited|
-| Support | Email      | 24/7     |
-
-| Metric | Target | Actual |
-|--------|--------|--------|
-| TAT    | 15m    | 12m    |
-| CSAT   | >90%   | 95%    |
-
-- Application ID: 123456
-- Status: Under Review
-- Priority: High
-
-\`\`\`json
-{
-  "status": "success",
-  "code": 200
-}
-\`\`\`
-`;
+      // Use the shared data constant
+      const demoData = WIDGET_DEMO_DATA;
+      
       setMessages(prev => [...prev, {
           id: `demo-${Date.now()}`,
           role: 'assistant',
-          content: demoContent,
+          content: demoData.answer,
           timestamp: new Date(),
+          citations: demoData.citations,
+          suggestions: demoData.related_questions,
           isTyping: false
       }]);
+      
+      // Update sidebar suggestions
+      if (demoData.related_questions && demoData.related_questions.length > 0) {
+          setActiveSuggestions(demoData.related_questions);
+          setIsSuggestionsOpen(true);
+      }
   };
 
   useEffect(() => {
@@ -1497,6 +1419,22 @@ Here is a full demonstration of all 24 interactive widgets supported by the visu
         }, 100);
     }
   }, [messages.length, messages[messages.length-1]?.content]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        const scrollHeight = textareaRef.current.scrollHeight;
+        textareaRef.current.style.height = `${Math.min(scrollHeight, 150)}px`;
+        textareaRef.current.style.overflowY = scrollHeight > 150 ? 'auto' : 'hidden';
+    }
+  }, [input]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
   const handleSend = async (manualInput?: string) => {
     const textToSend = manualInput || input;
@@ -1934,20 +1872,21 @@ Here is a full demonstration of all 24 interactive widgets supported by the visu
             </div>
         )}
 
-        <div className="relative flex items-center gap-2 max-w-4xl mx-auto w-full">
-            <input
-                type="text"
+        <div className="relative flex items-end gap-2 max-w-4xl mx-auto w-full">
+            <textarea
+                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                onKeyDown={handleKeyDown}
                 placeholder="Ask a question..."
-                className="flex-1 pl-5 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-fab-royal/20 focus:border-fab-royal text-sm transition-all shadow-inner"
+                className="flex-1 pl-5 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-[24px] focus:outline-none focus:ring-2 focus:ring-fab-royal/20 focus:border-fab-royal text-sm transition-all shadow-inner resize-none overflow-hidden min-h-[48px] max-h-[150px]"
                 disabled={isLoading}
+                rows={1}
             /> 
             <button
                 onClick={() => handleSend()}
                 disabled={!input.trim() || isLoading}
-                className="absolute right-2 top-1.5 bottom-1.5 p-2 bg-fab-navy hover:bg-fab-royal text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                className="absolute right-2 bottom-2 p-2 bg-fab-navy hover:bg-fab-royal text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md h-9 w-9 flex items-center justify-center mb-0.5"
             >
                 {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
             </button>

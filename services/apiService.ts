@@ -247,7 +247,7 @@ export const apiService: ApiServiceInterface = {
         }
     },
 
-    // --- Chat Endpoint (Streaming) ---
+    // --- Chat Endpoint (Streaming & Standard JSON) ---
     chatInference: async (payload: { 
         question: string, 
         index_name?: string, 
@@ -263,7 +263,7 @@ export const apiService: ApiServiceInterface = {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Accept': 'text/event-stream'
+                    'Accept': 'text/event-stream, application/json' // Accept both
                 },
                 body: JSON.stringify({
                     question: payload.question,
@@ -279,6 +279,27 @@ export const apiService: ApiServiceInterface = {
                  throw new Error(`API Error ${response.status}: ${errorText}`);
             }
 
+            // 1. Handle Standard JSON Response (Non-Streaming RAG)
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const data = await response.json();
+                
+                // Send the full answer text
+                if (data.answer) {
+                    payload.onToken(data.answer);
+                }
+                
+                // Complete with metadata
+                if (payload.onComplete) {
+                    payload.onComplete({
+                        citations: data.citations,
+                        related_questions: data.related_questions || data.suggestions
+                    });
+                }
+                return;
+            }
+
+            // 2. Handle Streaming Response (SSE)
             if (!response.body) {
                 throw new Error("ReadableStream not supported in this browser.");
             }
@@ -316,13 +337,14 @@ export const apiService: ApiServiceInterface = {
                             const jsonStr = trimmedLine.substring(6); 
                             const data = JSON.parse(jsonStr);
 
-                            // 1. Token Handling
+                            // Token Handling
                             if (data.token) {
-                                // Feed the token (which might be a raw JSON char) into the parser
-                                parser.process(data.token);
+                                // CHANGED: Directly pass standard text tokens to avoid parser buffering
+                                // This assumes standard RAG streaming where 'token' is just the next text chunk
+                                payload.onToken(data.token);
                             }
                             
-                            // 2. Direct Citations/Related Handling (if sent separately)
+                            // Direct Citations/Related Handling (if sent separately)
                             if (data.citations || data.related_questions) {
                                 if (payload.onComplete) {
                                     payload.onComplete({
@@ -332,7 +354,7 @@ export const apiService: ApiServiceInterface = {
                                 }
                             }
 
-                            // 3. Fallback: Full Answer Block (Legacy non-stream)
+                            // Fallback: Full Answer Block (Legacy non-stream)
                             if (data.answer && !data.token) {
                                 if (typeof data.answer === 'string') {
                                      // If it looks like JSON, ignore to avoid double print

@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { 
     X, Shield, AlertOctagon, Activity, ArrowRight, 
     CheckCircle2, Split, Target, BarChart3, Map,
-    ChevronDown, ChevronUp, Book, ScrollText, Compass
+    ChevronDown, ChevronUp, Book, ScrollText, Compass,
+    Download, FileText
 } from 'lucide-react';
 import { ProcessStep, SopResponse } from '../types';
 
@@ -27,6 +28,11 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
     setIsRisksOpen(true);
     setIsPoliciesOpen(true);
   }, [step?.stepId]);
+
+  const handleDownload = (docName: string) => {
+      // Dummy download handler
+      alert(`Downloading ${docName}...`);
+  };
 
   return (
     <div className="flex flex-col h-full bg-white relative">
@@ -71,13 +77,6 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
                 {/* Scrollable Content */}
                 <div className="p-6 overflow-y-auto space-y-8 flex-1">
                     
-                    {/* Description */}
-                    <div>
-                        <p className="text-sm text-slate-700 leading-relaxed p-4 bg-slate-50 rounded-xl border border-slate-100">
-                            {step.description}
-                        </p>
-                    </div>
-
                     {/* Actions / Navigation */}
                     <div className="space-y-3">
                         <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
@@ -256,23 +255,48 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
                         )}
                     </section>
 
-                    {/* Metrics */}
+                    {/* Documents Download Section (Replaced Metrics) */}
                     <section>
                         <h3 className="text-sm font-bold text-slate-500 tracking-wide flex items-center gap-2 mb-3">
-                            <BarChart3 size={16} /> Key metrics
+                            <FileText size={16} /> Process Documentation
                         </h3>
-                        {processData.metricsAndMeasures && processData.metricsAndMeasures.length > 0 ? (
-                            <div className="grid grid-cols-2 gap-3">
-                                {processData.metricsAndMeasures.slice(0, 4).map((m: any, i: number) => (
-                                    <div key={i} className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-center">
-                                        <p className="text-[10px] text-slate-500 uppercase truncate">{m.type}</p>
-                                        <p className="text-lg font-bold text-blue-600 mt-1">{m.target}</p>
+                        <div className="space-y-3">
+                            <div 
+                                onClick={() => handleDownload('Process Definition')}
+                                className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 hover:shadow-md transition-all group cursor-pointer"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg border border-blue-100 group-hover:scale-110 transition-transform">
+                                        <FileText size={20} />
                                     </div>
-                                ))}
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-800 group-hover:text-blue-700 transition-colors">Process Definition</p>
+                                        <p className="text-xs text-slate-500">Master SOP • v1.0 • PDF</p>
+                                    </div>
+                                </div>
+                                <div className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+                                    <Download size={18} />
+                                </div>
                             </div>
-                        ) : (
-                            <p className="text-sm text-slate-400 italic">No KPIs defined.</p>
-                        )}
+
+                            <div 
+                                onClick={() => handleDownload('Policy Document')}
+                                className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-emerald-300 hover:shadow-md transition-all group cursor-pointer"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100 group-hover:scale-110 transition-transform">
+                                        <Shield size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Policy Document</p>
+                                        <p className="text-xs text-slate-500">Compliance & Risks • v2.1 • PDF</p>
+                                    </div>
+                                </div>
+                                <div className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors">
+                                    <Download size={18} />
+                                </div>
+                            </div>
+                        </div>
                     </section>
 
                     {/* Risks Summary */}

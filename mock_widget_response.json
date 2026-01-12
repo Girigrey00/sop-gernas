@@ -1,0 +1,16 @@
+{
+  "question_id": "widget-gallery-demo-001",
+  "session_id": "sess-demo-123",
+  "product": "Personal Loan",
+  "timestamp": "2025-10-27T10:00:00Z",
+  "answer": "### 🧩 GERNAS A2UI Component Gallery\nHere is a full demonstration of all 25 interactive widgets supported by the visualization engine.\n\n#### 1. Entity & Profile Widgets\n**Product**: Personal Loan Pro | PL-2024-X | Active\n**Owner**: Sarah Connor | Risk Manager | sarah@bank.com\n**Contact**: IT Helpdesk | Support\n**Admin**: Full System Access privileges.\n\n#### 2. Visualizations & Analytics\n**Score**: 85%\n**Confidence**: High (0.92)\n**Rating**: 4/5\n\n**Trend Analysis**:\n- Jan: 150\n- Feb: 230\n- Mar: 180\n- Apr: 320\n\n**Portfolio Distribution**:\n- Retail: 40%\n- Corporate: 35%\n- SME: 25%\n\n**Volume Metrics**:\n- Q1: 500\n- Q2: 750\n- Q3: 600\n\n#### 3. Process & Navigation\n**Process Status**:\n- Step 1: Done\n- Step 2: Active\n- Step 3: Pending\n\n**S1-1**: Customer Application Entry\n**S1-2**: Dedupe Check\n\n**SLA**: 2 Hours Remaining\n\n#### 4. Compliance & Alerts\n**R4**: Fraud Risk detected (High)\n**POLICY**: Compliance check mandatory.\n**WARNING**: Do not override system decision.\n> \"Strict adherence to the credit policy is required for all high-value loans.\"\n\n#### 5. Operations & Logs\n**10:00 AM**: Application Received\n**10:15 AM**: KYC Verified\n\n**Required Documents**:\n- [x] Emirates ID\n- [ ] Salary Certificate\n\n**Decision Options**:\n- **Option A**: Approve Application\n- **Option B**: Refer to Credit\n\n#### 6. Knowledge Base\n**Q**: What is the max loan amount?\n**A**: The maximum loan amount is AED 5 Million.\n\n**Tags**: Lending, Risk, Policy\n\n[File] Credit_Policy_v2.pdf\n\n**Location**: Dubai HQ\n\n#### 7. Data Tables & Objects\n| Feature | Basic Plan | Pro Plan |\n|---------|------------|----------|\n| Users   | 5          | Unlimited|\n| Support | Email      | 24/7     |\n\n| Metric | Target | Actual |\n|--------|--------|--------|\n| TAT    | 15m    | 12m    |\n| CSAT   | >90%   | 95%    |\n\n- Application ID: 123456\n- Status: Under Review\n- Priority: High\n\n```json\n{\n  \"status\": \"success\",\n  \"code\": 200\n}\n```",
+  "citations": {
+    "[1] Credit Policy v2.0": "Page 12: Lending caps and tenure limits.",
+    "[2] Ops Manual": "Page 45: SLA definitions."
+  },
+  "related_questions": [
+    "What are the risk mitigations for R4?",
+    "Show me the full process flow.",
+    "Who is the owner of this product?"
+  ]
+}
