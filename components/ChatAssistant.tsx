@@ -765,23 +765,56 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
     if (!isUser) {
         let trimmed = content.trim();
         
-        // Remove markdown code blocks if present
-        const markdownMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-        if (markdownMatch) {
-            trimmed = markdownMatch[1].trim();
+        // 1. Remove markdown code blocks start/end (Streaming friendly)
+        if (trimmed.startsWith('```')) {
+            trimmed = trimmed.replace(/^```(?:json)?\s*/i, '');
         }
+        // Remove trailing ``` only if it exists at the very end
+        trimmed = trimmed.replace(/\s*```$/, '');
 
+        // 2. Try parsing complete JSON first (Best case)
+        let parsedJson = null;
         if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
             try {
-                // Attempt to parse standard response wrapper
-                const parsed = JSON.parse(trimmed);
-                if (parsed.answer) {
-                    displayContent = parsed.answer;
-                } else if (parsed.content) {
-                    displayContent = parsed.content;
+                parsedJson = JSON.parse(trimmed);
+            } catch (e) { /* ignore */ }
+        } else if (trimmed.startsWith('{')) {
+             // Maybe it ends with } but has trailing whitespace?
+             // Or maybe valid JSON but logic above failed.
+             try {
+                parsedJson = JSON.parse(trimmed);
+            } catch (e) { /* ignore */ }
+        }
+
+        if (parsedJson) {
+            if (parsedJson.answer) displayContent = parsedJson.answer;
+            else if (parsedJson.content) displayContent = parsedJson.content;
+        } else if (trimmed.startsWith('{')) {
+            // 3. Handle Partial JSON (Streaming) - Extract "answer" field manually
+            const answerMatch = trimmed.match(/"answer"\s*:\s*"/);
+            if (answerMatch) {
+                const startIndex = (answerMatch.index || 0) + answerMatch[0].length;
+                let textPart = trimmed.substring(startIndex);
+                
+                // Find the closing quote, respecting escaped quotes
+                let endQuoteIndex = -1;
+                for (let i = 0; i < textPart.length; i++) {
+                    if (textPart[i] === '"' && textPart[i-1] !== '\\') {
+                        endQuoteIndex = i;
+                        break;
+                    }
                 }
-            } catch (e) {
-                // Not valid JSON or parsing failed, fallback to raw text
+                
+                if (endQuoteIndex !== -1) {
+                    textPart = textPart.substring(0, endQuoteIndex);
+                }
+                
+                // Unescape common JSON escapes for display
+                displayContent = textPart
+                    .replace(/\\"/g, '"')
+                    .replace(/\\n/g, '\n')
+                    .replace(/\\\\/g, '\\')
+                    .replace(/\\t/g, '\t');
             }
         }
     }
@@ -1605,7 +1638,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
   };
 
   return (
-    <div className="flex flex-col h-full bg-white relative overflow-hidden">
+    <div className="flex flex-col h-full bg-white relative">
       
       {/* Header */}
       <div className="p-4 border-b border-slate-100 bg-white flex justify-between items-center shadow-sm z-20 h-16">
