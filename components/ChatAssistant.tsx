@@ -7,7 +7,8 @@ import {
   ShieldAlert, Info, AlertTriangle, Clock, Calendar, CheckCircle2, Circle, 
   ListTodo, Percent, TrendingUp, User, Braces, Terminal, LayoutDashboard, Zap, PieChart,
   TrendingDown, Paperclip, Phone, Mail, MapPin, Star, Tag, Lightbulb as Bulb, DollarSign,
-  ArrowRightLeft, Timer, Check, MoveRight, UserCheck, FileCheck, Package, HelpCircle, Quote, Hash
+  ArrowRightLeft, Timer, Check, MoveRight, UserCheck, FileCheck, Package, HelpCircle, Quote, Hash,
+  ExternalLink
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -378,40 +379,6 @@ const KeyValueWidget: React.FC<{ items: { key: string, value: string }[] }> = ({
     );
 };
 
-const JsonViewerWidget: React.FC<{ data: string }> = ({ data }) => {
-    let parsed = null;
-    let error = false;
-    try {
-        parsed = JSON.parse(data);
-    } catch {
-        error = true;
-    }
-
-    return (
-        <div className="my-3 w-full bg-[#1e1e1e] rounded-xl overflow-hidden shadow-md animate-in slide-in-from-bottom-2 border border-slate-700 group">
-            <div className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] border-b border-[#3e3e3e]">
-                <div className="flex items-center gap-2">
-                    <Braces size={14} className="text-yellow-400" />
-                    <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">JSON Data</span>
-                </div>
-                <div className="flex gap-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
-                   <div className="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
-                   <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></div>
-                   <div className="w-2.5 h-2.5 rounded-full bg-green-500/80"></div>
-                </div>
-            </div>
-            <div className="p-4 overflow-x-auto custom-scrollbar bg-[#1e1e1e]">
-                {error ? (
-                    <pre className="text-xs font-mono text-red-300 whitespace-pre-wrap break-all">{data}</pre>
-                ) : (
-                    <pre className="text-xs font-mono text-blue-300 whitespace-pre-wrap leading-relaxed">{JSON.stringify(parsed, null, 2)}</pre>
-                )}
-            </div>
-        </div>
-    );
-};
-
-
 const GaugeWidget: React.FC<{ label: string, value: number, max?: number, displayValue?: string }> = ({ label, value, max = 100, displayValue }) => {
     const percentage = Math.min(100, Math.max(0, (value / max) * 100));
     const circumference = 2 * Math.PI * 16; 
@@ -675,7 +642,7 @@ const MetricWidget: React.FC<{ row: string[], headers: string[] }> = ({ row, hea
 }
 
 // --- Citation Block ---
-const CitationBlock = ({ citations }: { citations: Record<string, string> }) => {
+const CitationBlock = ({ citations, onCitationClick }: { citations: Record<string, string>, onCitationClick?: (doc: string, page?: string) => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const count = Object.keys(citations).length;
   if (count === 0) return null;
@@ -701,6 +668,7 @@ const CitationBlock = ({ citations }: { citations: Record<string, string> }) => 
                 {Object.entries(citations).map(([key, value]) => {
                     let source = "Source Document";
                     let page = "";
+                    let pageNumber = "";
                     let content = value;
                     const firstColon = value.indexOf(':');
                     if (firstColon > -1 && firstColon < 100) {
@@ -709,27 +677,39 @@ const CitationBlock = ({ citations }: { citations: Record<string, string> }) => 
                         const pageMatch = meta.match(/[-|(]\s*Page\s*(\d+)/i);
                         if (pageMatch) {
                             page = `Page ${pageMatch[1]}`;
+                            pageNumber = pageMatch[1];
                             source = meta.replace(pageMatch[0], '').trim().replace(/[-|)]$/, '').trim();
                         } else {
                             source = meta.trim();
                         }
                     }
+                    
+                    // Fallback source name from key if meta didn't give it cleanly
+                    if (source === "Source Document" || source.length < 3) {
+                        source = key.replace(/[\[\]]/g, '');
+                    }
+
                     return (
-                        <div key={key} className="flex gap-3 items-start group/card relative bg-white p-3 rounded-lg border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all">
-                            <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-500 shadow-sm mt-0.5 group-hover/card:bg-blue-50 group-hover:card:text-blue-600 transition-colors">
+                        <button 
+                            key={key} 
+                            onClick={() => onCitationClick && onCitationClick(source, pageNumber)}
+                            className="flex gap-3 items-start group/card relative bg-white p-3 rounded-lg border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all text-left w-full cursor-pointer hover:bg-blue-50/10"
+                        >
+                            <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-500 shadow-sm mt-0.5 group-hover/card:bg-blue-50 group-hover/card:text-blue-600 transition-colors">
                                 {key.replace(/[\[\]]/g, '')}
                             </span>
                             <div className="min-w-0 flex-1 space-y-1.5">
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                     <div className="flex items-center gap-1.5 min-w-0">
-                                        <FileText size={12} className="text-slate-400 shrink-0" />
-                                        <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wide truncate max-w-[180px]" title={source}>{source}</p>
+                                        <FileText size={12} className="text-slate-400 shrink-0 group-hover/card:text-blue-500" />
+                                        <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wide truncate max-w-[180px] group-hover/card:text-blue-700" title={source}>{source}</p>
                                     </div>
-                                    {page && <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded border border-slate-200">{page}</span>}
+                                    {page && <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded border border-slate-200 group-hover/card:bg-white">{page}</span>}
+                                    <ExternalLink size={10} className="text-slate-300 opacity-0 group-hover/card:opacity-100 transition-opacity ml-auto" />
                                 </div>
                                 <div className="text-xs text-slate-600 leading-relaxed pl-1 border-l-2 border-slate-100 group-hover/card:border-blue-200 transition-colors">"{content}"</div>
                             </div>
-                        </div>
+                        </button>
                     )
                 })}
             </div>
@@ -780,7 +760,33 @@ const formatInlineText = (text: string, isUser: boolean, sopData?: SopResponse) 
 const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, onSendManual }: { content: string, role: 'user' | 'assistant', isWelcome?: boolean, sopData: SopResponse, onNavigateToStep?: (id: string) => void, onSendManual?: (txt: string) => void }) => {
     const isUser = role === 'user';
     
-    const lines = content.split('\n');
+    // Auto-unwrap JSON answers if API returns strictly raw JSON or markdown wrapped JSON
+    let displayContent = content;
+    if (!isUser) {
+        let trimmed = content.trim();
+        
+        // Remove markdown code blocks if present
+        const markdownMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+        if (markdownMatch) {
+            trimmed = markdownMatch[1].trim();
+        }
+
+        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+            try {
+                // Attempt to parse standard response wrapper
+                const parsed = JSON.parse(trimmed);
+                if (parsed.answer) {
+                    displayContent = parsed.answer;
+                } else if (parsed.content) {
+                    displayContent = parsed.content;
+                }
+            } catch (e) {
+                // Not valid JSON or parsing failed, fallback to raw text
+            }
+        }
+    }
+
+    const lines = displayContent.split('\n');
     const elements: React.ReactNode[] = [];
     
     let tableBuffer: string[] = [];
@@ -789,9 +795,6 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
     
     let inCodeBlock = false;
     let codeBuffer: string[] = [];
-
-    let inRawJson = false;
-    let rawJsonBuffer: string[] = [];
 
     const processListBuffer = (items: string[], keyPrefix: string) => {
         if (items.length === 0) return null;
@@ -904,7 +907,12 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
             if (inCodeBlock) {
                 inCodeBlock = false;
                 const code = codeBuffer.join('\n');
-                elements.push(<JsonViewerWidget key={`json-${i}`} data={code} />);
+                // Simple styled code block instead of heavy widget
+                elements.push(
+                    <div key={`code-${i}`} className="my-3 w-full bg-slate-900 rounded-lg p-4 overflow-x-auto">
+                        <pre className="text-xs font-mono text-slate-200 whitespace-pre-wrap break-all">{code}</pre>
+                    </div>
+                );
                 codeBuffer = [];
             } else {
                 inCodeBlock = true;
@@ -914,22 +922,6 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
 
         if (inCodeBlock) {
             codeBuffer.push(line);
-            return;
-        }
-
-        if (!isUser && trimmed.startsWith('{') && !inRawJson) {
-            inRawJson = true;
-            rawJsonBuffer.push(trimmed);
-            return;
-        }
-        if (inRawJson) {
-            rawJsonBuffer.push(trimmed);
-            if (trimmed.endsWith('}') || (trimmed === '}' && rawJsonBuffer.length > 1)) {
-                inRawJson = false;
-                const jsonStr = rawJsonBuffer.join('\n');
-                elements.push(<JsonViewerWidget key={`raw-json-${i}`} data={jsonStr} />);
-                rawJsonBuffer = [];
-            }
             return;
         }
 
@@ -1232,6 +1224,14 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
     return date.toLocaleDateString('en-US', { 
         timeZone: 'Asia/Dubai'
     });
+  };
+
+  const handleOpenCitation = (docName: string, page?: string) => {
+      const pageNum = page ? page.replace(/\D/g, '') : '';
+      const fakeUrl = `/documents/${docName}${pageNum ? `#page=${pageNum}` : ''}`;
+      // Placeholder for actual document viewer logic
+      alert(`Opening document: ${docName}\nNavigating to page: ${pageNum || '1'}\n(Link simulated)`);
+      // window.open(fakeUrl, '_blank'); 
   };
 
   // --- Widget Demo Function ---
@@ -1680,7 +1680,12 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                 </div>
 
                 {/* Citations */}
-                {msg.citations && Object.keys(msg.citations).length > 0 && <CitationBlock citations={msg.citations} />}
+                {msg.citations && Object.keys(msg.citations).length > 0 && (
+                    <CitationBlock 
+                        citations={msg.citations} 
+                        onCitationClick={handleOpenCitation}
+                    />
+                )}
 
                 {/* Feedback & Actions Toolbar */}
                 {msg.role === 'assistant' && !msg.isWelcome && !msg.isTyping && (
