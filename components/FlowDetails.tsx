@@ -4,7 +4,7 @@ import {
     X, Shield, AlertOctagon, Activity, ArrowRight, 
     CheckCircle2, Split, Target, BarChart3, Map,
     ChevronDown, ChevronUp, Book, ScrollText, Compass,
-    Download, FileText, User
+    Download, FileText, User, Play, Layout
 } from 'lucide-react';
 import { ProcessStep, SopResponse } from '../types';
 import { getActorTheme } from '../utils/layoutUtils';
@@ -33,6 +33,17 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
   // Get dynamic actor theme if step exists
   const actorTheme = step ? getActorTheme(step.actor) : null;
 
+  const handleDownload = () => {
+      // Mock download functionality
+      const element = document.createElement("a");
+      const file = new Blob([JSON.stringify(processData, null, 2)], {type: 'application/json'});
+      element.href = URL.createObjectURL(file);
+      element.download = `${processData.processDefinition.title.replace(/\s+/g, '_')}.json`;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+  };
+
   return (
     <div className="flex flex-col h-full bg-white relative">
         
@@ -46,7 +57,7 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
                     <h3 className="font-bold text-slate-900 text-sm">Process Guide</h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
                         <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
-                        <p className="text-[10px] text-slate-500 font-medium">Standard Operating Procedure</p>
+                        <p className="text-[10px] text-slate-500 font-medium">{step ? 'Step Details' : 'Process Overview'}</p>
                     </div>
                 </div>
             </div>
@@ -235,9 +246,75 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
                 </div>
             </>
         ) : (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">
-                <Target size={48} className="mb-4 opacity-20" />
-                <p className="text-sm font-medium">Select a step from the flowchart to view detailed controls, risks, and policies.</p>
+            <div className="h-full flex flex-col overflow-y-auto">
+                {/* Process Definition Header */}
+                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="px-2 py-0.5 bg-fab-royal text-white text-[10px] font-bold rounded uppercase tracking-wider">v{processData.processDefinition.version}</span>
+                        <span className="px-2 py-0.5 bg-slate-200 text-slate-600 text-[10px] font-bold rounded uppercase tracking-wider">{processData.processDefinition.classification}</span>
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-900 leading-tight mb-2">{processData.processDefinition.title}</h2>
+                    <a href={processData.processDefinition.documentLink} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                        <FileText size={12} /> View Source Document
+                    </a>
+                </div>
+
+                <div className="p-6 space-y-8 flex-1">
+                    {/* Objectives */}
+                    <div className="space-y-3">
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                            <Target size={14} /> Process Objectives
+                        </h4>
+                        <div className="space-y-2">
+                            {processData.processObjectives.length > 0 ? (
+                                processData.processObjectives.map((obj, i) => (
+                                    <div key={i} className="flex gap-3 items-start p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
+                                        <div className="mt-1 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
+                                        <p className="text-sm text-slate-700 leading-relaxed">{obj.description}</p>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-slate-400 italic">No specific objectives defined.</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Inherent Risks Summary */}
+                    <div className="space-y-3">
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                            <AlertOctagon size={14} /> Inherent Risks
+                        </h4>
+                        <div className="grid grid-cols-1 gap-2">
+                             {processData.inherentRisks.slice(0, 5).map(risk => (
+                                 <div key={risk.riskId} className="flex items-center gap-2 p-2 bg-rose-50 border border-rose-100 rounded text-xs text-rose-800">
+                                     <span className="font-bold">{risk.riskId}:</span>
+                                     <span className="truncate">{risk.riskType}</span>
+                                 </div>
+                             ))}
+                             {processData.inherentRisks.length > 5 && (
+                                 <p className="text-xs text-slate-400 text-center italic">+ {processData.inherentRisks.length - 5} more risks</p>
+                             )}
+                        </div>
+                    </div>
+
+                     {/* Action Buttons */}
+                     <div className="pt-4 space-y-3">
+                        <button 
+                            onClick={() => onNextStep(processData.startNode.stepId)}
+                            className="w-full py-3 bg-fab-royal text-white rounded-xl font-bold shadow-lg shadow-fab-royal/20 hover:bg-fab-blue hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                        >
+                            <Play size={18} fill="currentColor" /> Start Guide
+                        </button>
+
+                        <button 
+                            onClick={handleDownload}
+                            className="w-full py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:border-fab-royal hover:text-fab-royal hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                        >
+                            <Download size={18} /> Download Process Documentation
+                        </button>
+                    </div>
+
+                </div>
             </div>
         )}
     </div>

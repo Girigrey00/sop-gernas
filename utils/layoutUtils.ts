@@ -4,16 +4,18 @@ import { SopResponse, ProcessStep, LayoutType } from '../types';
 
 // --- Constants & Config ---
 const NODE_WIDTH = 280; 
-const NODE_HEIGHT = 130; 
-const X_GAP = 200; 
-const Y_GAP = 220; // Large vertical gap to allow lines to route AROUND nodes
-const SWIMLANE_COL_WIDTH = 1200; // Extra wide swimlanes to prevent cross-lane overlaps
-const STAGE_HEADER_HEIGHT = 100;
-const BRANCH_OFFSET = 420; // Wide offset for parallel decision branches to ensure separation
+const NODE_HEIGHT = 140; 
 
-// Horizontal Specific Config
-const HORIZ_X_GAP = 350; // Distance between columns in horizontal view
-const HORIZ_Y_GAP = 180; // Distance between siblings in horizontal view
+// Swimlane Config
+const SWIMLANE_COL_WIDTH = 400; // Tighter columns for better readability
+const SWIMLANE_Y_GAP = 100;
+const SWIMLANE_HEADER_HEIGHT = 80;
+
+// Tree Config
+const TREE_X_GAP = 50; 
+const TREE_Y_GAP = 150; 
+const HORIZ_X_GAP = 300;
+const HORIZ_Y_GAP = 50;
 
 // Google Brand Colors for Headers (Cyclical)
 const HEADER_COLORS = [
@@ -55,95 +57,30 @@ const DISTINCT_ACTOR_PALETTE = [
 
 /**
  * Helper: Get Color Theme based on Responsible Actor
- * Uses a robust hash to pick from the distinct palette cyclically.
  */
 export const getActorTheme = (actor: string) => {
     const normalized = (actor || 'System').trim();
-    
-    // Robust string hashing
     let hash = 0;
     for (let i = 0; i < normalized.length; i++) {
         hash = normalized.charCodeAt(i) + ((hash << 5) - hash);
     }
-    
-    // Cycle through the fixed palette
     const index = Math.abs(hash % DISTINCT_ACTOR_PALETTE.length);
     return DISTINCT_ACTOR_PALETTE[index];
 };
 
 /**
- * Helper: Calculate X-Offsets for Branching (Vertical Layouts)
- * Traverses the graph to assign horizontal lanes to nodes to avoid overlap.
- */
-const calculateGraphOffsets = (data: SopResponse): Map<string, number> => {
-    const offsets = new Map<string, number>();
-    if (!data.startNode) return offsets;
-
-    const stepMap = new Map<string, ProcessStep>();
-    if(data.startNode) stepMap.set(data.startNode.stepId, data.startNode);
-    if(data.endNode) stepMap.set(data.endNode.stepId, data.endNode);
-    data.processFlow?.stages?.forEach(s => s.steps?.forEach(st => stepMap.set(st.stepId, st)));
-
-    // Queue for BFS: { id, offset, depth }
-    const queue: { id: string, offset: number }[] = [{ id: data.startNode.stepId, offset: 0 }];
-    const visited = new Set<string>();
-
-    while(queue.length > 0) {
-        const { id, offset } = queue.shift()!;
-        
-        if (visited.has(id)) continue;
-        visited.add(id);
-        
-        offsets.set(id, offset);
-
-        const step = stepMap.get(id);
-        if (!step) continue;
-
-        // 1. Handle Decisions (Split)
-        if (step.decisionBranches && step.decisionBranches.length > 0) {
-            const branches = step.decisionBranches;
-            const count = branches.length;
-            
-            branches.forEach((branch, idx) => {
-                if (!branch.nextStep) return;
-                
-                // Calculate directional shift
-                let shift = 0;
-                if (count === 2) {
-                    shift = idx === 0 ? -0.8 : 0.8;
-                } else {
-                    shift = (idx - Math.floor(count / 2)) * 1.0;
-                }
-                
-                // Propagate offset
-                const nextOffset = offset + shift;
-                queue.push({ id: branch.nextStep, offset: nextOffset });
-            });
-        } 
-        // 2. Handle Linear Flow (Inherit)
-        else if (step.nextStep) {
-            queue.push({ id: step.nextStep, offset: offset });
-        }
-    }
-    
-    return offsets;
-};
-
-/**
  * Helper to create a standard node object
  */
-const createNode = (step: ProcessStep, x: number, y: number, layoutType: LayoutType = 'SWIMLANE'): Node => {
-    // 1. Determine Styling based on Type or Actor
+const createNode = (step: ProcessStep, x: number, y: number, layoutType: LayoutType): Node => {
     let style: React.CSSProperties = {};
     let className = 'hover:scale-105 transition-transform duration-300'; 
 
-    // Default Dynamic Actor Theme
     let theme = getActorTheme(step.actor);
     
     // Base Style
     style = {
         width: NODE_WIDTH,
-        minHeight: '100px',
+        minHeight: '110px',
         padding: '16px',
         fontSize: '13px',
         lineHeight: '1.5',
@@ -156,14 +93,13 @@ const createNode = (step: ProcessStep, x: number, y: number, layoutType: LayoutT
         fontWeight: 600,
         transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
         boxShadow: '0 8px 16px -4px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04)',
-        zIndex: 1002, // Topmost layer to sit above lines
+        zIndex: 1002,
         background: theme.bg,
         border: `2px solid ${theme.border}`, 
         borderLeft: `6px solid ${theme.left}`, 
         color: theme.text,
     };
 
-    // 2. Overrides for Special Types
     if (step.stepType === 'Start') {
         style.background = COLOR_START.bg;
         style.border = `3px solid ${COLOR_START.border}`;
@@ -195,10 +131,14 @@ const createNode = (step: ProcessStep, x: number, y: number, layoutType: LayoutT
         className += ' decision-node';
     }
 
-    // 3. Determine Handles Position based on Layout
-    // HORIZONTAL: Left -> Right
-    // OTHERS: Top -> Bottom
-    const isHorizontal = layoutType === 'HORIZONTAL';
+    // Handle Positions
+    let sourcePos = Position.Bottom;
+    let targetPos = Position.Top;
+
+    if (layoutType === 'HORIZONTAL') {
+        sourcePos = Position.Right;
+        targetPos = Position.Left;
+    }
 
     return {
         id: step.stepId,
@@ -212,13 +152,13 @@ const createNode = (step: ProcessStep, x: number, y: number, layoutType: LayoutT
         position: { x, y },
         style: style,
         className: className,
-        sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
-        targetPosition: isHorizontal ? Position.Left : Position.Top,
+        sourcePosition: sourcePos,
+        targetPosition: targetPos,
     };
 };
 
 /**
- * Helper to create edges with perfect bends
+ * Helper to create edges
  */
 const createEdges = (nodes: Node[], data: SopResponse, layoutType: LayoutType): Edge[] => {
     const edges: Edge[] = [];
@@ -233,49 +173,33 @@ const createEdges = (nodes: Node[], data: SopResponse, layoutType: LayoutType): 
             source,
             target,
             label: label ? (label.length > 25 ? label.substring(0, 22) + '...' : label) : undefined,
-            type: 'smoothstep', // Key for orthogonal lines
+            type: 'smoothstep', 
             markerEnd: { type: MarkerType.ArrowClosed, color },
             style: { 
                 stroke: color, 
                 strokeWidth: 2,
             }, 
-            pathOptions: { borderRadius: 50 }, // Smooth corners
+            pathOptions: { borderRadius: 40 },
             labelStyle: { fill: '#1e293b', fontWeight: 800, fontSize: 11 },
-            labelBgStyle: { 
-                fill: '#ffffff', 
-                fillOpacity: 1, 
-                stroke: color,
-                strokeWidth: 1,
-                rx: 6, 
-                ry: 6,
-            },
+            labelBgStyle: { fill: '#ffffff', fillOpacity: 1, stroke: color, strokeWidth: 1, rx: 6, ry: 6 },
             labelBgPadding: [6, 4],
             zIndex: 1001, 
         } as any);
     };
 
-    // 1. Start Flow
-    if (data.startNode && data.startNode.nextStep) {
-        addEdge(data.startNode.stepId, data.startNode.nextStep, undefined, '#10b981');
-    }
+    // Edge creation logic matches the structure
+    if (data.startNode && data.startNode.nextStep) addEdge(data.startNode.stepId, data.startNode.nextStep, undefined, '#10b981');
 
-    // 2. Process Flow
     if (data.processFlow && data.processFlow.stages) {
         data.processFlow.stages.forEach(stage => {
             if (stage.steps) {
                 stage.steps.forEach(step => {
-                    // Linear
-                    if (step.nextStep) {
-                        if (step.stepType !== 'Decision' || !step.decisionBranches?.length) {
-                            addEdge(step.stepId, step.nextStep);
-                        }
+                    if (step.nextStep && (!step.decisionBranches || step.decisionBranches.length === 0)) {
+                         addEdge(step.stepId, step.nextStep);
                     }
-                    // Decisions
                     if (step.decisionBranches) {
                         step.decisionBranches.forEach(branch => {
-                            if (branch.nextStep) {
-                                addEdge(step.stepId, branch.nextStep, branch.condition, '#f59e0b');
-                            }
+                            if (branch.nextStep) addEdge(step.stepId, branch.nextStep, branch.condition, '#f59e0b');
                         });
                     }
                 });
@@ -287,124 +211,175 @@ const createEdges = (nodes: Node[], data: SopResponse, layoutType: LayoutType): 
 };
 
 
-/**
- * Layout: Swimlane with Google-Themed Headers & Smart Graph Offsets
- */
+// --- 1. Strict Swimlane Layout ---
+// Groups nodes strictly by Stage ID. Does not use BFS for positioning, uses array index.
 const getSwimlaneLayout = (data: SopResponse): Node[] => {
     const nodes: Node[] = [];
     if (!data.startNode) return nodes;
 
-    // 1. Pre-calculate X-offsets for the entire graph to avoid overlaps
-    const graphOffsets = calculateGraphOffsets(data);
-
-    // 2. Place Start Node
-    nodes.push(createNode(data.startNode, (SWIMLANE_COL_WIDTH - NODE_WIDTH) / 2, STAGE_HEADER_HEIGHT + 40, 'SWIMLANE'));
-
     let currentX = 0;
+
+    // 1. Process Stages
     if (data.processFlow && data.processFlow.stages) {
         data.processFlow.stages.forEach((stage, index) => {
-            
-            // Cycle Google Colors
             const headerColor = HEADER_COLORS[index % HEADER_COLORS.length];
+            const stageLeft = currentX;
+            const stageCenter = stageLeft + (SWIMLANE_COL_WIDTH / 2);
 
-            // A. Stage Background Column
+            // A. Stage Background
             nodes.push({
                 id: `bg-${stage.stageId}`,
                 type: 'default', 
                 data: { label: '' },
-                position: { x: currentX, y: 0 },
+                position: { x: stageLeft, y: 0 },
                 style: {
-                    width: SWIMLANE_COL_WIDTH - 40, 
-                    height: 6000, // Very tall canvas
+                    width: SWIMLANE_COL_WIDTH - 20, 
+                    height: 5000, 
                     background: index % 2 === 0 ? '#f8fafc' : '#ffffff', 
-                    borderRadius: '40px',
-                    border: '1px dashed #e2e8f0',
+                    borderRadius: '20px',
+                    border: '1px dashed #cbd5e1',
                     zIndex: -1, 
                     pointerEvents: 'none',
                 },
-                draggable: false,
-                selectable: false,
+                draggable: false, selectable: false,
             });
 
-            // B. Google-Themed Stage Header with Shadow
+            // B. Header
             nodes.push({
                 id: `stage-${stage.stageId}`,
                 type: 'default', 
                 data: { label: stage.stageName },
-                position: { x: currentX + 40, y: 20 },
+                position: { x: stageLeft + 20, y: 20 },
                 style: {
-                    width: SWIMLANE_COL_WIDTH - 120,
-                    height: 70,
+                    width: SWIMLANE_COL_WIDTH - 60,
+                    height: 60,
                     background: '#ffffff',
                     borderTop: `6px solid ${headerColor}`, 
                     borderRadius: '12px',
-                    fontSize: '18px',
+                    fontSize: '16px',
                     fontWeight: '800',
-                    color: '#1e293b', 
-                    fontFamily: 'system-ui, sans-serif',
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                    color: '#334155', 
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                     zIndex: 10,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    padding: '0 32px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em'
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+                    padding: '0 10px', textTransform: 'uppercase'
                 },
-                selectable: false,
-                draggable: false
+                selectable: false, draggable: false
             });
 
-            // C. Place Steps
-            let currentY = STAGE_HEADER_HEIGHT + 240; 
+            // C. Place Steps Vertically in this Column
+            let currentY = SWIMLANE_HEADER_HEIGHT + 100;
             
+            // Check if Start Node belongs here (usually Stage 1, but technically Start Node is separate)
+            // We'll place Start Node in the first stage area visually
+            if (index === 0 && data.startNode) {
+                 nodes.push(createNode(data.startNode, stageCenter - (NODE_WIDTH / 2), currentY, 'SWIMLANE'));
+                 currentY += NODE_HEIGHT + SWIMLANE_Y_GAP;
+            }
+
             if (stage.steps) {
                 stage.steps.forEach(step => {
-                    let nodeX = currentX + (SWIMLANE_COL_WIDTH - NODE_WIDTH) / 2;
-                    
-                    // Apply graph-based smart offset
-                    if (graphOffsets.has(step.stepId)) {
-                        const offsetMultiplier = graphOffsets.get(step.stepId)!;
-                        // Branch Offset pushes nodes left/right from center
-                        nodeX += (offsetMultiplier * BRANCH_OFFSET);
-                    }
-                    
-                    nodes.push(createNode(step, nodeX, currentY, 'SWIMLANE'));
-                    
-                    // Increment Y gap
-                    currentY += NODE_HEIGHT + Y_GAP;
+                    nodes.push(createNode(step, stageCenter - (NODE_WIDTH / 2), currentY, 'SWIMLANE'));
+                    currentY += NODE_HEIGHT + SWIMLANE_Y_GAP;
                 });
             }
+
+            // Check if End Node belongs here (Last Stage)
+            if (index === data.processFlow.stages.length - 1 && data.endNode) {
+                 nodes.push(createNode(data.endNode, stageCenter - (NODE_WIDTH / 2), currentY, 'SWIMLANE'));
+            }
+
             currentX += SWIMLANE_COL_WIDTH;
         });
-    }
-
-    // 3. Place End Node
-    let lastY = 600;
-    let lastStageX = 0;
-    if (data.processFlow?.stages?.length > 0) {
-        lastStageX = (data.processFlow.stages.length - 1) * SWIMLANE_COL_WIDTH;
-        const lastStage = data.processFlow.stages[data.processFlow.stages.length - 1];
-        if (lastStage?.steps) {
-            lastY = STAGE_HEADER_HEIGHT + 240 + (lastStage.steps.length * (NODE_HEIGHT + Y_GAP));
-        }
-    }
-    if (data.endNode) {
-        const endX = lastStageX + (SWIMLANE_COL_WIDTH - NODE_WIDTH) / 2;
-        nodes.push(createNode(data.endNode, endX, lastY + 150, 'SWIMLANE'));
     }
 
     return nodes;
 };
 
 
-// --- Standard Tree Layout (Vertical) ---
-const getDecisionTreeLayout = (data: SopResponse): Node[] => {
-    return getSwimlaneLayout(data); // Using Swimlane logic as the default vertical view
+// --- 2. Vertical Tree Layout (True Hierarchy) ---
+const getVerticalTreeLayout = (data: SopResponse): Node[] => {
+    const nodes: Node[] = [];
+    const stepMap = new Map<string, ProcessStep>();
+    
+    // Flatten steps
+    if (data.startNode) stepMap.set(data.startNode.stepId, data.startNode);
+    if (data.endNode) stepMap.set(data.endNode.stepId, data.endNode);
+    data.processFlow?.stages?.forEach(s => s.steps?.forEach(st => stepMap.set(st.stepId, st)));
+
+    if (!data.startNode) return nodes;
+
+    const visited = new Set<string>();
+    const subtreeWidths = new Map<string, number>();
+
+    // Calculate Widths (Recursive)
+    const calculateWidth = (stepId: string): number => {
+        if (visited.has(stepId)) return NODE_WIDTH + TREE_X_GAP;
+        visited.add(stepId);
+        
+        const step = stepMap.get(stepId);
+        if (!step) return NODE_WIDTH + TREE_X_GAP;
+
+        let childrenIds: string[] = [];
+        if (step.decisionBranches?.length) childrenIds = step.decisionBranches.map(b => b.nextStep).filter(Boolean) as string[];
+        else if (step.nextStep) childrenIds = [step.nextStep];
+
+        if (childrenIds.length === 0) {
+            subtreeWidths.set(stepId, NODE_WIDTH + TREE_X_GAP);
+            return NODE_WIDTH + TREE_X_GAP;
+        }
+
+        let totalWidth = 0;
+        childrenIds.forEach(child => totalWidth += calculateWidth(child));
+        subtreeWidths.set(stepId, totalWidth);
+        return totalWidth;
+    };
+
+    visited.clear();
+    calculateWidth(data.startNode.stepId);
+    visited.clear();
+
+    // Place Nodes (Recursive)
+    const placeNodes = (stepId: string, x: number, y: number) => {
+        if (visited.has(stepId)) return;
+        visited.add(stepId);
+        
+        const step = stepMap.get(stepId);
+        if (!step) return;
+
+        nodes.push(createNode(step, x, y, 'TREE'));
+
+        let childrenIds: string[] = [];
+        if (step.decisionBranches?.length) childrenIds = step.decisionBranches.map(b => b.nextStep).filter(Boolean) as string[];
+        else if (step.nextStep) childrenIds = [step.nextStep];
+
+        if (childrenIds.length === 0) return;
+
+        // Position Children centered below
+        const totalW = subtreeWidths.get(stepId) || 0;
+        let startX = x - (totalW / 2);
+        
+        // Slightly offset first child to avoid direct overlap if simple line
+        // Actually, centering logic:
+        // Child 1 center is startX + childWidth/2
+        
+        let currentChildX = x - (totalW / 2); // Start at left edge of this subtree block
+
+        childrenIds.forEach(childId => {
+            const w = subtreeWidths.get(childId) || (NODE_WIDTH + TREE_X_GAP);
+            const childCenterX = currentChildX + (w / 2);
+            
+            placeNodes(childId, childCenterX, y + NODE_HEIGHT + TREE_Y_GAP);
+            currentChildX += w;
+        });
+    };
+
+    placeNodes(data.startNode.stepId, 0, 50);
+    return nodes;
 };
 
-// --- Horizontal Tree Layout ---
+
+// --- 3. Horizontal Tree Layout ---
 const getHorizontalTreeLayout = (data: SopResponse): Node[] => {
     const nodes: Node[] = [];
     const stepMap = new Map<string, ProcessStep>();
@@ -418,9 +393,8 @@ const getHorizontalTreeLayout = (data: SopResponse): Node[] => {
     const visited = new Set<string>();
     const subtreeHeights = new Map<string, number>();
 
-    // 1. Calculate Subtree Heights (Vertical Span needed for each node)
     const calculateHeight = (stepId: string): number => {
-        if (visited.has(stepId)) return NODE_HEIGHT + HORIZ_Y_GAP; 
+        if (visited.has(stepId)) return NODE_HEIGHT + HORIZ_Y_GAP;
         visited.add(stepId);
         
         const step = stepMap.get(stepId);
@@ -431,9 +405,8 @@ const getHorizontalTreeLayout = (data: SopResponse): Node[] => {
         else if (step.nextStep) childrenIds = [step.nextStep];
 
         if (childrenIds.length === 0) {
-            const h = NODE_HEIGHT + HORIZ_Y_GAP;
-            subtreeHeights.set(stepId, h);
-            return h;
+            subtreeHeights.set(stepId, NODE_HEIGHT + HORIZ_Y_GAP);
+            return NODE_HEIGHT + HORIZ_Y_GAP;
         }
 
         let totalHeight = 0;
@@ -446,7 +419,6 @@ const getHorizontalTreeLayout = (data: SopResponse): Node[] => {
     calculateHeight(data.startNode.stepId);
     visited.clear();
 
-    // 2. Place Nodes Recursively
     const placeNodes = (stepId: string, x: number, y: number) => {
         if (visited.has(stepId)) return;
         visited.add(stepId);
@@ -462,23 +434,19 @@ const getHorizontalTreeLayout = (data: SopResponse): Node[] => {
 
         if (childrenIds.length === 0) return;
 
-        const totalHeight = subtreeHeights.get(stepId) || 0;
-        // Start Y is the top of the block minus half height to center it
-        let startY = y - (totalHeight / 2);
+        const totalH = subtreeHeights.get(stepId) || 0;
+        let startY = y - (totalH / 2);
 
         childrenIds.forEach(childId => {
-            const childHeight = subtreeHeights.get(childId) || (NODE_HEIGHT + HORIZ_Y_GAP);
-            // Center the child in its allocated vertical slice
-            const childY = startY + (childHeight / 2);
+            const h = subtreeHeights.get(childId) || (NODE_HEIGHT + HORIZ_Y_GAP);
+            const childCenterY = startY + (h / 2);
             
-            placeNodes(childId, x + NODE_WIDTH + HORIZ_X_GAP, childY);
-            startY += childHeight;
+            placeNodes(childId, x + NODE_WIDTH + HORIZ_X_GAP, childCenterY);
+            startY += h;
         });
     };
 
-    // Center Start Node vertically at 0
     placeNodes(data.startNode.stepId, 0, 0);
-
     return nodes;
 };
 
@@ -496,7 +464,7 @@ export const convertSopToFlowData = (data: SopResponse, layoutType: LayoutType =
                 nodes = getHorizontalTreeLayout(data);
                 break;
             case 'TREE':
-                nodes = getDecisionTreeLayout(data);
+                nodes = getVerticalTreeLayout(data);
                 break;
             case 'SWIMLANE':
             default:
