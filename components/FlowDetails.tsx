@@ -30,11 +30,6 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
     setIsPoliciesOpen(true);
   }, [step?.stepId]);
 
-  const handleDownload = (docName: string) => {
-      // Dummy download handler
-      alert(`Downloading ${docName}...`);
-  };
-
   // Get dynamic actor theme if step exists
   const actorTheme = step ? getActorTheme(step.actor) : null;
 
@@ -84,10 +79,10 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
                     {actorTheme && (
                         <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full">
                             <div 
-                                className="w-2.5 h-2.5 rounded-full shadow-sm ring-1 ring-black/5" 
-                                style={{ backgroundColor: actorTheme.bg, borderColor: actorTheme.border, borderWidth: '1px' }}
+                                className="w-3 h-3 rounded-full shadow-sm ring-2 ring-white" 
+                                style={{ backgroundColor: actorTheme.left }}
                             ></div>
-                            <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                            <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
                                 {step.actor}
                             </span>
                         </div>
@@ -137,7 +132,7 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
 
                     <div className="border-t border-slate-100"></div>
 
-                    {/* Policies Section (New) */}
+                    {/* Policies Section */}
                     {step.policies && step.policies.length > 0 && (
                         <div className="border border-slate-200 rounded-xl overflow-hidden">
                             <button 
@@ -165,10 +160,8 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
                         </div>
                     )}
 
-
-                    {/* Risk & Control Grid - Collapsible */}
+                    {/* Risk & Control Grid */}
                     <div className="grid grid-cols-1 gap-6">
-                        
                         {/* Controls Section */}
                         {step.controls && step.controls.length > 0 && (
                             <div className="border border-slate-200 rounded-xl overflow-hidden">
