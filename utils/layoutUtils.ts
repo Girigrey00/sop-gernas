@@ -2,40 +2,48 @@
 import { Node, Edge, MarkerType } from 'reactflow';
 import { SopResponse, ProcessStep, LayoutType } from '../types';
 
-// Constants - Increased gaps to prevent overlaps
+// Constants
 const NODE_WIDTH = 280;
-const NODE_HEIGHT = 120; // Slightly taller for better text fit
-const X_GAP = 150; // Increased Gap
-const Y_GAP = 160; // Increased Gap for vertical breathing room
-const SWIMLANE_COL_WIDTH = 850; // Much wider swimlanes to prevent cross-line overlap
-const STAGE_HEADER_HEIGHT = 70;
-const BRANCH_OFFSET = 320; // Significant offset for parallel decision branches
+const NODE_HEIGHT = 100; 
+const X_GAP = 80;
+const Y_GAP = 100;
+const SWIMLANE_COL_WIDTH = 500; 
+const STAGE_HEADER_HEIGHT = 60;
+const BRANCH_OFFSET = 140; 
 
 /**
  * Helper: Get Color Theme based on Responsible Actor
- * Dynamic hashing for infinite unique actor colors with consistent pastel palette
+ * Updated with BRIGHTER, VIBRANT colors
  */
 export const getActorTheme = (actor: string) => {
-    const normalized = (actor || 'System').trim();
+    const normalized = (actor || '').toLowerCase();
     
-    // Robust string hashing
-    let hash = 0;
-    for (let i = 0; i < normalized.length; i++) {
-        hash = normalized.charCodeAt(i) + ((hash << 5) - hash);
+    // Customer / Client (Vibrant Purple)
+    if (normalized.includes('customer') || normalized.includes('client')) {
+        return { bg: '#fae8ff', border: '#e879f9', left: '#c026d3', text: '#6b21a8' }; 
     }
-    
-    // Use full 360 hue spectrum
-    const h = Math.abs(hash % 360);
-    
-    // Generate distinct, readable HSL Palette
-    return { 
-        bg: `hsl(${h}, 95%, 96%)`,        // Light background
-        border: `hsl(${h}, 60%, 80%)`,    // Soft border
-        left: `hsl(${h}, 70%, 50%)`,      // Strong accent bar
-        text: `hsl(${h}, 80%, 15%)`,      // High contrast text
-        iconBg: `hsl(${h}, 80%, 90%)`,    // For UI icons
-        iconColor: `hsl(${h}, 80%, 40%)`  // For UI icons
-    };
+    // System / Automated (Cool Cyan/Slate)
+    if (normalized.includes('system') || normalized.includes('bot') || normalized.includes('ai')) {
+        return { bg: '#ecfeff', border: '#22d3ee', left: '#0891b2', text: '#155e75' }; 
+    }
+    // Operations / Back Office (Bright Orange)
+    if (normalized.includes('operation') || normalized.includes('ops') || normalized.includes('admin')) {
+        return { bg: '#ffedd5', border: '#fb923c', left: '#ea580c', text: '#9a3412' }; 
+    }
+    // Credit / Risk / Compliance (Vibrant Blue)
+    if (normalized.includes('credit') || normalized.includes('risk') || normalized.includes('compliance') || normalized.includes('qa')) {
+        return { bg: '#dbeafe', border: '#60a5fa', left: '#2563eb', text: '#1e40af' }; 
+    }
+    // Third Party / External (Bright Emerald/Teal)
+    if (normalized.includes('ttp') || normalized.includes('vendor') || normalized.includes('external')) {
+        return { bg: '#d1fae5', border: '#34d399', left: '#059669', text: '#064e3b' }; 
+    }
+    // Management / Approval (Vibrant Rose)
+    if (normalized.includes('manager') || normalized.includes('head') || normalized.includes('approver')) {
+        return { bg: '#ffe4e6', border: '#fb7185', left: '#e11d48', text: '#9f1239' }; 
+    }
+    // Default (Clean White/Gray)
+    return { bg: '#ffffff', border: '#cbd5e1', left: '#64748b', text: '#1e293b' };
 };
 
 
@@ -48,11 +56,11 @@ const createNode = (step: ProcessStep, x: number, y: number, layoutType: LayoutT
     
     let background = theme.bg;
     let border = `1px solid ${theme.border}`;
-    let borderLeft = `6px solid ${theme.left}`;
+    let borderLeft = `4px solid ${theme.left}`;
     let borderRadius = '12px';
     let color = theme.text;
     let width = NODE_WIDTH;
-    let height: number | undefined = undefined; // Auto height
+    let height: number | undefined = undefined; // Auto height usually
     let textAlign: 'left' | 'center' = 'left';
 
     // Safety check for missing step data
@@ -60,23 +68,25 @@ const createNode = (step: ProcessStep, x: number, y: number, layoutType: LayoutT
 
     // --- Special Shape Overrides (Start/End) ---
     if (step.stepType === 'Start') {
-        background = '#f0fdf4'; 
-        border = '2px solid #22c55e';
+        // Bright Green
+        background = '#dcfce7'; 
+        border = '2px solid #4ade80';
         borderLeft = 'none';
         color = '#14532d';
-        borderRadius = '50px';
+        borderRadius = '30px';
         textAlign = 'center';
     } else if (step.stepType === 'End') {
-        background = '#fef2f2'; 
-        border = '2px solid #ef4444';
+        // Bright Red
+        background = '#fee2e2'; 
+        border = '2px solid #f87171';
         borderLeft = 'none';
         color = '#7f1d1d';
-        borderRadius = '50px';
+        borderRadius = '30px';
         textAlign = 'center';
     } else if (step.stepType === 'Decision') {
-        borderRadius = '32px';
+        // Decisions keep the actor color but get a more rounded shape and slightly thicker border
+        borderRadius = '24px';
         border = `2px solid ${theme.border}`;
-        textAlign = 'center';
     }
 
     return {
@@ -95,24 +105,20 @@ const createNode = (step: ProcessStep, x: number, y: number, layoutType: LayoutT
             borderLeft,
             borderRadius,
             width,
-            minHeight: '80px',
+            height,
             padding: '16px',
-            fontSize: '13px',
-            lineHeight: '1.4',
-            // CRITICAL: High Z-Index ensures box is ALWAYS on top of lines
-            zIndex: 1001, 
-            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)', 
+            fontSize: '12px',
+            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -1px rgb(0 0 0 / 0.05)', // Softer shadow
             textAlign,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
-            alignItems: textAlign === 'center' ? 'center' : 'flex-start',
+            alignItems: 'center',
             cursor: 'pointer',
             color: color,
-            fontWeight: 500,
-            transition: 'all 0.2s ease',
+            fontWeight: 600,
         },
-        className: 'hover:scale-105 transition-transform hover:shadow-lg'
+        zIndex: 10, 
     };
 };
 
@@ -122,15 +128,21 @@ const createNode = (step: ProcessStep, x: number, y: number, layoutType: LayoutT
 const createEdges = (nodes: Node[], data: SopResponse, layoutType: LayoutType): Edge[] => {
     const edges: Edge[] = [];
     const nodeMap = new Map(nodes.map(n => [n.id, n]));
+    const stepMap = new Map<string, ProcessStep>();
     
+    // Build step map for actor lookups
+    if (data.startNode) stepMap.set(data.startNode.stepId, data.startNode);
+    if (data.endNode) stepMap.set(data.endNode.stepId, data.endNode);
+    data.processFlow.stages?.forEach(s => s.steps?.forEach(st => stepMap.set(st.stepId, st)));
+
     // Helper to add edge
-    const addEdge = (source: string, target: string, label?: string, defaultColor: string = '#cbd5e1') => {
+    const addEdge = (source: string, target: string, label?: string, defaultColor: string = '#64748b') => {
         if (!source || !target) return;
         if (!nodeMap.has(source) || !nodeMap.has(target)) return;
         
-        let strokeDasharray = '0';
+        let strokeDasharray = '0'; // Solid by default
         let color = defaultColor;
-        let type = 'smoothstep'; // Orthogonal lines preventing diagonal overlap
+        let type = 'smoothstep';
 
         edges.push({
             id: `e-${source}-${target}-${Math.random().toString(36).substr(2, 5)}`,
@@ -139,22 +151,17 @@ const createEdges = (nodes: Node[], data: SopResponse, layoutType: LayoutType): 
             label: label ? (label.length > 20 ? label.substring(0, 18) + '...' : label) : undefined,
             type, 
             markerEnd: { type: MarkerType.ArrowClosed, color },
-            style: { 
-                stroke: color, 
-                strokeWidth: 2, 
-                strokeDasharray 
-            }, 
-            pathOptions: { borderRadius: 25 },
-            labelStyle: { fill: '#64748b', fontWeight: 700, fontSize: 10 },
-            labelBgStyle: { fill: '#ffffff', fillOpacity: 0.9, rx: 4, ry: 4 },
-            // CRITICAL: Low Z-Index ensures lines are BEHIND boxes
-            zIndex: 0, 
+            style: { stroke: color, strokeWidth: 2, strokeDasharray }, 
+            pathOptions: { borderRadius: 20 },
+            labelStyle: { fill: color, fontWeight: 700, fontSize: 11 },
+            labelBgStyle: { fill: '#ffffff', fillOpacity: 0.85 },
+            zIndex: 20,
         } as any);
     };
 
     // 1. Start -> First Step
     if (data.startNode && data.startNode.nextStep) {
-        addEdge(data.startNode.stepId, data.startNode.nextStep, undefined, '#10b981');
+        addEdge(data.startNode.stepId, data.startNode.nextStep, undefined, '#10b981'); // Green start arrow
     }
 
     // 2. Process Steps
@@ -172,7 +179,7 @@ const createEdges = (nodes: Node[], data: SopResponse, layoutType: LayoutType): 
                     if (step.decisionBranches) {
                         step.decisionBranches.forEach(branch => {
                             if (branch.nextStep) {
-                                addEdge(step.stepId, branch.nextStep, branch.condition, '#f59e0b');
+                                addEdge(step.stepId, branch.nextStep, branch.condition, '#f97316'); // Orange for decisions
                             }
                         });
                     }
@@ -214,8 +221,8 @@ const getSwimlaneLayout = (data: SopResponse): Node[] => {
         });
     }
 
-    // Start Node - Centered in first column
-    nodes.push(createNode(data.startNode, (SWIMLANE_COL_WIDTH - NODE_WIDTH) / 2, STAGE_HEADER_HEIGHT + 60, 'SWIMLANE'));
+    // Start Node
+    nodes.push(createNode(data.startNode, (SWIMLANE_COL_WIDTH - NODE_WIDTH) / 2, STAGE_HEADER_HEIGHT + 40, 'SWIMLANE'));
 
     let currentX = 0;
     if (data.processFlow && data.processFlow.stages) {
@@ -227,11 +234,11 @@ const getSwimlaneLayout = (data: SopResponse): Node[] => {
                 data: { label: '' },
                 position: { x: currentX, y: 0 },
                 style: {
-                    width: SWIMLANE_COL_WIDTH - 40, 
-                    height: 3500, // Very tall to accommodate long flows
+                    width: SWIMLANE_COL_WIDTH,
+                    height: 2000, 
                     background: index % 2 === 0 ? '#f8fafc' : '#ffffff', 
-                    borderRadius: '32px',
-                    border: '1px dashed #e2e8f0',
+                    borderRight: '1px dashed #cbd5e1',
+                    border: 'none',
                     zIndex: -1, 
                     pointerEvents: 'none',
                 },
@@ -239,41 +246,40 @@ const getSwimlaneLayout = (data: SopResponse): Node[] => {
                 selectable: false,
             });
 
-            // Stage Header - DISTINCT STYLING
+            // Stage Header - Updated Styling
             nodes.push({
                 id: `stage-${stage.stageId}`,
                 type: 'default', 
                 data: { label: stage.stageName },
-                position: { x: currentX + 40, y: 20 },
+                position: { x: currentX + 20, y: 20 },
                 style: {
-                    width: SWIMLANE_COL_WIDTH - 120,
-                    height: 56,
-                    background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)', // Dark blue-slate gradient
-                    borderRadius: '16px',
-                    border: '1px solid #475569',
-                    fontSize: '16px',
+                    width: SWIMLANE_COL_WIDTH - 40,
+                    height: 46,
+                    background: '#f1f5f9', // Slate 100
+                    border: '1px solid #cbd5e1', // Slate 300
+                    borderRadius: '8px',
+                    fontSize: '14px',
                     fontWeight: '700',
-                    color: '#ffffff',
+                    color: '#334155', // Slate 700
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
-                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
-                    zIndex: 10,
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                    zIndex: 1,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     textAlign: 'center',
-                    padding: '0 24px'
+                    padding: '0 16px'
                 },
                 selectable: false,
                 draggable: false
             });
 
-            let currentY = STAGE_HEADER_HEIGHT + 220; 
+            let currentY = STAGE_HEADER_HEIGHT + 150; 
             
             if (stage.steps) {
                 stage.steps.forEach(step => {
                     let nodeX = currentX + (SWIMLANE_COL_WIDTH - NODE_WIDTH) / 2;
-                    // Apply branch offset if part of a decision tree
                     if (decisionChildMap.has(step.stepId)) {
                         nodeX += (decisionChildMap.get(step.stepId)! * BRANCH_OFFSET);
                     }
@@ -285,19 +291,19 @@ const getSwimlaneLayout = (data: SopResponse): Node[] => {
         });
     }
 
-    // End Node placement
-    let lastY = 400;
+    // End Node Logic
+    let lastY = 300;
     let lastStageX = 0;
     if (data.processFlow?.stages?.length > 0) {
         lastStageX = (data.processFlow.stages.length - 1) * SWIMLANE_COL_WIDTH;
         const lastStage = data.processFlow.stages[data.processFlow.stages.length - 1];
         if (lastStage?.steps) {
-            lastY = STAGE_HEADER_HEIGHT + 220 + (lastStage.steps.length * (NODE_HEIGHT + Y_GAP));
+            lastY = STAGE_HEADER_HEIGHT + 150 + (lastStage.steps.length * (NODE_HEIGHT + Y_GAP));
         }
     }
     if (data.endNode) {
         const endX = lastStageX + (SWIMLANE_COL_WIDTH - NODE_WIDTH) / 2;
-        nodes.push(createNode(data.endNode, endX, lastY + 80, 'SWIMLANE'));
+        nodes.push(createNode(data.endNode, endX, lastY, 'SWIMLANE'));
     }
 
     return nodes;
@@ -428,14 +434,14 @@ const getHorizontalTreeLayout = (data: SopResponse): Node[] => {
     
     for (let l = 0; l <= maxLevel; l++) {
         const levelNodes = nodesByLevel[l] || [];
-        const levelHeight = levelNodes.length * (NODE_HEIGHT + 80);
+        const levelHeight = levelNodes.length * (NODE_HEIGHT + 50);
         let startY = -(levelHeight / 2); 
 
         levelNodes.forEach(nodeId => {
             const step = stepMap.get(nodeId);
             if (step) {
-                nodes.push(createNode(step, l * (NODE_WIDTH + 200), startY, 'HORIZONTAL'));
-                startY += NODE_HEIGHT + 80;
+                nodes.push(createNode(step, l * (NODE_WIDTH + 150), startY, 'HORIZONTAL'));
+                startY += NODE_HEIGHT + 50;
             }
         });
     }

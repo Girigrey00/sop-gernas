@@ -4,10 +4,9 @@ import {
     X, Shield, AlertOctagon, Activity, ArrowRight, 
     CheckCircle2, Split, Target, BarChart3, Map,
     ChevronDown, ChevronUp, Book, ScrollText, Compass,
-    Download, FileText, User
+    Download, FileText
 } from 'lucide-react';
 import { ProcessStep, SopResponse } from '../types';
-import { getActorTheme } from '../utils/layoutUtils';
 
 interface FlowDetailsProps {
   step: ProcessStep | null;
@@ -34,9 +33,6 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
       // Dummy download handler
       alert(`Downloading ${docName}...`);
   };
-
-  // Get dynamic actor theme if step exists
-  const actorTheme = step ? getActorTheme(step.actor) : null;
 
   return (
     <div className="flex flex-col h-full bg-white relative">
@@ -65,33 +61,17 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
             <>
                 {/* Step Sub-Header */}
                 <div className="p-5 border-b border-slate-100 bg-white">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                            <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border ${
-                                step.stepType === 'Decision' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                                step.stepType === 'Control' ? 'bg-sky-50 text-sky-600 border-sky-100' :
-                                'bg-slate-100 text-slate-600 border-slate-200'
-                            }`}>
-                                {step.stepType}
-                            </span>
-                            <span className="text-xs text-slate-400 font-mono">ID: {step.stepId}</span>
-                        </div>
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border ${
+                            step.stepType === 'Decision' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                            step.stepType === 'Control' ? 'bg-sky-50 text-sky-600 border-sky-100' :
+                            'bg-slate-100 text-slate-600 border-slate-200'
+                        }`}>
+                            {step.stepType}
+                        </span>
+                        <span className="text-xs text-slate-400 font-mono">ID: {step.stepId}</span>
                     </div>
-                    
-                    <h3 className="font-bold text-slate-900 text-xl leading-tight mb-3">{step.stepName}</h3>
-                    
-                    {/* Responsible Actor Badge with Dynamic Color Circle */}
-                    {actorTheme && (
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full">
-                            <div 
-                                className="w-2.5 h-2.5 rounded-full shadow-sm ring-1 ring-black/5" 
-                                style={{ backgroundColor: actorTheme.bg, borderColor: actorTheme.border, borderWidth: '1px' }}
-                            ></div>
-                            <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                                {step.actor}
-                            </span>
-                        </div>
-                    )}
+                    <h3 className="font-bold text-slate-900 text-xl leading-tight">{step.stepName}</h3>
                 </div>
 
                 {/* Scrollable Content */}
@@ -227,25 +207,123 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
                                                     <div className="flex-1">
                                                         <div className="flex justify-between items-center mb-1">
                                                             <p className="text-xs font-bold text-rose-800">{risk?.riskType || 'Uncategorized Risk'}</p>
-                                                            <span className="text-[9px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded border border-rose-200 font-bold">{riskId}</span>
+                                                            <span className="text-[9px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-mono">{riskId}</span>
                                                         </div>
-                                                        <p className="text-xs text-rose-700 leading-relaxed">{risk?.description || 'No description available.'}</p>
+                                                        <p className="text-xs text-rose-700/80 leading-tight">{risk?.description || 'Description not available'}</p>
                                                     </div>
                                                 </div>
-                                            )
+                                            );
                                         })}
                                     </div>
                                 )}
                             </div>
                         )}
+
+                        {/* Actor Info */}
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 shadow-sm">
+                                <Activity size={20} />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase">Responsible Actor</p>
+                                <p className="text-sm font-bold text-slate-800">{step.actor}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </>
         ) : (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">
-                <Target size={48} className="mb-4 opacity-20" />
-                <p className="text-sm font-medium">Select a step from the flowchart to view detailed controls, risks, and policies.</p>
-            </div>
+            // View: Process Overview (When no step selected)
+            <>
+                <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                    
+                    {/* Objectives */}
+                    <section>
+                        <h3 className="text-sm font-bold text-slate-500 tracking-wide flex items-center gap-2 mb-3">
+                            <Target size={16} /> Process objectives
+                        </h3>
+                        {processData.processObjectives && processData.processObjectives.length > 0 ? (
+                            <div className="space-y-3">
+                                {processData.processObjectives.map(obj => (
+                                    <div key={obj.id} className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-lg">
+                                        <p className="text-sm text-slate-700 font-medium">{obj.description}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-slate-400 italic">No specific objectives defined for this process.</p>
+                        )}
+                    </section>
+
+                    {/* Documents Download Section (Replaced Metrics) */}
+                    <section>
+                        <h3 className="text-sm font-bold text-slate-500 tracking-wide flex items-center gap-2 mb-3">
+                            <FileText size={16} /> Process Documentation
+                        </h3>
+                        <div className="space-y-3">
+                            <div 
+                                onClick={() => handleDownload('Process Definition')}
+                                className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 hover:shadow-md transition-all group cursor-pointer"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg border border-blue-100 group-hover:scale-110 transition-transform">
+                                        <FileText size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-800 group-hover:text-blue-700 transition-colors">Process Definition</p>
+                                        <p className="text-xs text-slate-500">Master SOP • v1.0 • PDF</p>
+                                    </div>
+                                </div>
+                                <div className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+                                    <Download size={18} />
+                                </div>
+                            </div>
+
+                            <div 
+                                onClick={() => handleDownload('Policy Document')}
+                                className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-emerald-300 hover:shadow-md transition-all group cursor-pointer"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100 group-hover:scale-110 transition-transform">
+                                        <Shield size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Policy Document</p>
+                                        <p className="text-xs text-slate-500">Compliance & Risks • v2.1 • PDF</p>
+                                    </div>
+                                </div>
+                                <div className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors">
+                                    <Download size={18} />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Risks Summary */}
+                    <section>
+                        <h3 className="text-sm font-bold text-slate-500 tracking-wide flex items-center gap-2 mb-3">
+                            <AlertOctagon size={16} /> Inherent risks ({processData.inherentRisks.length})
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                            {processData.inherentRisks.slice(0, 6).map(r => (
+                                <span key={r.riskId} className="px-2 py-1 text-xs bg-rose-50 text-rose-700 border border-rose-100 rounded">
+                                    {r.riskType}
+                                </span>
+                            ))}
+                        </div>
+                    </section>
+                </div>
+
+                {/* Static Footer Button */}
+                <div className="p-4 border-t border-slate-100 bg-white z-10 shrink-0">
+                    <button 
+                        onClick={() => onNextStep(processData.startNode.stepId)}
+                        className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Map size={18} /> Start Guide
+                    </button>
+                </div>
+            </>
         )}
     </div>
   );
