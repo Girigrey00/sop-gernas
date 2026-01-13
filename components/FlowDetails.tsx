@@ -77,7 +77,7 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
                     
                     {/* Responsible Actor Badge with Dynamic Color Circle */}
                     {actorTheme && (
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full shadow-sm">
                             <div 
                                 className="w-3 h-3 rounded-full shadow-sm ring-2 ring-white" 
                                 style={{ backgroundColor: actorTheme.left }}

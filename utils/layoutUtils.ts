@@ -3,38 +3,58 @@ import { Node, Edge, MarkerType } from 'reactflow';
 import { SopResponse, ProcessStep, LayoutType } from '../types';
 
 // --- Constants & Config ---
-const NODE_WIDTH = 280;
-const NODE_HEIGHT = 120; 
-const X_GAP = 200; // Wide gap for horizontal trees
-const Y_GAP = 180; // Tall gap for vertical flow
-const SWIMLANE_COL_WIDTH = 900; // Very wide swimlanes to prevent decision overlap
-const STAGE_HEADER_HEIGHT = 80;
-const BRANCH_OFFSET = 350; // Offset for decision branches
+const NODE_WIDTH = 300; // Wider nodes for better text wrapping
+const NODE_HEIGHT = 140; 
+const X_GAP = 250; 
+const Y_GAP = 220; // Large vertical gap to allow lines to route AROUND nodes
+const SWIMLANE_COL_WIDTH = 1000; // Very wide swimlanes to prevent cross-lane overlaps
+const STAGE_HEADER_HEIGHT = 90;
+const BRANCH_OFFSET = 400; // Significant offset for parallel decision branches
 
-// Google Brand Colors for Headers
-const GOOGLE_COLORS = [
+// Google Brand Colors for Headers (Cyclical)
+const HEADER_COLORS = [
     '#4285F4', // Blue
     '#EA4335', // Red
     '#FBBC05', // Yellow
     '#34A853', // Green
+    '#AA00FF', // Purple
+    '#FF6D00', // Orange
 ];
 
 // Start/End Specific Colors
 const COLOR_START = {
     bg: '#e6f4ea',
     border: '#34A853',
-    text: '#137333'
+    text: '#137333',
+    shadow: '0 4px 15px rgba(52, 168, 83, 0.4)'
 };
 
 const COLOR_END = {
     bg: '#fce8e6',
     border: '#EA4335',
-    text: '#c5221f'
+    text: '#c5221f',
+    shadow: '0 4px 15px rgba(234, 67, 53, 0.4)'
 };
+
+// --- DISTINCT ACTOR PALETTE ---
+// Hand-picked vibrant colors to ensure maximum separation.
+// Order: Blue -> Orange -> Purple -> Teal -> Pink -> Amber -> Indigo -> Cyan -> DeepOrange -> Lime
+const DISTINCT_ACTOR_PALETTE = [
+    { bg: '#E3F2FD', border: '#2196F3', left: '#1565C0', text: '#0D47A1' }, // Blue
+    { bg: '#FFF3E0', border: '#FF9800', left: '#EF6C00', text: '#E65100' }, // Orange
+    { bg: '#F3E5F5', border: '#9C27B0', left: '#7B1FA2', text: '#4A148C' }, // Purple
+    { bg: '#E0F2F1', border: '#009688', left: '#00695C', text: '#004D40' }, // Teal
+    { bg: '#FCE4EC', border: '#E91E63', left: '#C2185B', text: '#880E4F' }, // Pink
+    { bg: '#FFF8E1', border: '#FFC107', left: '#FFA000', text: '#FF6F00' }, // Amber
+    { bg: '#E8EAF6', border: '#3F51B5', left: '#283593', text: '#1A237E' }, // Indigo
+    { bg: '#E0F7FA', border: '#00BCD4', left: '#00838F', text: '#006064' }, // Cyan
+    { bg: '#FBE9E7', border: '#FF5722', left: '#D84315', text: '#BF360C' }, // Deep Orange
+    { bg: '#F9FBE7', border: '#CDDC39', left: '#9E9D24', text: '#827717' }, // Lime
+];
 
 /**
  * Helper: Get Color Theme based on Responsible Actor
- * Generates consistent, distinct pastel colors for dynamic actors.
+ * Uses a robust hash to pick from the distinct palette cyclically.
  */
 export const getActorTheme = (actor: string) => {
     const normalized = (actor || 'System').trim();
@@ -45,18 +65,9 @@ export const getActorTheme = (actor: string) => {
         hash = normalized.charCodeAt(i) + ((hash << 5) - hash);
     }
     
-    // Use full 360 hue spectrum, but shift to avoid purely red/green (reserved for start/end)
-    // We add a prime number offset to the hash to scatter colors well
-    const h = Math.abs((hash * 137) % 360);
-    
-    return { 
-        bg: `hsl(${h}, 90%, 96%)`,        // Very light pastel background
-        border: `hsl(${h}, 50%, 80%)`,    // Subtle border
-        left: `hsl(${h}, 65%, 55%)`,      // Vibrant left accent bar
-        text: `hsl(${h}, 80%, 15%)`,      // Dark readable text
-        iconBg: `hsl(${h}, 80%, 90%)`,    
-        iconColor: `hsl(${h}, 80%, 40%)` 
-    };
+    // Cycle through the fixed palette
+    const index = Math.abs(hash % DISTINCT_ACTOR_PALETTE.length);
+    return DISTINCT_ACTOR_PALETTE[index];
 };
 
 /**
@@ -65,7 +76,7 @@ export const getActorTheme = (actor: string) => {
 const createNode = (step: ProcessStep, x: number, y: number, layoutType: LayoutType = 'SWIMLANE'): Node => {
     // 1. Determine Styling based on Type or Actor
     let style: React.CSSProperties = {};
-    let className = 'hover:scale-105 transition-transform hover:shadow-xl';
+    let className = 'hover:scale-110 transition-transform duration-300'; // Enhanced hover effect
 
     // Default Dynamic Actor Theme
     let theme = getActorTheme(step.actor);
@@ -73,55 +84,57 @@ const createNode = (step: ProcessStep, x: number, y: number, layoutType: LayoutT
     // Base Style
     style = {
         width: NODE_WIDTH,
-        minHeight: '90px',
-        padding: '16px',
-        fontSize: '13px',
+        minHeight: '110px',
+        padding: '20px',
+        fontSize: '14px',
         lineHeight: '1.5',
-        borderRadius: '16px',
+        borderRadius: '20px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'flex-start',
         cursor: 'pointer',
-        fontWeight: 500,
-        transition: 'all 0.2s ease',
-        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
-        zIndex: 1001, // ALWAYS on top of edges
+        fontWeight: 600,
+        transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+        boxShadow: '0 10px 20px -5px rgba(0,0,0,0.1), 0 5px 10px -5px rgba(0,0,0,0.05)', // Soft shadow
+        zIndex: 1002, // Topmost layer to sit above lines
         background: theme.bg,
-        border: `1px solid ${theme.border}`,
-        borderLeft: `5px solid ${theme.left}`,
+        border: `2px solid ${theme.border}`, // Thicker border
+        borderLeft: `8px solid ${theme.left}`, // Prominent accent bar
         color: theme.text,
     };
 
     // 2. Overrides for Special Types
     if (step.stepType === 'Start') {
         style.background = COLOR_START.bg;
-        style.border = `2px solid ${COLOR_START.border}`;
+        style.border = `3px solid ${COLOR_START.border}`;
         style.color = COLOR_START.text;
-        style.borderRadius = '50px';
+        style.borderRadius = '60px';
         style.textAlign = 'center';
         style.alignItems = 'center';
-        style.borderLeft = 'none'; // No accent bar for start
-        style.boxShadow = '0 10px 15px -3px rgba(52, 168, 83, 0.2)';
+        style.borderLeft = 'none'; 
+        style.boxShadow = COLOR_START.shadow;
     } 
     else if (step.stepType === 'End') {
         style.background = COLOR_END.bg;
-        style.border = `2px solid ${COLOR_END.border}`;
+        style.border = `3px solid ${COLOR_END.border}`;
         style.color = COLOR_END.text;
-        style.borderRadius = '50px';
+        style.borderRadius = '60px';
         style.textAlign = 'center';
         style.alignItems = 'center';
-        style.borderLeft = 'none'; // No accent bar for end
-        style.boxShadow = '0 10px 15px -3px rgba(234, 67, 53, 0.2)';
+        style.borderLeft = 'none'; 
+        style.boxShadow = COLOR_END.shadow;
     }
     else if (step.stepType === 'Decision') {
-        // Diamond-ish feel via border radius, but keep content readable
-        style.borderRadius = '24px';
-        style.border = `2px solid ${theme.left}`; // Thicker border for decisions
-        style.background = '#ffffff'; // White bg to stand out
+        // Diamond-ish via CSS not fully possible on div without rotate, 
+        // keeping rounded box but distinct styling
+        style.borderRadius = '30px';
+        style.border = `3px solid ${theme.left}`; 
+        style.background = '#ffffff'; 
         style.textAlign = 'center';
         style.alignItems = 'center';
         style.borderLeft = 'none';
+        style.boxShadow = '0 12px 24px -8px rgba(0,0,0,0.15)'; // Float effect
     }
 
     return {
@@ -146,7 +159,7 @@ const createEdges = (nodes: Node[], data: SopResponse, layoutType: LayoutType): 
     const edges: Edge[] = [];
     const nodeMap = new Map(nodes.map(n => [n.id, n]));
     
-    const addEdge = (source: string, target: string, label?: string, color: string = '#94a3b8') => {
+    const addEdge = (source: string, target: string, label?: string, color: string = '#64748b') => {
         if (!source || !target) return;
         if (!nodeMap.has(source) || !nodeMap.has(target)) return;
         
@@ -154,23 +167,32 @@ const createEdges = (nodes: Node[], data: SopResponse, layoutType: LayoutType): 
             id: `e-${source}-${target}-${Math.random().toString(36).substr(2, 5)}`,
             source,
             target,
-            label: label ? (label.length > 25 ? label.substring(0, 22) + '...' : label) : undefined,
-            type: 'smoothstep', // Orthogonal lines are strictly required to avoid box overlap
+            label: label ? (label.length > 30 ? label.substring(0, 27) + '...' : label) : undefined,
+            type: 'smoothstep', // Orthogonal routing
             markerEnd: { type: MarkerType.ArrowClosed, color },
             style: { 
                 stroke: color, 
-                strokeWidth: 2, 
+                strokeWidth: 2,
             }, 
-            pathOptions: { borderRadius: 30 },
-            labelStyle: { fill: color, fontWeight: 700, fontSize: 11 },
-            labelBgStyle: { fill: '#ffffff', fillOpacity: 0.95, rx: 4, ry: 4 },
-            zIndex: 0, // BEHIND nodes
+            pathOptions: { borderRadius: 40 }, // Smooth corners
+            // Style the decision label box so it doesn't get lost
+            labelStyle: { fill: '#1e293b', fontWeight: 800, fontSize: 12 },
+            labelBgStyle: { 
+                fill: '#ffffff', 
+                fillOpacity: 1, 
+                stroke: color,
+                strokeWidth: 1,
+                rx: 6, 
+                ry: 6,
+            },
+            labelBgPadding: [8, 4],
+            zIndex: 1001, // High z-index for the EDGE LABEL mostly, but line is effectively drawn on canvas layer
         } as any);
     };
 
     // 1. Start Flow
     if (data.startNode && data.startNode.nextStep) {
-        addEdge(data.startNode.stepId, data.startNode.nextStep, undefined, COLOR_START.border);
+        addEdge(data.startNode.stepId, data.startNode.nextStep, undefined, '#34A853');
     }
 
     // 2. Process Flow
@@ -239,7 +261,7 @@ const getSwimlaneLayout = (data: SopResponse): Node[] => {
         data.processFlow.stages.forEach((stage, index) => {
             
             // Cycle Google Colors
-            const headerColor = GOOGLE_COLORS[index % GOOGLE_COLORS.length];
+            const headerColor = HEADER_COLORS[index % HEADER_COLORS.length];
 
             // A. Stage Background Column
             nodes.push({
@@ -248,51 +270,51 @@ const getSwimlaneLayout = (data: SopResponse): Node[] => {
                 data: { label: '' },
                 position: { x: currentX, y: 0 },
                 style: {
-                    width: SWIMLANE_COL_WIDTH - 20, 
-                    height: 4000, 
-                    background: index % 2 === 0 ? '#f8fafd' : '#ffffff', // Very subtle alt shading
-                    borderRadius: '24px',
+                    width: SWIMLANE_COL_WIDTH - 40, 
+                    height: 5000, // Very tall
+                    background: index % 2 === 0 ? '#fcfcfc' : '#ffffff', 
+                    borderRadius: '40px',
                     border: '1px dashed #e2e8f0',
-                    zIndex: -1, 
+                    zIndex: -1, // Strictly behind everything
                     pointerEvents: 'none',
                 },
                 draggable: false,
                 selectable: false,
             });
 
-            // B. Google-Themed Stage Header
+            // B. Google-Themed Stage Header with Shadow
             nodes.push({
                 id: `stage-${stage.stageId}`,
                 type: 'default', 
                 data: { label: stage.stageName },
-                position: { x: currentX + 20, y: 20 },
+                position: { x: currentX + 40, y: 20 },
                 style: {
-                    width: SWIMLANE_COL_WIDTH - 60,
-                    height: 60,
+                    width: SWIMLANE_COL_WIDTH - 120,
+                    height: 70,
                     background: '#ffffff',
-                    borderTop: `6px solid ${headerColor}`, // Colorful top bar
-                    borderBottom: '1px solid #e2e8f0',
-                    borderLeft: '1px solid #e2e8f0',
-                    borderRight: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    fontSize: '18px',
-                    fontWeight: '700',
-                    color: '#202124', // Google Dark Grey
+                    borderTop: `6px solid ${headerColor}`, 
+                    borderRadius: '12px',
+                    fontSize: '20px',
+                    fontWeight: '800',
+                    color: '#1f2937', 
                     fontFamily: '"Google Sans", Roboto, Arial, sans-serif',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+                    // Strong Shadow Effect
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
                     zIndex: 10,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     textAlign: 'center',
-                    padding: '0 24px'
+                    padding: '0 32px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.025em'
                 },
                 selectable: false,
                 draggable: false
             });
 
             // C. Place Steps
-            let currentY = STAGE_HEADER_HEIGHT + 200; 
+            let currentY = STAGE_HEADER_HEIGHT + 240; 
             
             if (stage.steps) {
                 stage.steps.forEach(step => {
@@ -312,18 +334,18 @@ const getSwimlaneLayout = (data: SopResponse): Node[] => {
     }
 
     // 2. Place End Node
-    let lastY = 500;
+    let lastY = 600;
     let lastStageX = 0;
     if (data.processFlow?.stages?.length > 0) {
         lastStageX = (data.processFlow.stages.length - 1) * SWIMLANE_COL_WIDTH;
         const lastStage = data.processFlow.stages[data.processFlow.stages.length - 1];
         if (lastStage?.steps) {
-            lastY = STAGE_HEADER_HEIGHT + 200 + (lastStage.steps.length * (NODE_HEIGHT + Y_GAP));
+            lastY = STAGE_HEADER_HEIGHT + 240 + (lastStage.steps.length * (NODE_HEIGHT + Y_GAP));
         }
     }
     if (data.endNode) {
         const endX = lastStageX + (SWIMLANE_COL_WIDTH - NODE_WIDTH) / 2;
-        nodes.push(createNode(data.endNode, endX, lastY + 100, 'SWIMLANE'));
+        nodes.push(createNode(data.endNode, endX, lastY + 120, 'SWIMLANE'));
     }
 
     return nodes;
