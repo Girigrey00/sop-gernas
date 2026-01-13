@@ -7,7 +7,8 @@ const NODE_WIDTH = 280;
 const NODE_HEIGHT = 140; 
 
 // Swimlane Config
-const SWIMLANE_COL_WIDTH = 400; // Tighter columns for better readability
+const SWIMLANE_COL_WIDTH = 400; // Width of the visible column
+const SWIMLANE_GAP = 60;        // Gap between columns
 const SWIMLANE_Y_GAP = 100;
 const SWIMLANE_HEADER_HEIGHT = 80;
 
@@ -217,9 +218,38 @@ const getSwimlaneLayout = (data: SopResponse): Node[] => {
     const nodes: Node[] = [];
     if (!data.startNode) return nodes;
 
+    // 1. Calculate Dynamic Height based on content
+    let maxContentY = 0;
+
+    if (data.processFlow && data.processFlow.stages) {
+        data.processFlow.stages.forEach((stage, index) => {
+            let stageY = SWIMLANE_HEADER_HEIGHT + 100; // Initial Top Offset
+            
+            // Add Start Node Height if in first stage
+            if (index === 0 && data.startNode) {
+                stageY += NODE_HEIGHT + SWIMLANE_Y_GAP;
+            }
+
+            // Add Steps Height
+            if (stage.steps) {
+                stageY += stage.steps.length * (NODE_HEIGHT + SWIMLANE_Y_GAP);
+            }
+
+            // Add End Node Height if in last stage
+            if (index === data.processFlow.stages.length - 1 && data.endNode) {
+                stageY += NODE_HEIGHT + SWIMLANE_Y_GAP;
+            }
+
+            if (stageY > maxContentY) maxContentY = stageY;
+        });
+    }
+
+    // Add padding to bottom, minimum 800px
+    const columnHeight = Math.max(maxContentY + 100, 800);
+
     let currentX = 0;
 
-    // 1. Process Stages
+    // 2. Process Stages
     if (data.processFlow && data.processFlow.stages) {
         data.processFlow.stages.forEach((stage, index) => {
             const headerColor = HEADER_COLORS[index % HEADER_COLORS.length];
@@ -233,8 +263,8 @@ const getSwimlaneLayout = (data: SopResponse): Node[] => {
                 data: { label: '' },
                 position: { x: stageLeft, y: 0 },
                 style: {
-                    width: SWIMLANE_COL_WIDTH - 20, 
-                    height: 5000, 
+                    width: SWIMLANE_COL_WIDTH, 
+                    height: columnHeight, 
                     background: index % 2 === 0 ? '#f8fafc' : '#ffffff', 
                     borderRadius: '20px',
                     border: '1px dashed #cbd5e1',
@@ -251,7 +281,7 @@ const getSwimlaneLayout = (data: SopResponse): Node[] => {
                 data: { label: stage.stageName },
                 position: { x: stageLeft + 20, y: 20 },
                 style: {
-                    width: SWIMLANE_COL_WIDTH - 60,
+                    width: SWIMLANE_COL_WIDTH - 40,
                     height: 60,
                     background: '#ffffff',
                     borderTop: `6px solid ${headerColor}`, 
@@ -270,8 +300,7 @@ const getSwimlaneLayout = (data: SopResponse): Node[] => {
             // C. Place Steps Vertically in this Column
             let currentY = SWIMLANE_HEADER_HEIGHT + 100;
             
-            // Check if Start Node belongs here (usually Stage 1, but technically Start Node is separate)
-            // We'll place Start Node in the first stage area visually
+            // Check if Start Node belongs here (usually Stage 1)
             if (index === 0 && data.startNode) {
                  nodes.push(createNode(data.startNode, stageCenter - (NODE_WIDTH / 2), currentY, 'SWIMLANE'));
                  currentY += NODE_HEIGHT + SWIMLANE_Y_GAP;
@@ -289,7 +318,8 @@ const getSwimlaneLayout = (data: SopResponse): Node[] => {
                  nodes.push(createNode(data.endNode, stageCenter - (NODE_WIDTH / 2), currentY, 'SWIMLANE'));
             }
 
-            currentX += SWIMLANE_COL_WIDTH;
+            // Move X for next column (Width + Gap)
+            currentX += SWIMLANE_COL_WIDTH + SWIMLANE_GAP;
         });
     }
 
