@@ -4,7 +4,7 @@ import {
     X, Shield, AlertOctagon, Activity, ArrowRight, 
     CheckCircle2, Split, Target, BarChart3, Map,
     ChevronDown, ChevronUp, Book, ScrollText, Compass,
-    Download, FileText, User, Play, Layout
+    Download, FileText, User, Play, Layout, FileType
 } from 'lucide-react';
 import { ProcessStep, SopResponse } from '../types';
 import { getActorTheme } from '../utils/layoutUtils';
@@ -22,6 +22,9 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
   const [isControlsOpen, setIsControlsOpen] = useState(true);
   const [isRisksOpen, setIsRisksOpen] = useState(true);
   const [isPoliciesOpen, setIsPoliciesOpen] = useState(true);
+  
+  // State for download options
+  const [showDownloadOptions, setShowDownloadOptions] = useState(false);
 
   // Reset expanded state when the step changes
   useEffect(() => {
@@ -33,15 +36,28 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
   // Get dynamic actor theme if step exists
   const actorTheme = step ? getActorTheme(step.actor) : null;
 
-  const handleDownload = () => {
+  const handleDownload = (type: 'json' | 'pdf' | 'docx') => {
       // Mock download functionality
       const element = document.createElement("a");
-      const file = new Blob([JSON.stringify(processData, null, 2)], {type: 'application/json'});
+      let content = "";
+      let filename = "";
+      
+      if (type === 'json') {
+          content = JSON.stringify(processData, null, 2);
+          filename = `${processData.processDefinition.title.replace(/\s+/g, '_')}.json`;
+      } else {
+          content = "Dummy content for download demo.";
+          filename = `${processData.processDefinition.title.replace(/\s+/g, '_')}.${type}`;
+      }
+      
+      const file = new Blob([content], {type: type === 'json' ? 'application/json' : 'text/plain'});
       element.href = URL.createObjectURL(file);
-      element.download = `${processData.processDefinition.title.replace(/\s+/g, '_')}.json`;
+      element.download = filename;
       document.body.appendChild(element);
       element.click();
       document.body.removeChild(element);
+      
+      setShowDownloadOptions(false);
   };
 
   return (
@@ -68,7 +84,7 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
 
         {/* View: Step Details */}
         {step ? (
-            <>
+            <div className="flex-1 overflow-y-auto">
                 {/* Step Sub-Header */}
                 <div className="p-5 border-b border-slate-100 bg-white">
                     <div className="flex items-center justify-between mb-3">
@@ -101,7 +117,7 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
                 </div>
 
                 {/* Scrollable Content */}
-                <div className="p-6 overflow-y-auto space-y-8 flex-1">
+                <div className="p-6 space-y-8">
                     
                     {/* Actions / Navigation */}
                     <div className="space-y-3">
@@ -244,78 +260,90 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, processData, onClose, o
                         )}
                     </div>
                 </div>
-            </>
+            </div>
         ) : (
-            <div className="h-full flex flex-col overflow-y-auto">
-                {/* Process Definition Header */}
-                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="px-2 py-0.5 bg-fab-royal text-white text-[10px] font-bold rounded uppercase tracking-wider">v{processData.processDefinition.version}</span>
-                        <span className="px-2 py-0.5 bg-slate-200 text-slate-600 text-[10px] font-bold rounded uppercase tracking-wider">{processData.processDefinition.classification}</span>
+            <>
+                <div className="flex-1 overflow-y-auto">
+                    {/* Process Definition Header - Cleaned Up */}
+                    <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                        <h2 className="text-xl font-bold text-slate-900 leading-tight mb-2">{processData.processDefinition.title}</h2>
+                        <a href={processData.processDefinition.documentLink} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                            <FileText size={12} /> View Source Document
+                        </a>
                     </div>
-                    <h2 className="text-xl font-bold text-slate-900 leading-tight mb-2">{processData.processDefinition.title}</h2>
-                    <a href={processData.processDefinition.documentLink} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-                        <FileText size={12} /> View Source Document
-                    </a>
+
+                    <div className="p-6 space-y-8">
+                        {/* Objectives */}
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                                <Target size={14} /> Process Objectives
+                            </h4>
+                            <div className="space-y-2">
+                                {processData.processObjectives.length > 0 ? (
+                                    processData.processObjectives.map((obj, i) => (
+                                        <div key={i} className="flex gap-3 items-start p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
+                                            <div className="mt-1 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
+                                            <p className="text-sm text-slate-700 leading-relaxed">{obj.description}</p>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-slate-400 italic">No specific objectives defined.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Inherent Risks Summary */}
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                                <AlertOctagon size={14} /> Inherent Risks
+                            </h4>
+                            <div className="grid grid-cols-1 gap-2">
+                                {processData.inherentRisks.slice(0, 5).map(risk => (
+                                    <div key={risk.riskId} className="flex items-center gap-2 p-2 bg-rose-50 border border-rose-100 rounded text-xs text-rose-800">
+                                        <span className="font-bold">{risk.riskId}:</span>
+                                        <span className="truncate">{risk.riskType}</span>
+                                    </div>
+                                ))}
+                                {processData.inherentRisks.length > 5 && (
+                                    <p className="text-xs text-slate-400 text-center italic">+ {processData.inherentRisks.length - 5} more risks</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="p-6 space-y-8 flex-1">
-                    {/* Objectives */}
-                    <div className="space-y-3">
-                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                            <Target size={14} /> Process Objectives
-                        </h4>
-                        <div className="space-y-2">
-                            {processData.processObjectives.length > 0 ? (
-                                processData.processObjectives.map((obj, i) => (
-                                    <div key={i} className="flex gap-3 items-start p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
-                                        <div className="mt-1 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
-                                        <p className="text-sm text-slate-700 leading-relaxed">{obj.description}</p>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-sm text-slate-400 italic">No specific objectives defined.</p>
-                            )}
-                        </div>
-                    </div>
+                {/* Sticky Footer */}
+                <div className="p-4 border-t border-slate-200 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20 space-y-3 shrink-0">
+                    <button 
+                        onClick={() => onNextStep(processData.startNode.stepId)}
+                        className="w-full py-3 bg-fab-royal text-white rounded-xl font-bold shadow-lg shadow-fab-royal/20 hover:bg-fab-blue hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                    >
+                        <Play size={18} fill="currentColor" /> Start Guide
+                    </button>
 
-                    {/* Inherent Risks Summary */}
-                    <div className="space-y-3">
-                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                            <AlertOctagon size={14} /> Inherent Risks
-                        </h4>
-                        <div className="grid grid-cols-1 gap-2">
-                             {processData.inherentRisks.slice(0, 5).map(risk => (
-                                 <div key={risk.riskId} className="flex items-center gap-2 p-2 bg-rose-50 border border-rose-100 rounded text-xs text-rose-800">
-                                     <span className="font-bold">{risk.riskId}:</span>
-                                     <span className="truncate">{risk.riskType}</span>
-                                 </div>
-                             ))}
-                             {processData.inherentRisks.length > 5 && (
-                                 <p className="text-xs text-slate-400 text-center italic">+ {processData.inherentRisks.length - 5} more risks</p>
-                             )}
-                        </div>
-                    </div>
-
-                     {/* Action Buttons */}
-                     <div className="pt-4 space-y-3">
+                    <div className="relative">
                         <button 
-                            onClick={() => onNextStep(processData.startNode.stepId)}
-                            className="w-full py-3 bg-fab-royal text-white rounded-xl font-bold shadow-lg shadow-fab-royal/20 hover:bg-fab-blue hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
-                        >
-                            <Play size={18} fill="currentColor" /> Start Guide
-                        </button>
-
-                        <button 
-                            onClick={handleDownload}
+                            onClick={() => setShowDownloadOptions(!showDownloadOptions)}
                             className="w-full py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:border-fab-royal hover:text-fab-royal hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
                         >
-                            <Download size={18} /> Download Process Documentation
+                            <Download size={18} /> Download Documentation
+                            {showDownloadOptions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
+                        
+                        {/* Download Options Dropdown (Simulated Upward) */}
+                        {showDownloadOptions && (
+                            <div className="absolute bottom-full left-0 w-full mb-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden animate-in slide-in-from-bottom-2 fade-in">
+                                <button onClick={() => handleDownload('pdf')} className="w-full text-left px-4 py-3 hover:bg-slate-50 text-slate-700 text-sm font-medium flex items-center gap-3 border-b border-slate-100">
+                                    <FileType size={16} className="text-rose-500" /> Process Definition (PDF)
+                                </button>
+                                <button onClick={() => handleDownload('docx')} className="w-full text-left px-4 py-3 hover:bg-slate-50 text-slate-700 text-sm font-medium flex items-center gap-3">
+                                    <FileText size={16} className="text-blue-500" /> Standard Operating Procedure (DOCX)
+                                </button>
+                            </div>
+                        )}
                     </div>
-
                 </div>
-            </div>
+            </>
         )}
     </div>
   );

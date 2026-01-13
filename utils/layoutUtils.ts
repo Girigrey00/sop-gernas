@@ -9,7 +9,7 @@ const NODE_HEIGHT = 140;
 // Swimlane Config
 const SWIMLANE_COL_WIDTH = 400; // Width of the visible column
 const SWIMLANE_GAP = 60;        // Gap between columns
-const SWIMLANE_Y_GAP = 100;
+const SWIMLANE_Y_GAP = 140;     // Increased vertical gap for better line routing
 const SWIMLANE_HEADER_HEIGHT = 80;
 
 // Tree Config
@@ -165,7 +165,7 @@ const createEdges = (nodes: Node[], data: SopResponse, layoutType: LayoutType): 
     const edges: Edge[] = [];
     const nodeMap = new Map(nodes.map(n => [n.id, n]));
     
-    const addEdge = (source: string, target: string, label?: string, color: string = '#94a3b8') => {
+    const addEdge = (source: string, target: string, label?: string, color: string = '#94a3b8', isDecision: boolean = false) => {
         if (!source || !target) return;
         if (!nodeMap.has(source) || !nodeMap.has(target)) return;
         
@@ -173,17 +173,19 @@ const createEdges = (nodes: Node[], data: SopResponse, layoutType: LayoutType): 
             id: `e-${source}-${target}-${Math.random().toString(36).substr(2, 5)}`,
             source,
             target,
-            label: label ? (label.length > 25 ? label.substring(0, 22) + '...' : label) : undefined,
+            label: label ? (label.length > 20 ? label.substring(0, 18) + '...' : label) : undefined,
             type: 'smoothstep', 
             markerEnd: { type: MarkerType.ArrowClosed, color },
             style: { 
                 stroke: color, 
-                strokeWidth: 2,
+                strokeWidth: isDecision ? 2.5 : 2,
             }, 
-            pathOptions: { borderRadius: 40 },
-            labelStyle: { fill: '#1e293b', fontWeight: 800, fontSize: 11 },
+            // Increased radius for smoother separation
+            pathOptions: { borderRadius: 50 },
+            labelStyle: { fill: isDecision ? '#b45309' : '#1e293b', fontWeight: 800, fontSize: 11 },
+            // White solid background to prevent label overlap issues
             labelBgStyle: { fill: '#ffffff', fillOpacity: 1, stroke: color, strokeWidth: 1, rx: 6, ry: 6 },
-            labelBgPadding: [6, 4],
+            labelBgPadding: [8, 4],
             zIndex: 1001, 
         } as any);
     };
@@ -200,7 +202,10 @@ const createEdges = (nodes: Node[], data: SopResponse, layoutType: LayoutType): 
                     }
                     if (step.decisionBranches) {
                         step.decisionBranches.forEach(branch => {
-                            if (branch.nextStep) addEdge(step.stepId, branch.nextStep, branch.condition, '#f59e0b');
+                            if (branch.nextStep) {
+                                // Use a distinct orange color for decision paths
+                                addEdge(step.stepId, branch.nextStep, branch.condition, '#f59e0b', true);
+                            }
                         });
                     }
                 });
