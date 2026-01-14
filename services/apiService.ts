@@ -1,5 +1,5 @@
 
-import { LibraryDocument, SopResponse, Product, ChatSession, FeedbackPayload, ChatSessionDetail } from '../types';
+import { LibraryDocument, SopResponse, Product, ChatSession, FeedbackPayload, ChatSessionDetail, ProcessDefinitionRow } from '../types';
 
 // CHANGED: Use relative path to leverage Vite Proxy configured in vite.config.ts
 // This resolves CORS issues by routing requests through the local dev server
@@ -218,6 +218,8 @@ export interface ApiServiceInterface {
     uploadDocument(file: File, metadata: any): Promise<any>;
     deleteDocument(docId: string, indexName: string): Promise<any>;
     getProcessFlow(productName: string): Promise<SopResponse>;
+    getProcessTable(productName: string, sopData?: SopResponse): Promise<ProcessDefinitionRow[]>;
+    updateProcessFlowFromTable(productName: string, tableData: ProcessDefinitionRow[], originalSop: SopResponse): Promise<SopResponse>;
 }
 
 export const apiService: ApiServiceInterface = {
@@ -618,5 +620,63 @@ export const apiService: ApiServiceInterface = {
             metadata: core.metadata || json.metadata
         };
         return normalizedData;
+    },
+
+    // --- Mock Implementation for Editable Process Table ---
+    getProcessTable: async (productName: string, sopData?: SopResponse): Promise<ProcessDefinitionRow[]> => {
+        // In a real app, this would fetch from an endpoint like /process-definition/table/:productName
+        // For now, we simulate extraction from the current SOP JSON
+        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate latency
+
+        if (!sopData || !sopData.processFlow || !sopData.processFlow.stages) {
+            return [];
+        }
+
+        const rows: ProcessDefinitionRow[] = [];
+        let counter = 1;
+
+        sopData.processFlow.stages.forEach(stage => {
+            stage.steps.forEach(step => {
+                rows.push({
+                    id: step.stepId,
+                    l2Process: stage.stageName, // Using Stage Name as L2 Process proxy
+                    stepName: step.stepName,
+                    stepDescription: step.description,
+                    stepType: step.stepType,
+                    system: 'System', // Default fallback as JSON might not have it explicitly in this simplified type
+                    actor: step.actor,
+                    processingTime: '10', // Mock
+                    risks: step.risksMitigated ? step.risksMitigated.join(', ') : ''
+                });
+            });
+        });
+
+        return rows;
+    },
+
+    updateProcessFlowFromTable: async (productName: string, tableData: ProcessDefinitionRow[], originalSop: SopResponse): Promise<SopResponse> => {
+        // In a real app, this would POST the table data to backend which re-runs the LLM/Algorithm
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate processing
+
+        // Create a deep copy to modify
+        const newSop = JSON.parse(JSON.stringify(originalSop)) as SopResponse;
+        
+        // Naive update logic: Iterate through stages and update steps that match IDs
+        if (newSop.processFlow && newSop.processFlow.stages) {
+            newSop.processFlow.stages.forEach(stage => {
+                stage.steps.forEach(step => {
+                    const row = tableData.find(r => r.id === step.stepId);
+                    if (row) {
+                        step.stepName = row.stepName;
+                        step.description = row.stepDescription;
+                        step.actor = row.actor;
+                        step.stepType = row.stepType;
+                        // We could update more fields here
+                    }
+                });
+            });
+        }
+
+        return newSop;
     }
 };

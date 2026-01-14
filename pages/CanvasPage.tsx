@@ -23,7 +23,10 @@ import {
     X,
     LayoutDashboard,
     Compass,
-    Brain
+    Brain,
+    FilePenLine,
+    Save,
+    RotateCcw
 } from 'lucide-react';
 
 import FlowDetails from '../components/FlowDetails';
@@ -31,7 +34,7 @@ import ChatAssistant from '../components/ChatAssistant';
 import { generateSopFlow } from '../services/geminiService';
 import { apiService } from '../services/apiService';
 import { convertSopToFlowData, getActorTheme } from '../utils/layoutUtils';
-import { SopResponse, ProcessStep, LayoutType, Product } from '../types';
+import { SopResponse, ProcessStep, LayoutType, Product, ProcessDefinitionRow } from '../types';
 
 interface CanvasPageProps {
     initialPrompt?: string;
@@ -58,6 +61,11 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
     const [isLoading, setIsLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState<string>('Generating Flow...');
     const [isDownloading, setIsDownloading] = useState(false);
+    
+    // Edit Modal State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [processTable, setProcessTable] = useState<ProcessDefinitionRow[]>([]);
+    const [isTableLoading, setIsTableLoading] = useState(false);
     
     // CHANGED: Set to true by default as requested
     const [isLegendOpen, setIsLegendOpen] = useState(true);
@@ -168,6 +176,42 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
             console.error("Failed to generate flow:", error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleEditProcessClick = async () => {
+        if (!sopData) return;
+        setIsEditModalOpen(true);
+        setIsTableLoading(true);
+        try {
+            const table = await apiService.getProcessTable(productContext?.product_name || 'demo', sopData);
+            setProcessTable(table);
+        } catch (e) {
+            console.error("Failed to load process table", e);
+        } finally {
+            setIsTableLoading(false);
+        }
+    };
+
+    const handleTableChange = (id: string, field: keyof ProcessDefinitionRow, value: string) => {
+        setProcessTable(prev => prev.map(row => row.id === id ? { ...row, [field]: value } : row));
+    };
+
+    const handleRegenerateFlow = async () => {
+        if (!sopData) return;
+        setIsTableLoading(true);
+        try {
+            const newSop = await apiService.updateProcessFlowFromTable(
+                productContext?.product_name || 'demo',
+                processTable,
+                sopData
+            );
+            loadData(newSop);
+            setIsEditModalOpen(false);
+        } catch (e) {
+            console.error("Failed to regenerate flow", e);
+        } finally {
+            setIsTableLoading(false);
         }
     };
 
@@ -373,20 +417,32 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                         })}
                     </div>
 
-                     {/* 2. Download Button */}
-                    <button
-                        onClick={handleDownload}
-                        disabled={isDownloading}
-                        className="bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 border border-blue-500 rounded-full p-2.5 px-4 flex items-center gap-2 text-xs font-bold transition-all disabled:opacity-70 flex-shrink-0"
-                        title="Download as JPG"
-                    >
-                        {isDownloading ? (
-                             <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        ) : (
-                            <Download size={14} />
-                        )}
-                        <span className="hidden md:inline">Download JPG</span>
-                    </button>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                        {/* 2. Edit Process Definition Button */}
+                        <button
+                            onClick={handleEditProcessClick}
+                            className="bg-white text-fab-royal hover:bg-fab-royal/5 shadow-lg border border-fab-royal/20 rounded-full p-2.5 px-4 flex items-center gap-2 text-xs font-bold transition-all"
+                            title="Edit Process Definition"
+                        >
+                            <FilePenLine size={14} />
+                            <span className="hidden md:inline">Edit Process</span>
+                        </button>
+
+                        {/* 3. Download Button */}
+                        <button
+                            onClick={handleDownload}
+                            disabled={isDownloading}
+                            className="bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 border border-blue-500 rounded-full p-2.5 px-4 flex items-center gap-2 text-xs font-bold transition-all disabled:opacity-70"
+                            title="Download as JPG"
+                        >
+                            {isDownloading ? (
+                                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            ) : (
+                                <Download size={14} />
+                            )}
+                            <span className="hidden md:inline">Download JPG</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* 3. Stage Navigation Bar */}
@@ -560,6 +616,126 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                     </>
                 )}
             </div>
+
+            {/* Edit Process Definition Modal */}
+            {isEditModalOpen && (
+                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        
+                        {/* Modal Header */}
+                        <div className="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-lg font-bold text-fab-navy flex items-center gap-2">
+                                    <FilePenLine size={20} className="text-fab-royal" />
+                                    Edit Process Definition
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-1">Modify step details, actors, and descriptions. Click "Regenerate Flow" to update the diagram.</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button 
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Table Content */}
+                        <div className="flex-1 overflow-auto bg-white p-6 relative">
+                            {isTableLoading ? (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10">
+                                    <div className="w-12 h-12 border-4 border-fab-royal/20 border-t-fab-royal rounded-full animate-spin mb-3"></div>
+                                    <p className="text-sm font-medium text-slate-600 animate-pulse">Processing Table Data...</p>
+                                </div>
+                            ) : (
+                                <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                                    <table className="w-full text-left border-collapse text-xs">
+                                        <thead className="bg-slate-100 border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+                                            <tr>
+                                                <th className="p-3 font-bold text-slate-600 border-r border-slate-200 w-24">ID</th>
+                                                <th className="p-3 font-bold text-slate-600 border-r border-slate-200 w-48">L2 Process</th>
+                                                <th className="p-3 font-bold text-slate-600 border-r border-slate-200 w-64">Step Name</th>
+                                                <th className="p-3 font-bold text-slate-600 border-r border-slate-200 min-w-[200px]">Description</th>
+                                                <th className="p-3 font-bold text-slate-600 border-r border-slate-200 w-28">Actor</th>
+                                                <th className="p-3 font-bold text-slate-600 border-r border-slate-200 w-24">Type</th>
+                                                <th className="p-3 font-bold text-slate-600 border-r border-slate-200 w-24">System</th>
+                                                <th className="p-3 font-bold text-slate-600 border-r border-slate-200 w-20">Time (s)</th>
+                                                <th className="p-3 font-bold text-slate-600">Risks</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {processTable.map((row) => (
+                                                <tr key={row.id} className="hover:bg-slate-50 transition-colors">
+                                                    <td className="p-2 border-r border-slate-100 font-mono font-medium text-slate-500 bg-slate-50/50">{row.id}</td>
+                                                    <td className="p-2 border-r border-slate-100">{row.l2Process}</td>
+                                                    <td className="p-2 border-r border-slate-100">
+                                                        <input 
+                                                            type="text" 
+                                                            value={row.stepName} 
+                                                            onChange={(e) => handleTableChange(row.id, 'stepName', e.target.value)}
+                                                            className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all px-1 py-0.5 font-bold text-slate-800"
+                                                        />
+                                                    </td>
+                                                    <td className="p-2 border-r border-slate-100">
+                                                        <textarea 
+                                                            value={row.stepDescription} 
+                                                            onChange={(e) => handleTableChange(row.id, 'stepDescription', e.target.value)}
+                                                            className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all px-1 py-0.5 resize-none h-8 focus:h-16 text-slate-600 leading-tight"
+                                                        />
+                                                    </td>
+                                                    <td className="p-2 border-r border-slate-100">
+                                                        <input 
+                                                            type="text" 
+                                                            value={row.actor} 
+                                                            onChange={(e) => handleTableChange(row.id, 'actor', e.target.value)}
+                                                            className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all px-1 py-0.5 text-slate-700 font-medium"
+                                                        />
+                                                    </td>
+                                                    <td className="p-2 border-r border-slate-100">
+                                                        <input 
+                                                            type="text" 
+                                                            value={row.stepType} 
+                                                            onChange={(e) => handleTableChange(row.id, 'stepType', e.target.value)}
+                                                            className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all px-1 py-0.5 text-slate-500"
+                                                        />
+                                                    </td>
+                                                    <td className="p-2 border-r border-slate-100 text-slate-500">{row.system}</td>
+                                                    <td className="p-2 border-r border-slate-100 text-slate-500">{row.processingTime}</td>
+                                                    <td className="p-2 text-rose-600 font-medium">{row.risks}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-5 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
+                            <p className="text-xs text-slate-500">
+                                Note: Updating the table will trigger a logic re-evaluation. Ensure all connected steps (Next Step logic) are consistent.
+                            </p>
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="px-4 py-2.5 text-slate-600 font-bold text-sm hover:bg-slate-200 rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handleRegenerateFlow}
+                                    disabled={isTableLoading}
+                                    className="px-6 py-2.5 bg-fab-royal text-white rounded-lg font-bold text-sm shadow-lg shadow-fab-royal/20 hover:bg-fab-blue hover:scale-105 transition-all disabled:opacity-70 flex items-center gap-2"
+                                >
+                                    <RotateCcw size={16} />
+                                    Regenerate Flow
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

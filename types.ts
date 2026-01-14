@@ -1,5 +1,4 @@
 
-
 // Enums for clarity
 export enum StepType {
   Start = 'Start',
@@ -218,6 +217,19 @@ export interface FeedbackPayload {
     feedback_type: 'thumbs_up' | 'thumbs_down';
     comment?: string;
     jwt_token?: string;
+}
+
+// --- Process Table Interface ---
+export interface ProcessDefinitionRow {
+    id: string;
+    l2Process: string;
+    stepName: string;
+    stepDescription: string;
+    stepType: string;
+    system: string;
+    actor: string;
+    processingTime: string;
+    risks: string;
 }
 
 // Layout types
