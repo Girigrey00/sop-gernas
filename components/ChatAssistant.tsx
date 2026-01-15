@@ -114,8 +114,8 @@ const ProductCardWidget: React.FC<{ name: string, id: string, status: string }> 
                 <Package size={24} />
             </div>
             <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start">
-                    <h4 className="text-sm font-bold text-slate-800 truncate pr-2">{name}</h4>
+                <div className="flex justify-between items-start gap-2">
+                    <h4 className="text-sm font-bold text-slate-800 break-words leading-tight">{name}</h4>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wide shrink-0 ${
                         status.toLowerCase() === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
                         'bg-slate-100 text-slate-500 border-slate-200'
@@ -123,7 +123,7 @@ const ProductCardWidget: React.FC<{ name: string, id: string, status: string }> 
                         {status}
                     </span>
                 </div>
-                <p className="text-xs text-slate-500 font-mono mt-1">ID: {id}</p>
+                <p className="text-xs text-slate-500 font-mono mt-1 break-all">{id}</p>
             </div>
         </div>
     );
@@ -138,12 +138,12 @@ const FaqWidget: React.FC<{ question: string, answer: string }> = ({ question, a
                 className="w-full flex items-center gap-3 p-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
             >
                 <HelpCircle size={16} className="text-fab-royal shrink-0" />
-                <span className="text-xs font-bold text-slate-700 flex-1">{question}</span>
+                <span className="text-xs font-bold text-slate-700 flex-1 leading-normal break-words">{question}</span>
                 {isOpen ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
             </button>
             {isOpen && (
                 <div className="p-3 bg-white border-t border-slate-100">
-                    <p className="text-xs text-slate-600 leading-relaxed">{answer}</p>
+                    <p className="text-xs text-slate-600 leading-relaxed break-words">{answer}</p>
                 </div>
             )}
         </div>
@@ -167,7 +167,7 @@ const SnippetWidget: React.FC<{ text: string }> = ({ text }) => {
     return (
         <div className="my-3 flex gap-3 p-4 bg-amber-50/50 border-l-4 border-amber-400 rounded-r-lg animate-in slide-in-from-left-2">
             <Quote size={20} className="text-amber-400 shrink-0 fill-amber-100" />
-            <p className="text-xs text-slate-700 italic leading-relaxed font-medium">{text}</p>
+            <p className="text-xs text-slate-700 italic leading-relaxed font-medium break-words">{text}</p>
         </div>
     );
 };
@@ -254,7 +254,7 @@ const FileWidget: React.FC<{ filename: string, type?: string }> = ({ filename, t
             <Paperclip size={18} className="text-slate-400 group-hover:text-blue-500" />
         </div>
         <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-slate-700 truncate group-hover:text-blue-700">{filename}</p>
+            <p className="text-xs font-bold text-slate-700 break-words group-hover:text-blue-700">{filename}</p>
             <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{type} Document</p>
         </div>
         <div className="p-2 bg-white rounded-full text-slate-300 group-hover:text-blue-500 shadow-sm opacity-0 group-hover:opacity-100 transition-all">
@@ -267,19 +267,19 @@ const SLAWidget: React.FC<{ time: string, text: string }> = ({ time, text }) => 
     <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full text-amber-700 text-xs font-bold my-1 shadow-sm animate-pulse">
         <Timer size={14} className="animate-spin-slow" />
         <span className="uppercase tracking-wide">{time}:</span>
-        <span>{text}</span>
+        <span className="break-words">{text}</span>
     </div>
 );
 
 const ContactWidget: React.FC<{ name: string, role: string, email?: string }> = ({ name, role, email }) => (
     <div className="flex items-center gap-3 p-3 my-2 bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-xl shadow-sm w-full max-w-sm">
-        <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm border-2 border-white shadow-md">
+        <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm border-2 border-white shadow-md shrink-0">
             {name.substring(0, 2).toUpperCase()}
         </div>
-        <div>
-            <p className="text-sm font-bold text-slate-800">{name}</p>
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-                <UserCheck size={12} /> {role}
+        <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-slate-800 break-words">{name}</p>
+            <div className="flex items-center gap-2 text-xs text-slate-500 break-words">
+                <UserCheck size={12} className="shrink-0" /> {role}
             </div>
         </div>
     </div>
@@ -287,8 +287,8 @@ const ContactWidget: React.FC<{ name: string, role: string, email?: string }> = 
 
 const LocationWidget: React.FC<{ location: string }> = ({ location }) => (
     <div className="flex items-center gap-2 my-2 text-xs text-slate-600 font-medium bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 w-fit">
-        <MapPin size={14} className="text-rose-500" />
-        {location}
+        <MapPin size={14} className="text-rose-500 shrink-0" />
+        <span className="break-words">{location}</span>
     </div>
 );
 
@@ -442,7 +442,7 @@ const ChecklistWidget: React.FC<{ items: string[] }> = ({ items }) => {
                             <div className={`mt-0.5 shrink-0 ${isChecked ? 'text-emerald-600' : 'text-slate-300'}`}>
                                 {isChecked ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                             </div>
-                            <span className={`text-xs leading-relaxed ${isChecked ? 'text-emerald-900 line-through decoration-emerald-300 decoration-2' : 'text-slate-700'}`}>
+                            <span className={`text-xs leading-relaxed break-words ${isChecked ? 'text-emerald-900 line-through decoration-emerald-300 decoration-2' : 'text-slate-700'}`}>
                                 {text}
                             </span>
                         </div>
@@ -459,7 +459,7 @@ const RoleWidget: React.FC<{ actor: string, description: string }> = ({ actor, d
             <User size={16} />
         </div>
         <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-indigo-900 uppercase tracking-wide truncate">{actor}</p>
+            <p className="text-xs font-bold text-indigo-900 uppercase tracking-wide break-words">{actor}</p>
             <p className="text-xs text-indigo-700 leading-relaxed break-words">{description}</p>
         </div>
     </div>
@@ -494,7 +494,7 @@ const RiskWidget: React.FC<{ riskId: string, sopData: SopResponse, fallbackText:
        </div>
        <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1 gap-2">
-             <span className="text-xs font-bold text-rose-900 truncate">{displayId}</span>
+             <span className="text-xs font-bold text-rose-900 break-words">{displayId}</span>
              <span className="text-[9px] uppercase bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded font-bold tracking-wider shrink-0">{category}</span>
           </div>
           <p className="text-xs text-rose-700 leading-relaxed break-words">{description.replace(/[*_]/g, '')}</p>
@@ -539,7 +539,7 @@ const StepWidget: React.FC<{ stepId: string, sopData: SopResponse, onClick?: (id
                     <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 rounded border border-slate-200 truncate">{stepDetails.stepId}</span>
                     <span className="text-[9px] font-medium text-slate-400 uppercase tracking-wider truncate">{stepDetails.actor}</span>
                  </div>
-                 <p className="text-xs font-medium text-slate-800 truncate group-hover:text-blue-700 transition-colors">{stepDetails.stepName}</p>
+                 <p className="text-xs font-medium text-slate-800 break-words group-hover:text-blue-700 transition-colors">{stepDetails.stepName}</p>
             </div>
             <div className="flex items-center gap-1 text-slate-300 group-hover:text-blue-500 transition-colors shrink-0">
                 <span className="text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline">LOCATE</span>
@@ -640,7 +640,7 @@ const MetricWidget: React.FC<{ row: string[], headers: string[] }> = ({ row, hea
           <div className="p-2 bg-blue-50 text-fab-royal rounded-full mb-2">
               <BarChart3 size={16} />
           </div>
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 w-full line-clamp-2 leading-tight min-h-[2.5em]">{safeName.replace(/[*_]/g, '')}</p>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 w-full line-clamp-2 leading-tight min-h-[2.5em] break-words">{safeName.replace(/[*_]/g, '')}</p>
           <div className="text-2xl font-bold text-slate-800 mb-2 break-all">{safeValue.replace(/[*_]/g, '')}</div>
           {safeTarget && (
             <div className="text-[9px] text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 w-full truncate">
@@ -727,12 +727,12 @@ const CitationBlock = ({ citations, onCitationClick }: { citations: Record<strin
                             </span>
                             <div className="min-w-0 flex-1 space-y-1.5">
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                    <div className="flex items-center gap-1.5 min-w-0">
+                                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                         <FileText size={12} className="text-slate-400 shrink-0 group-hover/card:text-blue-500" />
-                                        <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wide truncate max-w-[180px] group-hover/card:text-blue-700" title={source}>{source}</p>
+                                        <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wide break-words group-hover/card:text-blue-700" title={source}>{source}</p>
                                     </div>
-                                    {page && <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded border border-slate-200 group-hover/card:bg-white">{page}</span>}
-                                    <ExternalLink size={10} className="text-slate-300 opacity-0 group-hover/card:opacity-100 transition-opacity ml-auto" />
+                                    {page && <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded border border-slate-200 group-hover/card:bg-white shrink-0">{page}</span>}
+                                    <ExternalLink size={10} className="text-slate-300 opacity-0 group-hover/card:opacity-100 transition-opacity ml-auto shrink-0" />
                                 </div>
                                 <div className="text-xs text-slate-600 leading-relaxed pl-1 border-l-2 border-slate-100 group-hover/card:border-blue-200 transition-colors">"{content}"</div>
                             </div>
@@ -816,12 +816,12 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
         if (parsedJson) {
             if (parsedJson.answer) displayContent = parsedJson.answer;
             else if (parsedJson.content) displayContent = parsedJson.content;
-        } else if (trimmed.startsWith('{')) {
-            // 3. Handle Partial JSON (Streaming) - Extract "answer" field manually
-            const answerMatch = trimmed.match(/"answer"\s*:\s*"/);
-            if (answerMatch) {
-                const startIndex = (answerMatch.index || 0) + answerMatch[0].length;
-                let textPart = trimmed.substring(startIndex);
+        } else {
+            // 3. Handle Partial JSON (Streaming) OR Raw "answer": "..." strings that aren't strict JSON
+            // We use a more aggressive check to strip the answer key prefix if present
+            const answerPrefixRegex = /^"answer"\s*:\s*"/;
+            if (answerPrefixRegex.test(trimmed)) {
+                let textPart = trimmed.replace(answerPrefixRegex, '');
                 
                 // Find the closing quote, respecting escaped quotes
                 let endQuoteIndex = -1;
@@ -834,6 +834,9 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
                 
                 if (endQuoteIndex !== -1) {
                     textPart = textPart.substring(0, endQuoteIndex);
+                } else if (textPart.endsWith('"')) {
+                    // Handle case where quote is at very end
+                    textPart = textPart.substring(0, textPart.length - 1);
                 }
                 
                 // Unescape common JSON escapes for display
@@ -1074,7 +1077,7 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
                 }
             }
 
-            // 2. SLA Widget (**SLA**: Text)
+            // 2. SLA Widget (**SLA**: Text) - Requires BOLD marker
             if (trimmed.match(/^\*\*(SLA|Deadline|Time)\*\*:/i)) {
                 const parts = trimmed.split(':');
                 elements.push(<SLAWidget key={`sla-${i}`} time={parts[0].replace(/\*\*/g, '').trim()} text={parts.slice(1).join(':').trim()} />);
@@ -1123,22 +1126,11 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
                 const question = trimmed.split(':')[1].trim();
                 const nextLine = lines[i+1]?.trim();
                 if (nextLine && nextLine.match(/^\*\*(A|Answer)\*\*:/i)) {
-                    // Skip next line in main loop since we handle it here
-                    // Ideally we'd advance the index, but React rendering maps line by line.
-                    // Instead, we can render the widget here and the next iteration will see the 'A' line.
-                    // We need to suppress the 'A' line from rendering separately.
-                    // Simple hack: We won't suppress, we just render the FAQ widget which encapsulates Q & A.
-                    // Actually, let's just assume trigger is the Q line, and we pull A from next line content.
                     const answer = nextLine.split(':')[1].trim();
                     elements.push(<FaqWidget key={`faq-${i}`} question={question} answer={answer} />);
-                    // We can't skip `i` here easily in map. So we will let the 'A' line render as text or handle it?
-                    // Better approach: If this line is Q, render widget. If next line is A, we need to hide it in next iteration.
-                    // This simple parser doesn't support lookahead skipping. 
-                    // Let's rely on standard Q/A formatting or just render Q here.
                     return; 
                 }
             }
-            // Hide Answer line if it was part of FAQ above (Hack for simple parser)
             if (trimmed.match(/^\*\*(A|Answer)\*\*:/i)) {
                 return; 
             }
@@ -1166,8 +1158,10 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
                 }
             }
 
-            const roleMatch = trimmed.match(/^\*?\*?(.*(?:Manager|Officer|Customer|System|Admin|User|Client).*)\*?\*?\s*[:\-]\s*(.*)/i);
-            if (roleMatch && !roleMatch[1].toLowerCase().includes('step') && !roleMatch[1].toLowerCase().includes('risk') && !roleMatch[1].toLowerCase().includes('sla') && !roleMatch[1].toLowerCase().includes('owner') && !roleMatch[1].toLowerCase().includes('product')) {
+            // Role Match - STRICTER REGEX to avoid matching normal text
+            // Must start with **Role**: or **Role -**
+            const roleMatch = trimmed.match(/^\*\*(Manager|Officer|Customer|System|Admin|User|Client|Staff|Role|Actor)\*\*[:\-]\s*(.*)/i);
+            if (roleMatch && !roleMatch[1].toLowerCase().includes('step')) {
                  elements.push(<RoleWidget key={`role-${i}`} actor={roleMatch[1]} description={roleMatch[2]} />);
                  return;
             }
@@ -1188,7 +1182,8 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
                 return;
             }
 
-            const riskMatch = trimmed.match(/^[-*]\s*(?:\*\*)?(R\d+)(?:\*\*)?[\s:.-]+(.*)/i);
+            // Risk Match - Requires R# format
+            const riskMatch = trimmed.match(/^[-*]?\s*(?:\*\*)?(R\d+)(?:\*\*)?[\s:.-]+(.*)/i);
             if (riskMatch) {
                 elements.push(<RiskWidget key={`risk-${i}`} riskId={riskMatch[1]} sopData={sopData} fallbackText={riskMatch[2]} />);
                 return;
