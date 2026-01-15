@@ -32,6 +32,8 @@ interface CitationObject {
     page_number?: number | string;
     document_id?: string;
     match_confidence?: number;
+    url?: string; // Fallback
+    link?: string; // Fallback
 }
 
 interface Message {
@@ -686,7 +688,8 @@ const CitationBlock = ({ citations, onCitationClick }: { citations: Record<strin
                     if (typeof value === 'object' && value !== null) {
                         content = value.text || "No content preview available.";
                         source = value.document_name || "Source Document";
-                        presignedUrl = value.presigned_url || (value as any).url || (value as any).link || "";
+                        // Explicitly look for presigned_url and fallbacks
+                        presignedUrl = value.presigned_url || value.url || value.link || "";
                         if (value.page_number) {
                             page = `Page ${value.page_number}`;
                             pageNumber = String(value.page_number);
@@ -734,7 +737,7 @@ const CitationBlock = ({ citations, onCitationClick }: { citations: Record<strin
                                     {page && <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded border border-slate-200 group-hover/card:bg-white shrink-0">{page}</span>}
                                     <ExternalLink size={10} className="text-slate-300 opacity-0 group-hover/card:opacity-100 transition-opacity ml-auto shrink-0" />
                                 </div>
-                                <div className="text-xs text-slate-600 leading-relaxed pl-1 border-l-2 border-slate-100 group-hover/card:border-blue-200 transition-colors">"{content}"</div>
+                                <div className="text-xs text-slate-600 leading-relaxed pl-1 border-l-2 border-slate-100 group-hover/card:border-blue-200 transition-colors whitespace-normal break-words">"{content}"</div>
                             </div>
                         </button>
                     )
@@ -1291,7 +1294,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
           return;
       }
       
-      // Fallback behavior (e.g. log) instead of alert
+      // Fallback behavior: log warning, DO NOT use alert()
       console.warn(`Opening document: ${docName} (Page: ${page || '1'}) - No URL provided.`);
   };
 

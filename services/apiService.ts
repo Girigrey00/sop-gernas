@@ -163,7 +163,13 @@ class JsonStreamParser {
 
                         if (foundEnd) {
                             const jsonStr = this.citationsBuffer.substring(startBrace, endIndex + 1);
-                            result.citations = JSON.parse(jsonStr);
+                            try {
+                                result.citations = JSON.parse(jsonStr);
+                            } catch(e) {
+                                console.warn("Citation JSON parse error (retrying cleaned):", e);
+                                // Fallback: try to clean control chars if any
+                                result.citations = JSON.parse(jsonStr.replace(/[\u0000-\u001F]+/g, ""));
+                            }
                         }
                     }
                 }
