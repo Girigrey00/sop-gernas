@@ -298,6 +298,8 @@ export const apiService: ApiServiceInterface = {
                         related_questions: data.related_questions || data.suggestions
                     });
                 }
+                // Log full response for debugging
+                console.log("Full JSON Response (Standard):", data);
                 return;
             }
 
@@ -309,6 +311,7 @@ export const apiService: ApiServiceInterface = {
             const reader = response.body.getReader();
             const decoder = new TextDecoder("utf-8");
             let buffer = '';
+            let fullResponseAccumulator = ''; // For debugging log
 
             console.log("--- Stream Started ---");
 
@@ -341,12 +344,12 @@ export const apiService: ApiServiceInterface = {
 
                             // Token Handling
                             if (data.token) {
-                                // CHANGED: Directly pass standard text tokens to avoid parser buffering
-                                // This assumes standard RAG streaming where 'token' is just the next text chunk
-                                payload.onToken(data.token);
+                                // Feed token to parser to handle "JSON inside Stream" wrapping
+                                parser.process(data.token);
+                                fullResponseAccumulator += data.token;
                             }
                             
-                            // Direct Citations/Related Handling (if sent separately)
+                            // Direct Citations/Related Handling (if sent separately/final event)
                             if (data.citations || data.related_questions) {
                                 if (payload.onComplete) {
                                     payload.onComplete({
@@ -354,6 +357,8 @@ export const apiService: ApiServiceInterface = {
                                         related_questions: data.related_questions
                                     });
                                 }
+                                // Append metadata to log if it's separate
+                                fullResponseAccumulator += JSON.stringify({ citations: data.citations, related_questions: data.related_questions });
                             }
 
                             // Fallback: Full Answer Block (Legacy non-stream)
@@ -375,6 +380,8 @@ export const apiService: ApiServiceInterface = {
             
             parser.finish();
             console.log("--- Stream Completed ---");
+            console.log("Full JSON Response (Streamed):", fullResponseAccumulator);
+            
             if (payload.onComplete) payload.onComplete();
 
         } catch (error: any) {

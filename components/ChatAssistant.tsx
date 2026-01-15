@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
@@ -24,12 +25,21 @@ interface ChatAssistantProps {
   onNavigateToStep?: (stepId: string) => void;
 }
 
+interface CitationObject {
+    text: string;
+    presigned_url?: string;
+    document_name?: string;
+    page_number?: number | string;
+    document_id?: string;
+    match_confidence?: number;
+}
+
 interface Message {
   id: string; // Used as question_id for feedback
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
-  citations?: Record<string, string>;
+  citations?: Record<string, string | CitationObject>;
   isTyping?: boolean;
   feedback?: 'thumbs_up' | 'thumbs_down' | null;
   isWelcome?: boolean; // Flag to identify the initial welcome message
@@ -642,7 +652,7 @@ const MetricWidget: React.FC<{ row: string[], headers: string[] }> = ({ row, hea
 }
 
 // --- Citation Block ---
-const CitationBlock = ({ citations, onCitationClick }: { citations: Record<string, string>, onCitationClick?: (doc: string, page?: string) => void }) => {
+const CitationBlock = ({ citations, onCitationClick }: { citations: Record<string, string | CitationObject>, onCitationClick?: (doc: string, page?: string, url?: string) => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const count = Object.keys(citations).length;
   if (count === 0) return null;
@@ -669,18 +679,35 @@ const CitationBlock = ({ citations, onCitationClick }: { citations: Record<strin
                     let source = "Source Document";
                     let page = "";
                     let pageNumber = "";
-                    let content = value;
-                    const firstColon = value.indexOf(':');
-                    if (firstColon > -1 && firstColon < 100) {
-                        const meta = value.substring(0, firstColon);
-                        content = value.substring(firstColon + 1).trim();
-                        const pageMatch = meta.match(/[-|(]\s*Page\s*(\d+)/i);
-                        if (pageMatch) {
-                            page = `Page ${pageMatch[1]}`;
-                            pageNumber = pageMatch[1];
-                            source = meta.replace(pageMatch[0], '').trim().replace(/[-|)]$/, '').trim();
+                    let content = "";
+                    let presignedUrl = "";
+
+                    // Handle New Object Format or Legacy String Format
+                    if (typeof value === 'object' && value !== null) {
+                        content = value.text || "No content preview available.";
+                        source = value.document_name || "Source Document";
+                        presignedUrl = value.presigned_url || "";
+                        if (value.page_number) {
+                            page = `Page ${value.page_number}`;
+                            pageNumber = String(value.page_number);
+                        }
+                    } else {
+                        // Legacy String Parsing
+                        const valStr = String(value);
+                        const firstColon = valStr.indexOf(':');
+                        if (firstColon > -1 && firstColon < 100) {
+                            const meta = valStr.substring(0, firstColon);
+                            content = valStr.substring(firstColon + 1).trim();
+                            const pageMatch = meta.match(/[-|(]\s*Page\s*(\d+)/i);
+                            if (pageMatch) {
+                                page = `Page ${pageMatch[1]}`;
+                                pageNumber = pageMatch[1];
+                                source = meta.replace(pageMatch[0], '').trim().replace(/[-|)]$/, '').trim();
+                            } else {
+                                source = meta.trim();
+                            }
                         } else {
-                            source = meta.trim();
+                            content = valStr;
                         }
                     }
                     
@@ -692,7 +719,7 @@ const CitationBlock = ({ citations, onCitationClick }: { citations: Record<strin
                     return (
                         <button 
                             key={key} 
-                            onClick={() => onCitationClick && onCitationClick(source, pageNumber)}
+                            onClick={() => onCitationClick && onCitationClick(source, pageNumber, presignedUrl)}
                             className="flex gap-3 items-start group/card relative bg-white p-3 rounded-lg border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all text-left w-full cursor-pointer hover:bg-blue-50/10"
                         >
                             <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-500 shadow-sm mt-0.5 group-hover/card:bg-blue-50 group-hover/card:text-blue-600 transition-colors">
@@ -1259,12 +1286,15 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
     });
   };
 
-  const handleOpenCitation = (docName: string, page?: string) => {
+  const handleOpenCitation = (docName: string, page?: string, url?: string) => {
+      if (url) {
+          window.open(url, '_blank');
+          return;
+      }
       const pageNum = page ? page.replace(/\D/g, '') : '';
       const fakeUrl = `/documents/${docName}${pageNum ? `#page=${pageNum}` : ''}`;
-      // Placeholder for actual document viewer logic
-      alert(`Opening document: ${docName}\nNavigating to page: ${pageNum || '1'}\n(Link simulated)`);
-      // window.open(fakeUrl, '_blank'); 
+      // Placeholder for actual document viewer logic if no URL
+      alert(`Opening document: ${docName}\nNavigating to page: ${pageNum || '1'}\n(No URL provided, simulate internal viewer)`);
   };
 
   // --- Widget Demo Function ---
