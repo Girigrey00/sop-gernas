@@ -121,7 +121,7 @@ class JsonStreamParser {
         if (this.citationsBuffer) {
             const result: { citations?: any, related_questions?: string[] } = {};
             
-            // 1. Extract Citations using Brace Counting (More robust than Regex)
+            // 1. Extract Citations using Brace Counting (String Aware)
             try {
                 const citKeyIndex = this.citationsBuffer.indexOf('"citations"');
                 if (citKeyIndex !== -1) {
@@ -131,16 +131,32 @@ class JsonStreamParser {
                         let depth = 0;
                         let foundEnd = false;
                         let endIndex = -1;
+                        let inString = false;
+                        let esc = false;
 
                         for (let i = startBrace; i < this.citationsBuffer.length; i++) {
                             const char = this.citationsBuffer[i];
-                            if (char === '{') depth++;
-                            else if (char === '}') {
-                                depth--;
-                                if (depth === 0) {
-                                    endIndex = i;
-                                    foundEnd = true;
-                                    break;
+                            
+                            if (inString) {
+                                if (esc) {
+                                    esc = false;
+                                } else if (char === '\\') {
+                                    esc = true;
+                                } else if (char === '"') {
+                                    inString = false;
+                                }
+                            } else {
+                                if (char === '"') {
+                                    inString = true;
+                                } else if (char === '{') {
+                                    depth++;
+                                } else if (char === '}') {
+                                    depth--;
+                                    if (depth === 0) {
+                                        endIndex = i;
+                                        foundEnd = true;
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -155,7 +171,7 @@ class JsonStreamParser {
                 console.warn("Failed to parse citations:", e);
             }
 
-            // 2. Extract Related Questions using Array Counting
+            // 2. Extract Related Questions using Array Counting (String Aware)
             try {
                 const rqKeyIndex = this.citationsBuffer.indexOf('"related_questions"');
                 if (rqKeyIndex !== -1) {
@@ -164,16 +180,32 @@ class JsonStreamParser {
                          let depth = 0;
                          let foundEnd = false;
                          let endIndex = -1;
+                         let inString = false;
+                         let esc = false;
  
                          for (let i = startBracket; i < this.citationsBuffer.length; i++) {
                              const char = this.citationsBuffer[i];
-                             if (char === '[') depth++;
-                             else if (char === ']') {
-                                 depth--;
-                                 if (depth === 0) {
-                                     endIndex = i;
-                                     foundEnd = true;
-                                     break;
+                             
+                             if (inString) {
+                                if (esc) {
+                                    esc = false;
+                                } else if (char === '\\') {
+                                    esc = true;
+                                } else if (char === '"') {
+                                    inString = false;
+                                }
+                             } else {
+                                 if (char === '"') {
+                                     inString = true;
+                                 } else if (char === '[') {
+                                     depth++;
+                                 } else if (char === ']') {
+                                     depth--;
+                                     if (depth === 0) {
+                                         endIndex = i;
+                                         foundEnd = true;
+                                         break;
+                                     }
                                  }
                              }
                          }

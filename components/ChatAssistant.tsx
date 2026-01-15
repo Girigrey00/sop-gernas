@@ -686,7 +686,7 @@ const CitationBlock = ({ citations, onCitationClick }: { citations: Record<strin
                     if (typeof value === 'object' && value !== null) {
                         content = value.text || "No content preview available.";
                         source = value.document_name || "Source Document";
-                        presignedUrl = value.presigned_url || "";
+                        presignedUrl = value.presigned_url || (value as any).url || (value as any).link || "";
                         if (value.page_number) {
                             page = `Page ${value.page_number}`;
                             pageNumber = String(value.page_number);
@@ -729,7 +729,7 @@ const CitationBlock = ({ citations, onCitationClick }: { citations: Record<strin
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                     <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                         <FileText size={12} className="text-slate-400 shrink-0 group-hover/card:text-blue-500" />
-                                        <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wide break-words group-hover/card:text-blue-700" title={source}>{source}</p>
+                                        <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wide break-words whitespace-normal group-hover/card:text-blue-700 leading-tight" title={source}>{source}</p>
                                     </div>
                                     {page && <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded border border-slate-200 group-hover/card:bg-white shrink-0">{page}</span>}
                                     <ExternalLink size={10} className="text-slate-300 opacity-0 group-hover/card:opacity-100 transition-opacity ml-auto shrink-0" />
@@ -1282,14 +1282,17 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
   };
 
   const handleOpenCitation = (docName: string, page?: string, url?: string) => {
-      if (url) {
-          window.open(url, '_blank');
+      // Clean up the URL if needed
+      let cleanUrl = url?.trim();
+      
+      // Fix: Check if URL exists and is valid
+      if (cleanUrl && cleanUrl !== "undefined" && cleanUrl !== "null") {
+          window.open(cleanUrl, '_blank');
           return;
       }
-      const pageNum = page ? page.replace(/\D/g, '') : '';
-      const fakeUrl = `/documents/${docName}${pageNum ? `#page=${pageNum}` : ''}`;
-      // Placeholder for actual document viewer logic if no URL
-      alert(`Opening document: ${docName}\nNavigating to page: ${pageNum || '1'}\n(No URL provided, simulate internal viewer)`);
+      
+      // Fallback behavior (e.g. log) instead of alert
+      console.warn(`Opening document: ${docName} (Page: ${page || '1'}) - No URL provided.`);
   };
 
   // --- Widget Demo Function ---
