@@ -1295,11 +1295,12 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
       
       // Fix: Check if URL exists and is valid
       if (cleanUrl && cleanUrl !== "undefined" && cleanUrl !== "null") {
+          // Open URL in new tab directly
           window.open(cleanUrl, '_blank');
           return;
       }
       
-      // Fallback behavior: log warning, DO NOT use alert()
+      // Only warn if URL is missing, do not alert
       console.warn(`Opening document: ${docName} (Page: ${page || '1'}) - No URL provided.`);
   };
 
