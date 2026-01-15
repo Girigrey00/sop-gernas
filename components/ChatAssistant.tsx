@@ -722,11 +722,12 @@ const CitationBlock = ({ citations, onCitationClick }: { citations: Record<strin
                         source = key.replace(/[\[\]]/g, '');
                     }
 
+                    const isUrlValid = presignedUrl && presignedUrl.length > 10;
+
                     return (
-                        <button 
+                        <div 
                             key={key} 
-                            onClick={() => onCitationClick && onCitationClick(source, pageNumber, presignedUrl)}
-                            className="flex gap-3 items-start group/card relative bg-white p-3 rounded-lg border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all text-left w-full cursor-pointer hover:bg-blue-50/10"
+                            className="flex gap-3 items-start group/card relative bg-white p-3 rounded-lg border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all text-left w-full hover:bg-blue-50/10"
                         >
                             <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-500 shadow-sm mt-0.5 group-hover/card:bg-blue-50 group-hover/card:text-blue-600 transition-colors">
                                 {key.replace(/[\[\]]/g, '')}
@@ -738,11 +739,27 @@ const CitationBlock = ({ citations, onCitationClick }: { citations: Record<strin
                                         <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wide break-words whitespace-normal group-hover/card:text-blue-700 leading-tight" title={source}>{source}</p>
                                     </div>
                                     {page && <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded border border-slate-200 group-hover/card:bg-white shrink-0">{page}</span>}
-                                    <ExternalLink size={10} className="text-slate-300 opacity-0 group-hover/card:opacity-100 transition-opacity ml-auto shrink-0" />
+                                    
+                                    {/* CLICKABLE LINK WITH ICON */}
+                                    {isUrlValid && (
+                                        <a 
+                                            href={presignedUrl} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded border border-blue-100 transition-colors ml-auto shrink-0 z-10 cursor-pointer hover:shadow-sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onCitationClick && onCitationClick(source, pageNumber, presignedUrl);
+                                            }}
+                                            title="Open Document in New Tab"
+                                        >
+                                            View <ExternalLink size={10} />
+                                        </a>
+                                    )}
                                 </div>
                                 <div className="text-xs text-slate-600 leading-relaxed pl-1 border-l-2 border-slate-100 group-hover/card:border-blue-200 transition-colors whitespace-normal break-words">"{content}"</div>
                             </div>
-                        </button>
+                        </div>
                     )
                 })}
             </div>

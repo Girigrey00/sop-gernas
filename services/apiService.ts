@@ -171,7 +171,9 @@ class JsonStreamParser {
                                 // REPAIR LOGIC FOR UNQUOTED URLS
                                 try {
                                     // Robust Regex: "presigned_url": https://... until comma or closing brace
-                                    const fixed = jsonStr.replace(/("presigned_url"\s*:\s*)(https?:\/\/[^,}\s]+)/g, '$1"$2"');
+                                    // Handles spaces in URLs (e.g., filenames) by reading until the next property key or end of object
+                                    // Look for "presigned_url": followed by non-greedy match until it sees a comma followed by a quote (next key) OR end brace
+                                    const fixed = jsonStr.replace(/("presigned_url"\s*:\s*)(https?:\/\/.*?)(?=\s*(?:,\s*"[^"]+"\s*:|\s*\}))/g, '$1"$2"');
                                     result.citations = JSON.parse(fixed);
                                 } catch(e2) {
                                     console.warn("Citation JSON parse failed even after repair:", e2);
@@ -424,7 +426,7 @@ export const apiService: ApiServiceInterface = {
                                 // Regex matches "presigned_url": http... (no quote) and wraps it
                                 // It handles URL with spaces or query params by capturing everything until the next comma or closing brace
                                 const fixedJsonStr = trimmedLine.substring(6)
-                                    .replace(/("presigned_url"\s*:\s*)(https?:\/\/[^,}\s]+)(?=\s*(?:,\s*"|}))/g, '$1"$2"');
+                                    .replace(/("presigned_url"\s*:\s*)(https?:\/\/.*?)(?=\s*(?:,\s*"[^"]+"\s*:|\s*\}))/g, '$1"$2"');
                                 
                                 const fixedData = JSON.parse(fixedJsonStr);
                                 
@@ -441,7 +443,7 @@ export const apiService: ApiServiceInterface = {
                             } catch (retryErr) {
                                 // If retry fails, try raw regex extraction as a last resort
                                 console.warn("Retry fix failed. Attempting raw extraction.", retryErr);
-                                const urlMatch = trimmedLine.match(/"presigned_url"\s*:\s*(https?:\/\/.*?)(?=\s*(?:,\s*"|}))/);
+                                const urlMatch = trimmedLine.match(/"presigned_url"\s*:\s*(https?:\/\/.*?)(?=\s*(?:,\s*"[^"]+"\s*:|\s*\}))/);
                                 if (urlMatch) {
                                     const rawUrl = urlMatch[1];
                                     if (payload.onComplete) {
