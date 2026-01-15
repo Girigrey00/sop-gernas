@@ -163,24 +163,32 @@ class JsonStreamParser {
 
                         if (foundEnd) {
                             const jsonStr = this.citationsBuffer.substring(startBrace, endIndex + 1);
-                            
-                            // Try parsing, if fail, try to repair unquoted URLs
                             try {
                                 result.citations = JSON.parse(jsonStr);
                             } catch(e) {
-                                // REPAIR LOGIC FOR UNQUOTED URLS
-                                try {
-                                    const fixed = jsonStr.replace(/"presigned_url":\s*(https?:\/\/[^,}\s]+)/g, '"presigned_url": "$1"');
-                                    result.citations = JSON.parse(fixed);
-                                } catch(e2) {
-                                    console.warn("Citation JSON parse failed even after repair:", e2);
-                                }
+                                console.warn("Citation JSON parse error (retrying cleaned):", e);
+                                // Fallback: try to clean control chars if any
+                                result.citations = JSON.parse(jsonStr.replace(/[\u0000-\u001F]+/g, ""));
                             }
                         }
                     }
                 }
             } catch (e) {
-                console.warn("Failed to parse citations:", e);
+                console.warn("Failed to parse citations via braces, trying fallback:", e);
+                // Regex Fallback for difficult JSON
+                try {
+                    // Look for key "presigned_url": "..." and extract it manually if needed
+                    const urlMatch = this.citationsBuffer.match(/"presigned_url"\s*:\s*"(https?:\/\/[^"]+)"/);
+                    if (urlMatch && urlMatch[1]) {
+                        // Construct a dummy citation object if we found a URL but couldn't parse the full object
+                        result.citations = {
+                            "[1]": {
+                                text: "Source Document",
+                                presigned_url: urlMatch[1]
+                            }
+                        };
+                    }
+                } catch(err) { /* ignore */ }
             }
 
             // 2. Extract Related Questions using Array Counting (String Aware)
@@ -421,8 +429,9 @@ export const apiService: ApiServiceInterface = {
                             // --- ROBUST FALLBACK FOR MALFORMED JSON (Unquoted URLs) ---
                             try {
                                 // Regex matches "presigned_url": http... (no quote) and wraps it
+                                // It handles URL with spaces by capturing everything until the next comma followed by a quote or }
                                 const fixedJsonStr = trimmedLine.substring(6)
-                                    .replace(/"presigned_url":\s*(https?:\/\/[^,}\s]+)/g, '"presigned_url": "$1"');
+                                    .replace(/("presigned_url"\s*:\s*)(https?:\/\/.*?)(?=\s*(?:,\s*"|}))/g, '$1"$2"');
                                 
                                 const fixedData = JSON.parse(fixedJsonStr);
                                 
@@ -437,7 +446,23 @@ export const apiService: ApiServiceInterface = {
                                     }
                                 }
                             } catch (retryErr) {
-                                console.warn("Retry fix failed.", retryErr);
+                                // If retry fails, try raw regex extraction
+                                console.warn("Retry fix failed. Attempting raw extraction.", retryErr);
+                                const urlMatch = trimmedLine.match(/"presigned_url"\s*:\s*(https?:\/\/.*?)(?=\s*(?:,\s*"|}))/);
+                                if (urlMatch) {
+                                    const rawUrl = urlMatch[1];
+                                    if (payload.onComplete) {
+                                        payload.onComplete({
+                                            citations: {
+                                                "[1]": {
+                                                    text: "Document (Recovered)",
+                                                    presigned_url: rawUrl,
+                                                    document_name: "Document"
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
                             }
                         }
                     }
