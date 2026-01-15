@@ -163,12 +163,18 @@ class JsonStreamParser {
 
                         if (foundEnd) {
                             const jsonStr = this.citationsBuffer.substring(startBrace, endIndex + 1);
+                            
+                            // Try parsing, if fail, try to repair unquoted URLs
                             try {
                                 result.citations = JSON.parse(jsonStr);
                             } catch(e) {
-                                console.warn("Citation JSON parse error (retrying cleaned):", e);
-                                // Fallback: try to clean control chars if any
-                                result.citations = JSON.parse(jsonStr.replace(/[\u0000-\u001F]+/g, ""));
+                                // REPAIR LOGIC FOR UNQUOTED URLS
+                                try {
+                                    const fixed = jsonStr.replace(/"presigned_url":\s*(https?:\/\/[^,}\s]+)/g, '"presigned_url": "$1"');
+                                    result.citations = JSON.parse(fixed);
+                                } catch(e2) {
+                                    console.warn("Citation JSON parse failed even after repair:", e2);
+                                }
                             }
                         }
                     }
@@ -411,6 +417,28 @@ export const apiService: ApiServiceInterface = {
 
                         } catch (e) {
                             console.warn("Failed to parse SSE JSON:", trimmedLine);
+                            
+                            // --- ROBUST FALLBACK FOR MALFORMED JSON (Unquoted URLs) ---
+                            try {
+                                // Regex matches "presigned_url": http... (no quote) and wraps it
+                                const fixedJsonStr = trimmedLine.substring(6)
+                                    .replace(/"presigned_url":\s*(https?:\/\/[^,}\s]+)/g, '"presigned_url": "$1"');
+                                
+                                const fixedData = JSON.parse(fixedJsonStr);
+                                
+                                // Recover data if possible
+                                if (fixedData.citations || fixedData.related_questions) {
+                                    console.log("Recovered data from malformed JSON via fix.");
+                                    if (payload.onComplete) {
+                                        payload.onComplete({
+                                            citations: fixedData.citations,
+                                            related_questions: fixedData.related_questions
+                                        });
+                                    }
+                                }
+                            } catch (retryErr) {
+                                console.warn("Retry fix failed.", retryErr);
+                            }
                         }
                     }
                 }

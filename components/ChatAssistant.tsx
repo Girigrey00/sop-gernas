@@ -34,6 +34,8 @@ interface CitationObject {
     match_confidence?: number;
     url?: string; // Fallback
     link?: string; // Fallback
+    blob_url?: string; // Fallback
+    source_url?: string; // Fallback
 }
 
 interface Message {
@@ -688,8 +690,9 @@ const CitationBlock = ({ citations, onCitationClick }: { citations: Record<strin
                     if (typeof value === 'object' && value !== null) {
                         content = value.text || "No content preview available.";
                         source = value.document_name || "Source Document";
-                        // Explicitly look for presigned_url and fallbacks
-                        presignedUrl = value.presigned_url || value.url || value.link || "";
+                        // CHECK ALL POSSIBLE KEYS FOR URL
+                        // presigned_url is the primary one sent by backend
+                        presignedUrl = value.presigned_url || value.blob_url || value.url || value.link || value.source_url || "";
                         if (value.page_number) {
                             page = `Page ${value.page_number}`;
                             pageNumber = String(value.page_number);
@@ -1285,6 +1288,8 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
   };
 
   const handleOpenCitation = (docName: string, page?: string, url?: string) => {
+      console.log('Attempting to open citation:', { docName, page, url });
+      
       // Clean up the URL if needed
       let cleanUrl = url?.trim();
       
