@@ -29,6 +29,66 @@ body {
   font-size: 12px;
 }
 
+/* Process Analysis Node Styles */
+.process-node {
+  background: #eff6ff; /* blue-50 */
+  border: 1px solid #3b82f6; /* blue-500 */
+  color: #1e3a8a; /* blue-900 */
+  border-radius: 8px;
+  padding: 10px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
+  width: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.data-node {
+  background: #f8fafc; /* slate-50 */
+  border: 1px dashed #64748b; /* slate-500 */
+  color: #334155; /* slate-700 */
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 11px;
+  text-align: center;
+  width: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.risk-node {
+  background: #fff1f2; /* rose-50 */
+  border: 1px solid #f43f5e; /* rose-500 */
+  border-left: 4px solid #f43f5e;
+  color: #881337; /* rose-900 */
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+  width: 250px;
+  display: flex;
+  align-items: center;
+}
+
+.control-node {
+  background: #f0fdf4; /* emerald-50 */
+  border: 1px solid #10b981; /* emerald-500 */
+  border-left: 4px solid #10b981;
+  color: #064e3b; /* emerald-900 */
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: left;
+  width: 250px;
+  display: flex;
+  align-items: center;
+}
+
 @keyframes shimmer {
   100% {
     transform: translateX(100%);

@@ -236,4 +236,4 @@ export interface ProcessDefinitionRow {
 export type LayoutType = 'SWIMLANE' | 'TREE' | 'HORIZONTAL';
 
 // Navigation types
-export type View = 'HOME' | 'CANVAS' | 'HISTORY' | 'SOPS' | 'LIBRARY';
+export type View = 'HOME' | 'CANVAS' | 'HISTORY' | 'SOPS' | 'LIBRARY' | 'PROCESS_ANALYSIS' | 'ANALYSIS_CANVAS';

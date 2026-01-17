@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import CanvasPage from './pages/CanvasPage';
 import LibraryPage from './pages/LibraryPage';
+import ProcessAnalysisPage from './pages/ProcessAnalysisPage';
 import { View, SopResponse, Product, ChatSession } from './types';
 import { apiService } from './services/apiService';
 import { 
@@ -159,10 +160,11 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
 };
 
 // --- Home Page (CBG Knowledge Hub) ---
-const HomePage = ({ onStart, onSelectProduct, onNotification }: { 
+const HomePage = ({ onStart, onSelectProduct, onNotification, isAnalysisMode = false }: { 
     onStart: (data: any) => void, 
     onSelectProduct: (product: Product, redirect: boolean) => void,
-    onNotification: (msg: string, type: 'success' | 'error') => void
+    onNotification: (msg: string, type: 'success' | 'error') => void,
+    isAnalysisMode?: boolean
 }) => {
     const [products, setProducts] = useState<Product[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -253,6 +255,13 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
     const handleCardClick = async (product: Product, e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('.delete-btn')) return;
 
+        // Specialized behavior for Analysis Mode
+        if (isAnalysisMode) {
+            onSelectProduct(product, false);
+            return;
+        }
+
+        // Standard Home Behavior
         onSelectProduct(product, false);
 
         if (product.flow_status === 'Completed') {
@@ -293,8 +302,8 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
             <div className="px-8 pt-8 pb-6 flex flex-col gap-6 bg-white border-b border-slate-200">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                     <div>
-                        <h2 className="text-2xl font-bold text-fab-navy mb-1">CBG Knowledge Hub</h2>
-                        <p className="text-slate-500 text-sm">Select a product to view its workflow or upload new documents.</p>
+                        <h2 className="text-2xl font-bold text-fab-navy mb-1">{isAnalysisMode ? 'Process Analysis' : 'CBG Knowledge Hub'}</h2>
+                        <p className="text-slate-500 text-sm">{isAnalysisMode ? 'Select a product to view specific process risk and control analysis.' : 'Select a product to view its workflow or upload new documents.'}</p>
                     </div>
                     
                     <div className="flex items-center gap-3 w-full md:w-auto">
@@ -408,7 +417,7 @@ const HomePage = ({ onStart, onSelectProduct, onNotification }: {
                                     <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-auto w-full">
                                         <span className="text-[10px] font-medium text-slate-400 truncate max-w-[100px]">Docs: {item.document_count}</span>
                                         <div className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
-                                            {isCompleted ? 'View Flow' : isEmpty ? 'Upload Docs' : isFailed ? 'Retry' : 'Wait...'} <ArrowRight size={14} />
+                                            {isCompleted ? (isAnalysisMode ? 'View Analysis' : 'View Flow') : isEmpty ? 'Upload Docs' : isFailed ? 'Retry' : 'Wait...'} <ArrowRight size={14} />
                                         </div>
                                     </div>
                                 </button>
@@ -553,6 +562,14 @@ const App: React.FC = () => {
       }
   };
 
+  // Handler for Analysis Mode
+  const handleProcessAnalysisSelect = (product: Product, redirect: boolean) => {
+      setSelectedContextProduct(product);
+      if(!redirect) {
+          setCurrentView('ANALYSIS_CANVAS');
+      }
+  };
+
   // UPDATED: Robust Session Opener
   const handleOpenSession = async (session: ChatSession) => {
       // 1. Determine product context (fallback if missing)
@@ -607,6 +624,21 @@ const App: React.FC = () => {
         return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} onNotification={showNotification} />;
       case 'SOPS':
         return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} onNotification={showNotification} />;
+      case 'PROCESS_ANALYSIS':
+        return <HomePage onStart={() => {}} onSelectProduct={handleProcessAnalysisSelect} onNotification={showNotification} isAnalysisMode={true} />;
+      case 'ANALYSIS_CANVAS':
+        if(selectedContextProduct) {
+            return (
+                <ProcessAnalysisPage 
+                    product={selectedContextProduct} 
+                    onBack={() => {
+                        setCurrentView('PROCESS_ANALYSIS');
+                        setSelectedContextProduct(null);
+                    }} 
+                />
+            );
+        }
+        return <HomePage onStart={() => {}} onSelectProduct={handleProcessAnalysisSelect} onNotification={showNotification} isAnalysisMode={true} />;
       case 'LIBRARY':
         return (
             <LibraryPage 
@@ -660,7 +692,6 @@ const App: React.FC = () => {
                 initialSessionId={currentSessionId}
             />
         );
-      // Removed HISTORY case as it is now sidebar only
       default:
         return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} onNotification={showNotification} />;
     }

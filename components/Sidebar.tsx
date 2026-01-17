@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Compass, LogOut, ChevronRight, BookOpen, ChevronLeft, User, Clock, MessageSquare, LayoutDashboard } from 'lucide-react';
+import { Compass, LogOut, ChevronRight, BookOpen, ChevronLeft, User, Clock, MessageSquare, LayoutDashboard, Activity } from 'lucide-react';
 import { View, ChatSession, Product } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -49,6 +49,7 @@ const Sidebar = ({
 
   const navItems = [
     { id: 'HOME', label: 'CBG Knowledge Hub', icon: LayoutDashboard },
+    { id: 'PROCESS_ANALYSIS', label: 'Process Analysis', icon: Activity },
     // Only show Library/History if a product context is selected
     ...(productContext ? [
         { id: 'LIBRARY', label: 'Library', icon: BookOpen },
@@ -97,8 +98,11 @@ const Sidebar = ({
             {navItems.map(item => {
                 const Icon = item.icon;
                 // Map CANVAS/SOPS view to HOME for highlighting if no specific match
-                // Note: HISTORY is now treated as a toggle/expand action, but we can highlight it if we want to show it's 'active' mode
-                const isActive = currentView === item.id || (item.id === 'HOME' && (currentView === 'CANVAS' || currentView === 'SOPS'));
+                // Note: HISTORY is now treated as a toggle/expand action
+                let isActive = currentView === item.id;
+                if (item.id === 'HOME' && (currentView === 'CANVAS' || currentView === 'SOPS')) isActive = true;
+                if (item.id === 'PROCESS_ANALYSIS' && currentView === 'ANALYSIS_CANVAS') isActive = true;
+
                 return (
                   <button
                     key={item.id}
