@@ -1057,102 +1057,187 @@ export const WIDGET_DEMO_DATA = {
 
 export const DUMMY_PROCESS_ANALYSIS_DATA = {
   "nodes": [
-    /* ROW 1: CUSTOMER DETAILS */
+    /* ------------------------------------------------------------------
+       ROW 1: Customer Details & Product Selection
+       ------------------------------------------------------------------ */
     {
       "id": "l2-1",
       "data": { "label": "1. Customer details & product selection" },
-      "position": { "x": 0, "y": 0 },
+      "position": { "x": 0, "y": 100 }, // Centered vertically relative to branches
       "className": "l2-process-node"
     },
+    // Data Input (Left/Top or just nearby)
     {
       "id": "data-1",
-      "data": { "label": "Customer name, EID, Customer email, Customer phone" },
-      "position": { "x": 300, "y": 0 },
+      "data": { "label": "Input: Name, EID, Email, Phone" },
+      "position": { "x": 0, "y": 200 }, // Below the process node
       "className": "data-node"
     },
+    // Branch A: Fraud
     {
-      "id": "risk-1",
-      "data": { "label": "Fraud, Compliance Risk (R4, R11)" },
-      "position": { "x": 600, "y": 0 },
+      "id": "risk-1a",
+      "data": { "label": "Risk: Fraud (R4) - Duplicate/WIP" },
+      "position": { "x": 400, "y": 0 },
       "className": "risk-node"
     },
     {
-      "id": "control-1",
-      "data": { "label": "Existing FAB customer/WIP check (R4), Restricted IP blocking (R11), EID/UAEPASS + OTP" },
-      "position": { "x": 900, "y": 0 },
+      "id": "control-1a",
+      "data": { "label": "Control: Existing FAB customer/WIP check (Automated)" },
+      "position": { "x": 750, "y": 0 },
+      "className": "control-node"
+    },
+    // Branch B: Compliance
+    {
+      "id": "risk-1b",
+      "data": { "label": "Risk: Compliance (R11) - Sanctions" },
+      "position": { "x": 400, "y": 100 },
+      "className": "risk-node"
+    },
+    {
+      "id": "control-1b",
+      "data": { "label": "Control: Restricted IP blocking (Automated)" },
+      "position": { "x": 750, "y": 100 },
+      "className": "control-node"
+    },
+    // Branch C: Auth
+    {
+      "id": "risk-1c",
+      "data": { "label": "Risk: Auth (R11) - Identity Theft" },
+      "position": { "x": 400, "y": 200 },
+      "className": "risk-node"
+    },
+    {
+      "id": "control-1c",
+      "data": { "label": "Control: EID/UAEPASS + OTP (Automated)" },
+      "position": { "x": 750, "y": 200 },
       "className": "control-node"
     },
 
-    /* ROW 2: PRE-ELIGIBILITY */
+    /* ------------------------------------------------------------------
+       ROW 2: Pre-eligibility + Customer ID&V
+       ------------------------------------------------------------------ */
     {
       "id": "l2-2",
       "data": { "label": "2. Pre-eligibility + customer ID&V" },
-      "position": { "x": 0, "y": 300 },
+      "position": { "x": 0, "y": 450 },
       "className": "l2-process-node"
     },
     {
       "id": "data-2",
-      "data": { "label": "EID copy (digital)" },
-      "position": { "x": 300, "y": 300 },
+      "data": { "label": "Input: Digital EID Copy" },
+      "position": { "x": 0, "y": 550 },
       "className": "data-node"
     },
+    // Branch A: Fraud (Identity)
     {
-      "id": "risk-2",
-      "data": { "label": "Fraud, Reputation Risk (R4, R8)" },
-      "position": { "x": 600, "y": 300 },
+      "id": "risk-2a",
+      "data": { "label": "Risk: Fraud (R4) - Fake ID" },
+      "position": { "x": 400, "y": 400 },
       "className": "risk-node"
     },
     {
-      "id": "control-2",
-      "data": { "label": "OCR EID scan (EFR) (R4), Income threshold (+7K) (R8), Minimum age, AECB (711+), Negative Checklist, Fraud Watchlist (OFS)" },
-      "position": { "x": 900, "y": 300 },
+      "id": "control-2a",
+      "data": { "label": "Control: OCR EID Scan + Watchlist Check (Automated)" },
+      "position": { "x": 750, "y": 400 },
+      "className": "control-node"
+    },
+    // Branch B: Reputation (Credit)
+    {
+      "id": "risk-2b",
+      "data": { "label": "Risk: Reputation (R8) - Bad Debt" },
+      "position": { "x": 400, "y": 500 },
+      "className": "risk-node"
+    },
+    {
+      "id": "control-2b",
+      "data": { "label": "Control: Income >7k, Age Check, AECB >711" },
+      "position": { "x": 750, "y": 500 },
       "className": "control-node"
     },
 
-    /* ROW 3: EMPLOYER & SALARY */
+    /* ------------------------------------------------------------------
+       ROW 3: Employer & Salary Validation
+       ------------------------------------------------------------------ */
     {
       "id": "l2-3",
       "data": { "label": "3. Employer and salary validation" },
-      "position": { "x": 0, "y": 700 },
+      "position": { "x": 0, "y": 800 },
       "className": "l2-process-node"
     },
     {
       "id": "data-3",
-      "data": { "label": "Employer details, Salary, UID/TL, EFR/AECB/UAEFTS Reports" },
-      "position": { "x": 300, "y": 700 },
+      "data": { "label": "Input: Employer, Salary, Reports" },
+      "position": { "x": 0, "y": 900 },
       "className": "data-node"
     },
+    // Branch A: Fraud (Employer)
     {
-      "id": "risk-3",
-      "data": { "label": "Fraud, Compliance Risk (R4, R5, R11)" },
-      "position": { "x": 600, "y": 700 },
+      "id": "risk-3a",
+      "data": { "label": "Risk: Fraud (R4) - Fake Employer" },
+      "position": { "x": 400, "y": 700 },
       "className": "risk-node"
     },
     {
-      "id": "control-3",
-      "data": { "label": "Employer category/UID check (R4), IBAN validation (R5), Affordability (CPR), Salary variance, Calculated salary logic (R11)" },
-      "position": { "x": 900, "y": 700 },
+      "id": "control-3a",
+      "data": { "label": "Control: Employer Category, UID/TL TML Validation" },
+      "position": { "x": 750, "y": 700 },
+      "className": "control-node"
+    },
+    // Branch B: Fraud (Banking)
+    {
+      "id": "risk-3b",
+      "data": { "label": "Risk: Fraud (R5) - Invalid IBAN" },
+      "position": { "x": 400, "y": 800 },
+      "className": "risk-node"
+    },
+    {
+      "id": "control-3b",
+      "data": { "label": "Control: IBAN Validation (CB API + AECB)" },
+      "position": { "x": 750, "y": 800 },
+      "className": "control-node"
+    },
+    // Branch C: Compliance (Salary)
+    {
+      "id": "risk-3c",
+      "data": { "label": "Risk: Compliance (R11) - Affordability" },
+      "position": { "x": 400, "y": 900 },
+      "className": "risk-node"
+    },
+    {
+      "id": "control-3c",
+      "data": { "label": "Control: Salary Variance & CPR Calculation" },
+      "position": { "x": 750, "y": 900 },
       "className": "control-node"
     }
   ],
   "edges": [
-    /* Vertical L2 Process Flow */
-    { "id": "e-l1-l2", "source": "l2-1", "target": "l2-2", "type": "step" },
-    { "id": "e-l2-l3", "source": "l2-2", "target": "l2-3", "type": "step" },
+    // Flow Sequence
+    { "id": "seq-1-2", "source": "l2-1", "target": "l2-2", "type": "step", "label": "next" },
+    { "id": "seq-2-3", "source": "l2-2", "target": "l2-3", "type": "step", "label": "next" },
 
-    /* Row 1 Connections */
-    { "id": "e1-d", "source": "l2-1", "target": "data-1" },
-    { "id": "e1-r", "source": "data-1", "target": "risk-1" },
-    { "id": "e1-c", "source": "risk-1", "target": "control-1" },
+    // Connections Row 1
+    { "id": "e1-d", "source": "l2-1", "target": "data-1", "type": "smoothstep" },
+    { "id": "e1-r1", "source": "l2-1", "target": "risk-1a", "type": "smoothstep" },
+    { "id": "e1-c1", "source": "risk-1a", "target": "control-1a", "type": "smoothstep" },
+    { "id": "e1-r2", "source": "l2-1", "target": "risk-1b", "type": "smoothstep" },
+    { "id": "e1-c2", "source": "risk-1b", "target": "control-1b", "type": "smoothstep" },
+    { "id": "e1-r3", "source": "l2-1", "target": "risk-1c", "type": "smoothstep" },
+    { "id": "e1-c3", "source": "risk-1c", "target": "control-1c", "type": "smoothstep" },
 
-    /* Row 2 Connections */
-    { "id": "e2-d", "source": "l2-2", "target": "data-2" },
-    { "id": "e2-r", "source": "data-2", "target": "risk-2" },
-    { "id": "e2-c", "source": "risk-2", "target": "control-2" },
+    // Connections Row 2
+    { "id": "e2-d", "source": "l2-2", "target": "data-2", "type": "smoothstep" },
+    { "id": "e2-r1", "source": "l2-2", "target": "risk-2a", "type": "smoothstep" },
+    { "id": "e2-c1", "source": "risk-2a", "target": "control-2a", "type": "smoothstep" },
+    { "id": "e2-r2", "source": "l2-2", "target": "risk-2b", "type": "smoothstep" },
+    { "id": "e2-c2", "source": "risk-2b", "target": "control-2b", "type": "smoothstep" },
 
-    /* Row 3 Connections */
-    { "id": "e3-d", "source": "l2-3", "target": "data-3" },
-    { "id": "e3-r", "source": "data-3", "target": "risk-3" },
-    { "id": "e3-c", "source": "risk-3", "target": "control-3" }
+    // Connections Row 3
+    { "id": "e3-d", "source": "l2-3", "target": "data-3", "type": "smoothstep" },
+    { "id": "e3-r1", "source": "l2-3", "target": "risk-3a", "type": "smoothstep" },
+    { "id": "e3-c1", "source": "risk-3a", "target": "control-3a", "type": "smoothstep" },
+    { "id": "e3-r2", "source": "l2-3", "target": "risk-3b", "type": "smoothstep" },
+    { "id": "e3-c2", "source": "risk-3b", "target": "control-3b", "type": "smoothstep" },
+    { "id": "e3-r3", "source": "l2-3", "target": "risk-3c", "type": "smoothstep" },
+    { "id": "e3-c3", "source": "risk-3c", "target": "control-3c", "type": "smoothstep" }
   ]
 }
