@@ -30,7 +30,7 @@ body {
 }
 
 /* Process Analysis Node Styles */
-.process-node {
+.process-node, .l2-process-node {
   background: #eff6ff; /* blue-50 */
   border: 1px solid #3b82f6; /* blue-500 */
   color: #1e3a8a; /* blue-900 */
