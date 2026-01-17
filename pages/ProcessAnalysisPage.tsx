@@ -5,7 +5,9 @@ import ReactFlow, {
     useNodesState, 
     useEdgesState, 
     ReactFlowProvider,
-    useReactFlow
+    useReactFlow,
+    Node,
+    Edge
 } from 'reactflow';
 import { LayoutDashboard, ArrowLeft, Loader2, Info } from 'lucide-react';
 import { SopResponse, Product } from '../types';
@@ -32,8 +34,8 @@ const ProcessAnalysisContent: React.FC<ProcessAnalysisPageProps> = ({ product, o
                 // Check if this is the dummy product
                 if (product.id === 'dummy-analysis' || product.product_name.includes('Analysis Demo')) {
                     console.log("Loading Dummy Process Analysis Data");
-                    setNodes(DUMMY_PROCESS_ANALYSIS_DATA.nodes);
-                    setEdges(DUMMY_PROCESS_ANALYSIS_DATA.edges);
+                    setNodes(DUMMY_PROCESS_ANALYSIS_DATA.nodes as Node[]);
+                    setEdges(DUMMY_PROCESS_ANALYSIS_DATA.edges as Edge[]);
                     setIsLoading(false);
                     setTimeout(() => {
                         fitView({ padding: 0.2 });
