@@ -11,6 +11,7 @@ import { LayoutDashboard, ArrowLeft, Loader2, Info } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
 import { convertSopToAnalysisData } from '../utils/analysisUtils';
+import { DUMMY_PROCESS_ANALYSIS_DATA } from '../constants';
 
 interface ProcessAnalysisPageProps {
     product: Product;
@@ -28,6 +29,18 @@ const ProcessAnalysisContent: React.FC<ProcessAnalysisPageProps> = ({ product, o
         const fetchData = async () => {
             setIsLoading(true);
             try {
+                // Check if this is the dummy product
+                if (product.id === 'dummy-analysis' || product.product_name.includes('Analysis Demo')) {
+                    console.log("Loading Dummy Process Analysis Data");
+                    setNodes(DUMMY_PROCESS_ANALYSIS_DATA.nodes);
+                    setEdges(DUMMY_PROCESS_ANALYSIS_DATA.edges);
+                    setIsLoading(false);
+                    setTimeout(() => {
+                        fitView({ padding: 0.2 });
+                    }, 100);
+                    return;
+                }
+
                 const data = await apiService.getProcessFlow(product.product_name);
                 setSopData(data);
                 const { nodes: newNodes, edges: newEdges } = convertSopToAnalysisData(data);

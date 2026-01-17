@@ -286,7 +286,22 @@ const HomePage = ({ onStart, onSelectProduct, onNotification, isAnalysisMode = f
         }
     };
 
-    const filteredProducts = products
+    const filteredProducts = [
+        // Inject Dummy Product for Analysis View Only
+        ...(isAnalysisMode ? [{
+            _id: 'dummy-analysis',
+            id: 'dummy-analysis',
+            product_name: 'Personal Loan (Analysis Demo)',
+            index_name: 'dummy',
+            has_index: 'Yes' as const,
+            has_flow: 'Yes' as const,
+            document_count: 5,
+            description: 'Demo product for Risk & Control Analysis visualization.',
+            flow_status: 'Completed',
+            created_at: new Date().toISOString()
+        } as Product] : []),
+        ...products
+    ]
         .filter(item => {
             return item.product_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                    (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());

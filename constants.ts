@@ -1054,3 +1054,106 @@ export const WIDGET_DEMO_DATA = {
     "Who is the owner of this product?"
   ]
 };
+
+export const DUMMY_PROCESS_ANALYSIS_DATA = {
+  "nodes": [
+    /* STEP 1: Customer Details & Product Selection */
+    {
+      "id": "l2-1",
+      "data": { "label": "1. Customer details & product selection" },
+      "position": { "x": 0, "y": 0 },
+      "type": "input",
+      "className": "process-node"
+    },
+    {
+      "id": "data-1",
+      "data": { "label": "Customer name, EID, email, phone" },
+      "position": { "x": 0, "y": 100 },
+      "className": "data-node"
+    },
+    {
+      "id": "risk-1",
+      "data": { "label": "Fraud / Compliance Risk (R4, R11)" },
+      "position": { "x": 0, "y": 200 },
+      "className": "risk-node"
+    },
+    {
+      "id": "control-1",
+      "data": { "label": "WIP Drop, Restricted IP Blocking, EID/UAEPASS + OTP" },
+      "position": { "x": 0, "y": 300 },
+      "className": "control-node"
+    },
+
+    /* STEP 2: Pre-eligibility + Customer ID&V */
+    {
+      "id": "l2-2",
+      "data": { "label": "2. Pre-eligibility + customer ID&V" },
+      "position": { "x": 350, "y": 0 },
+      "type": "input",
+      "className": "process-node"
+    },
+    {
+      "id": "data-2",
+      "data": { "label": "EID copy (digital)" },
+      "position": { "x": 350, "y": 100 },
+      "className": "data-node"
+    },
+    {
+      "id": "risk-2",
+      "data": { "label": "Fraud / Reputation Risk (R4, R8)" },
+      "position": { "x": 350, "y": 200 },
+      "className": "risk-node"
+    },
+    {
+      "id": "control-2",
+      "data": { "label": "OCR EID Scan, Income/Age Check, AECB (711+), Negative Checklist, Fraud Watchlist" },
+      "position": { "x": 350, "y": 300 },
+      "className": "control-node"
+    },
+
+    /* STEP 3: Employer and Salary Validation */
+    {
+      "id": "l2-3",
+      "data": { "label": "3. Employer and salary validation" },
+      "position": { "x": 700, "y": 0 },
+      "type": "input",
+      "className": "process-node"
+    },
+    {
+      "id": "data-3",
+      "data": { "label": "Employer details, Salary, UID/TL, EFR Report/Cert, AECB, UAEFTS" },
+      "position": { "x": 700, "y": 100 },
+      "className": "data-node"
+    },
+    {
+      "id": "risk-3",
+      "data": { "label": "Fraud / Compliance Risk (R4, R5, R11)" },
+      "position": { "x": 700, "y": 200 },
+      "className": "risk-node"
+    },
+    {
+      "id": "control-3",
+      "data": { "label": "Employer Category/UID Match, IBAN Validation, Affordability (CPR), Salary Variance Calc" },
+      "position": { "x": 700, "y": 300 },
+      "className": "control-node"
+    }
+  ],
+  "edges": [
+    /* Vertical Flow Connections */
+    { "id": "e1-1", "source": "l2-1", "target": "data-1", "animated": true },
+    { "id": "e1-2", "source": "data-1", "target": "risk-1" },
+    { "id": "e1-3", "source": "risk-1", "target": "control-1" },
+
+    { "id": "e2-1", "source": "l2-2", "target": "data-2", "animated": true },
+    { "id": "e2-2", "source": "data-2", "target": "risk-2" },
+    { "id": "e2-3", "source": "risk-2", "target": "control-2" },
+
+    { "id": "e3-1", "source": "l2-3", "target": "data-3", "animated": true },
+    { "id": "e3-2", "source": "data-3", "target": "risk-3" },
+    { "id": "e3-3", "source": "risk-3", "target": "control-3" },
+
+    /* Horizontal Process Sequence */
+    { "id": "p1-2", "source": "l2-1", "target": "l2-2", "label": "next step" },
+    { "id": "p2-3", "source": "l2-2", "target": "l2-3", "label": "next step" }
+  ]
+}
