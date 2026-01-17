@@ -1066,19 +1066,19 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "data-1",
-      "data": { "label": "Data: Customer name, EID, Email, Phone" },
+      "data": { "label": "Customer name, EID, Customer email, Customer phone" },
       "position": { "x": 300, "y": 0 },
       "className": "data-node"
     },
     {
       "id": "risk-1",
-      "data": { "label": "Risk: Fraud & Compliance (R4, R11)" },
+      "data": { "label": "Fraud, Compliance Risk (R4, R11)" },
       "position": { "x": 600, "y": 0 },
       "className": "risk-node"
     },
     {
       "id": "control-1",
-      "data": { "label": "Controls: Restricted IP blocking, EID/UAEPASS + OTP (Automated)" },
+      "data": { "label": "Existing FAB customer/WIP check (R4), Restricted IP blocking (R11), EID/UAEPASS + OTP" },
       "position": { "x": 900, "y": 0 },
       "className": "control-node"
     },
@@ -1087,25 +1087,25 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "l2-2",
       "data": { "label": "2. Pre-eligibility + customer ID&V" },
-      "position": { "x": 0, "y": 200 },
+      "position": { "x": 0, "y": 300 },
       "className": "l2-process-node"
     },
     {
       "id": "data-2",
-      "data": { "label": "Data: EID copy (digital)" },
-      "position": { "x": 300, "y": 200 },
+      "data": { "label": "EID copy (digital)" },
+      "position": { "x": 300, "y": 300 },
       "className": "data-node"
     },
     {
       "id": "risk-2",
-      "data": { "label": "Risk: Fraud & Reputation (R4, R8)" },
-      "position": { "x": 600, "y": 200 },
+      "data": { "label": "Fraud, Reputation Risk (R4, R8)" },
+      "position": { "x": 600, "y": 300 },
       "className": "risk-node"
     },
     {
       "id": "control-2",
-      "data": { "label": "Controls: OCR EID scan, AECB Score (711+), Fraud Watchlist (OFS)" },
-      "position": { "x": 900, "y": 200 },
+      "data": { "label": "OCR EID scan (EFR) (R4), Income threshold (+7K) (R8), Minimum age, AECB (711+), Negative Checklist, Fraud Watchlist (OFS)" },
+      "position": { "x": 900, "y": 300 },
       "className": "control-node"
     },
 
@@ -1113,25 +1113,25 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "l2-3",
       "data": { "label": "3. Employer and salary validation" },
-      "position": { "x": 0, "y": 400 },
+      "position": { "x": 0, "y": 700 },
       "className": "l2-process-node"
     },
     {
       "id": "data-3",
-      "data": { "label": "Data: Employer details, Salary, UID/TL, EFR/AECB/UAEFTS Reports" },
-      "position": { "x": 300, "y": 400 },
+      "data": { "label": "Employer details, Salary, UID/TL, EFR/AECB/UAEFTS Reports" },
+      "position": { "x": 300, "y": 700 },
       "className": "data-node"
     },
     {
       "id": "risk-3",
-      "data": { "label": "Risk: Fraud & Compliance (R4, R5, R11)" },
-      "position": { "x": 600, "y": 400 },
+      "data": { "label": "Fraud, Compliance Risk (R4, R5, R11)" },
+      "position": { "x": 600, "y": 700 },
       "className": "risk-node"
     },
     {
       "id": "control-3",
-      "data": { "label": "Controls: IBAN validation, Affordability (CPR), Salary Variance threshold" },
-      "position": { "x": 900, "y": 400 },
+      "data": { "label": "Employer category/UID check (R4), IBAN validation (R5), Affordability (CPR), Salary variance, Calculated salary logic (R11)" },
+      "position": { "x": 900, "y": 700 },
       "className": "control-node"
     }
   ],
