@@ -511,13 +511,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "sourcePosition": "right",
       "targetPosition": "left"
     },
-    // Output - None for Step 6 as per CSV
-    // {
-    //   "id": "output-6",
-    //   "data": { "label": "None" },
-    //   "position": { "x": COL_OUTPUT, "y": 1850 },
-    //   "className": "output-node",
-    // },
+    // Output - Added None explicitly for Step 6
+    {
+      "id": "output-6",
+      "data": { "label": "None" },
+      "position": { "x": COL_OUTPUT, "y": 1850 },
+      "className": "output-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
 
     /* ------------------------------------------------------------------
        ROW 7: Loan disbursal / funds release
@@ -633,6 +635,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     { "id": "e6-8", "source": "risk-6b", "target": "ctrl-6b", "type": "step", "style": { "stroke": "#10b981" } },
     { "id": "e6-9", "source": "risk-6c", "target": "ctrl-6c", "type": "step", "style": { "stroke": "#10b981" } },
     { "id": "e6-10", "source": "risk-6d", "target": "ctrl-6d", "type": "step", "style": { "stroke": "#10b981" } },
+    { "id": "e6-11", "source": "ctrl-6a", "target": "output-6", "type": "step", "style": { "stroke": "#8b5cf6" } },
     // Row 7
     { "id": "e7-1", "source": "l2-7", "target": "data-7", "type": "step", "style": { "stroke": "#94a3b8" } },
     { "id": "e7-2", "source": "data-7", "target": "risk-7a", "type": "step", "style": { "stroke": "#f43f5e" } },
