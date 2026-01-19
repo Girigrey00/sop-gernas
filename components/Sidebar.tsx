@@ -47,11 +47,16 @@ const Sidebar = ({
     fetchHistory();
   }, [currentView, productContext]); // Refresh when view changes or product context changes
 
-  // UPDATED NAVIGATION ITEMS
   const navItems = [
-    { id: 'HOME', label: 'Home', icon: FileText },
-    { id: 'PROCESS_ANALYSIS', label: 'Canvas', icon: LayoutDashboard }, // Maps to Analysis/Canvas Flow
-    { id: 'HISTORY', label: 'History', icon: Clock }
+    { id: 'HOME', label: 'Procedure', icon: FileText },
+    { id: 'PROCESS_ANALYSIS', label: 'Process Lineage', icon: GitMerge },
+    { id: 'PROCESS_LINEAGE', label: 'Policy Standard', icon: ShieldCheck },
+    { id: 'IMPACT_ASSESSMENT', label: 'Impact Assessment', icon: AlertOctagon, badge: 'Coming Soon' },
+    // Only show Library/History if a product context is selected
+    ...(productContext ? [
+        { id: 'LIBRARY', label: 'Library', icon: BookOpen },
+        { id: 'HISTORY', label: 'History', icon: Clock }
+    ] : []),
   ];
 
   return (
@@ -98,6 +103,7 @@ const Sidebar = ({
                 let isActive = currentView === item.id;
                 if (item.id === 'HOME' && (currentView === 'CANVAS' || currentView === 'SOPS')) isActive = true;
                 if (item.id === 'PROCESS_ANALYSIS' && currentView === 'ANALYSIS_CANVAS') isActive = true;
+                if (item.id === 'PROCESS_LINEAGE' && currentView === 'LINEAGE_CHAT') isActive = true;
 
                 return (
                   <button
@@ -114,7 +120,10 @@ const Sidebar = ({
                       <Icon size={isCollapsed ? 22 : 18} className={`${isActive ? 'text-white' : 'text-fab-sky/50 group-hover:text-fab-sky'} transition-colors`} />
                       {!isCollapsed && <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>}
                     </div>
-                    {!isCollapsed && isActive && <ChevronRight size={14} className="text-fab-sky" />}
+                    {!isCollapsed && item.badge && (
+                       <span className="text-[9px] bg-fab-sky/20 text-fab-sky border border-fab-sky/20 px-1.5 py-0.5 rounded font-bold">{item.badge}</span>
+                    )}
+                    {!isCollapsed && !item.badge && isActive && <ChevronRight size={14} className="text-fab-sky" />}
                     
                     {/* Active Bar Indicator for Collapsed Mode */}
                     {isCollapsed && isActive && (
