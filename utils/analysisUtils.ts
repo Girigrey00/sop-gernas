@@ -100,7 +100,7 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
 export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
     // LAYOUT CONSTANTS
     const COL_WIDTH = 350; 
-    const SLOT_HEIGHT = 200; // Fixed height per "slot" (e.g. Risk A, Risk B)
+    const SLOT_HEIGHT = 220; // Increased height per slot to accommodate detailed control text
     const GROUP_PADDING = 80; // Padding between Process Rows
 
     const CLASS_MAP: Record<FlowNodeType, string> = {
@@ -173,6 +173,7 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
             if (nodesInCell.length === 0) return;
 
             // Sort nodes alphabetically by ID to ensure A matches A, B matches B
+            // This aligns Risk-1a with Ctrl-1a naturally
             nodesInCell.sort((a, b) => a.id.localeCompare(b.id));
 
             // Are we filling all slots or centering few items?
@@ -184,7 +185,6 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
                 if (isFullColumn) {
                     // Place exactly in the slot. 
                     // Slot 0 starts at currentY.
-                    // Center the node within the slot height.
                     const slotTop = currentY + (nodeIdx * SLOT_HEIGHT);
                     nodeY = slotTop + (SLOT_HEIGHT / 2) - 40; // -40 approx half node height
                 } else {
@@ -245,18 +245,14 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
                     const tgtSuffix = tgtNode.id.match(/[a-z]$/i)?.[0];
 
                     if (srcSuffix && tgtSuffix) {
-                        // Strict horizontal connection for same suffix
+                        // Strict horizontal connection for same suffix (Direct Line)
                         if (srcSuffix === tgtSuffix) shouldConnect = true;
-                        
-                        // Special overrides for demo data cross-links
-                        if (srcNode.id === 'risk-2a' && tgtNode.id === 'ctrl-2b') shouldConnect = true;
-                        if (srcNode.id === 'risk-7b' && tgtNode.id === 'ctrl-7a') shouldConnect = true;
                     } 
-                    // 2. Fan Out: Source has NO suffix (Process/Data), Target HAS suffix
+                    // 2. Fan Out: Source has NO suffix (Process/Data), Target HAS suffix (Risk/Control)
                     else if (!srcSuffix && tgtSuffix) {
                         shouldConnect = true; // Connect Process to All Risks
                     }
-                    // 3. Fan In: Source HAS suffix, Target has NO suffix (Output)
+                    // 3. Fan In: Source HAS suffix (Risk/Control), Target has NO suffix (Output)
                     else if (srcSuffix && !tgtSuffix) {
                         shouldConnect = true; // Connect All Controls to Output
                     }
@@ -275,7 +271,6 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
                             style: { 
                                 stroke: '#94a3b8', 
                                 strokeWidth: 2,
-                                strokeDasharray: (srcNode.id === 'risk-2a' && tgtNode.id === 'ctrl-2b') ? '5,5' : undefined // Dashed for cross-link
                             },
                             animated: false,
                             markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' }
