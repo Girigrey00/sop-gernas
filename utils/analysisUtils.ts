@@ -14,12 +14,12 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
         return { nodes: [], edges: [] };
     }
 
-    const COL_WIDTH = 400; // Horizontal space between columns
+    const COL_WIDTH = 500; // Increased width
     const COL_L2 = 0;
-    const COL_DATA = 400;
-    const COL_RISK = 800;
-    const COL_CTRL = 1200;
-    const COL_OUTPUT = 1600;
+    const COL_DATA = 500;
+    const COL_RISK = 1000;
+    const COL_CTRL = 1500;
+    const COL_OUTPUT = 2000;
 
     let currentY = 100; // Start Y position
 
@@ -72,9 +72,9 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
 
         // Calculate heights to vertically center items relative to L2 Node
         const maxItems = Math.max(inputItems.length, riskItems.length, controlItems.length, outputItems.length);
-        const verticalSpread = 100; // Space between items in the same column
-        const stageHeight = Math.max(200, maxItems * verticalSpread);
-        const stageCenterY = currentY + (stageHeight / 2) - 50; // -50 roughly half node height
+        const verticalSpread = 250; // Increased vertical spread
+        const stageHeight = Math.max(300, maxItems * verticalSpread);
+        const stageCenterY = currentY + (stageHeight / 2) - 50; 
 
         // 1. L2 Process Node (Centered)
         const l2NodeId = stagePrefix;
@@ -148,7 +148,7 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
         });
 
         // Advance Y for next stage
-        currentY += stageHeight + 100; // Gap between stages
+        currentY += stageHeight + 250; // Increased Gap between stages
     });
 
     return { nodes, edges };
@@ -160,7 +160,7 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
  */
 export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
     // 1. Config
-    const COL_WIDTH = 400;
+    const COL_WIDTH = 500; // Increased column width
     const CLASS_MAP: Record<FlowNodeType, string> = {
         'process': 'l2-process-node',
         'data': 'data-node',
