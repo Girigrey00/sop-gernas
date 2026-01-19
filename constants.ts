@@ -85,7 +85,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "data-1",
-      "data": { "label": "Customer name\nEID\nEmail\nPhone" },
+      "data": { "label": "Customer Name\nEID\nEmail\nPhone" },
       "position": { "x": COL_DATA, "y": 100 },
       "className": "data-node",
       "sourcePosition": "right",
@@ -94,7 +94,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Risks
     {
       "id": "risk-1a",
-      "data": { "label": "Fraud: Existing Cust/WIP" },
+      "data": { "label": "Fraud: Existing FAB Cust/WIP" },
       "position": { "x": COL_RISK, "y": 50 },
       "className": "risk-node",
       "sourcePosition": "right",
@@ -111,7 +111,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Controls
     {
       "id": "ctrl-1a",
-      "data": { "label": "Existing FAB customer check (A)" },
+      "data": { "label": "App WIP Check (Dropped if exists) (A)" },
       "position": { "x": COL_CTRL, "y": 50 },
       "className": "control-node",
       "sourcePosition": "right",
@@ -127,12 +127,12 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
 
     /* ------------------------------------------------------------------
-       ROW 2: Pre-eligibility + customer ID&V
+       ROW 2: Pre-eligibility & ID&V
        Base Y: 400
        ------------------------------------------------------------------ */
     {
       "id": "l2-2",
-      "data": { "label": "2. Pre-eligibility + customer ID&V" },
+      "data": { "label": "2. Pre-eligibility & ID&V" },
       "position": { "x": COL_L2, "y": 400 },
       "className": "l2-process-node",
       "sourcePosition": "right",
@@ -149,7 +149,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Risks
     {
       "id": "risk-2a",
-      "data": { "label": "Fraud: OCR Scan" },
+      "data": { "label": "Fraud: EID Verification" },
       "position": { "x": COL_RISK, "y": 350 },
       "className": "risk-node",
       "sourcePosition": "right",
@@ -157,7 +157,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "risk-2b",
-      "data": { "label": "Reputation: Eligibility" },
+      "data": { "label": "Reputation: Eligibility Criteria" },
       "position": { "x": COL_RISK, "y": 450 },
       "className": "risk-node",
       "sourcePosition": "right",
@@ -174,7 +174,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "ctrl-2b",
-      "data": { "label": "Income/Age/AECB Checks (A)\nNegative Checklist (A)" },
+      "data": { "label": "Income/Age/AECB (711+) (A)\nWatchlists (OFS/Mubadara) (A)" },
       "position": { "x": COL_CTRL, "y": 450 },
       "className": "control-node",
       "sourcePosition": "right",
@@ -182,12 +182,12 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
 
     /* ------------------------------------------------------------------
-       ROW 3: Employer and salary validation
+       ROW 3: Employer & salary validation
        Base Y: 750
        ------------------------------------------------------------------ */
     {
       "id": "l2-3",
-      "data": { "label": "3. Employer and salary validation" },
+      "data": { "label": "3. Employer & salary validation" },
       "position": { "x": COL_L2, "y": 750 },
       "className": "l2-process-node",
       "sourcePosition": "right",
@@ -195,7 +195,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "data-3",
-      "data": { "label": "Employer details\nSalary amount\nUID/TL\nReports (EFR, AECB, UAEFTS)" },
+      "data": { "label": "Employer details\nSalary amount\nUID/TL, Reports" },
       "position": { "x": COL_DATA, "y": 750 },
       "className": "data-node",
       "sourcePosition": "right",
@@ -204,7 +204,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Risks
     {
       "id": "risk-3a",
-      "data": { "label": "Fraud: Employer Category" },
+      "data": { "label": "Fraud: Employer Category/ID" },
       "position": { "x": COL_RISK, "y": 650 },
       "className": "risk-node",
       "sourcePosition": "right",
@@ -212,7 +212,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "risk-3b",
-      "data": { "label": "Fraud: IBAN/Salary" },
+      "data": { "label": "Fraud: IBAN & Affordability" },
       "position": { "x": COL_RISK, "y": 750 },
       "className": "risk-node",
       "sourcePosition": "right",
@@ -220,7 +220,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "risk-3c",
-      "data": { "label": "Compliance: Calculated Salary" },
+      "data": { "label": "Compliance: Salary Calculation" },
       "position": { "x": COL_RISK, "y": 850 },
       "className": "risk-node",
       "sourcePosition": "right",
@@ -229,7 +229,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Controls
     {
       "id": "ctrl-3a",
-      "data": { "label": "Employer Validation (TML/MOHRE) (A)" },
+      "data": { "label": "TML Matching (A)\nNER Verification (P)" },
       "position": { "x": COL_CTRL, "y": 650 },
       "className": "control-node",
       "sourcePosition": "right",
@@ -237,7 +237,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "ctrl-3b",
-      "data": { "label": "IBAN & Affordability Check (A)" },
+      "data": { "label": "IBAN API / Affordability (CPR) (A)\nSalary Variance (3mo) (A)" },
       "position": { "x": COL_CTRL, "y": 750 },
       "className": "control-node",
       "sourcePosition": "right",
@@ -245,7 +245,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "ctrl-3c",
-      "data": { "label": "Salary Variance Threshold (A)" },
+      "data": { "label": "Most occurring salary logic (A)\nException Trigger (A)" },
       "position": { "x": COL_CTRL, "y": 850 },
       "className": "control-node",
       "sourcePosition": "right",
@@ -266,7 +266,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "data-4",
-      "data": { "label": "Credit Score\nDBR\nOffer Letter" },
+      "data": { "label": "Internal Credit Score\nDBR" },
       "position": { "x": COL_DATA, "y": 1100 },
       "className": "data-node",
       "sourcePosition": "right",
@@ -300,7 +300,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "ctrl-4b",
-      "data": { "label": "Mandatory Life Insurance (A)\nInsurance Onboarding (M)" },
+      "data": { "label": "Mandatory Selection (A)\nRegistration (M) / Linking (A)" },
       "position": { "x": COL_CTRL, "y": 1150 },
       "className": "control-node",
       "sourcePosition": "right",
@@ -308,12 +308,12 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
 
     /* ------------------------------------------------------------------
-       ROW 5: CASA account opening
+       ROW 5: CASA account opening & insurance
        Base Y: 1450
        ------------------------------------------------------------------ */
     {
       "id": "l2-5",
-      "data": { "label": "5. CASA account opening" },
+      "data": { "label": "5. CASA account opening & insurance" },
       "position": { "x": COL_L2, "y": 1450 },
       "className": "l2-process-node",
       "sourcePosition": "right",
@@ -321,7 +321,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "data-5",
-      "data": { "label": "Insurance form\nAccount Details" },
+      "data": { "label": "Insurance form\nNTB App Data" },
       "position": { "x": COL_DATA, "y": 1450 },
       "className": "data-node",
       "sourcePosition": "right",
@@ -330,7 +330,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Risks
     {
       "id": "risk-5a",
-      "data": { "label": "Fin Crime: Account Opening" },
+      "data": { "label": "Ops: Insurance Process" },
       "position": { "x": COL_RISK, "y": 1350 },
       "className": "risk-node",
       "sourcePosition": "right",
@@ -338,7 +338,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "risk-5b",
-      "data": { "label": "Reputation/Comp: Ts&Cs" },
+      "data": { "label": "Fin Crime / Rep / Comp" },
       "position": { "x": COL_RISK, "y": 1450 },
       "className": "risk-node",
       "sourcePosition": "right",
@@ -346,7 +346,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "risk-5c",
-      "data": { "label": "Ops: FATCA & Tax" },
+      "data": { "label": "Financial / Fraud" },
       "position": { "x": COL_RISK, "y": 1550 },
       "className": "risk-node",
       "sourcePosition": "right",
@@ -355,7 +355,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Controls
     {
       "id": "ctrl-5a",
-      "data": { "label": "BAU CASA Onboarding (A)" },
+      "data": { "label": "Form Gen (A) / Manual Reg (M)" },
       "position": { "x": COL_CTRL, "y": 1350 },
       "className": "control-node",
       "sourcePosition": "right",
@@ -363,7 +363,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "ctrl-5b",
-      "data": { "label": "Signed Ts&Cs / Digital Form (A)" },
+      "data": { "label": "BAU CASA Journey (A)\nFSK/Silent8/BBL (A)\nSigned Ts&Cs (A)" },
       "position": { "x": COL_CTRL, "y": 1450 },
       "className": "control-node",
       "sourcePosition": "right",
@@ -371,7 +371,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "ctrl-5c",
-      "data": { "label": "FATCA CRS Declaration (A)\nFSK + Silent8 Screening (A)" },
+      "data": { "label": "NTB Capture (A)\nCRAM Verification (A)" },
       "position": { "x": COL_CTRL, "y": 1550 },
       "className": "control-node",
       "sourcePosition": "right",
@@ -392,7 +392,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "data-6",
-      "data": { "label": "STL Record\nSalary Date\nSecurity Cheque" },
+      "data": { "label": "STL record\nActual salary\nSecurity cheque" },
       "position": { "x": COL_DATA, "y": 1850 },
       "className": "data-node",
       "sourcePosition": "right",
@@ -401,7 +401,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Risks
     {
       "id": "risk-6a",
-      "data": { "label": "Fin/Ops: IBAN & Block" },
+      "data": { "label": "Fin/Ops: IBAN & DMS" },
       "position": { "x": COL_RISK, "y": 1750 },
       "className": "risk-node",
       "sourcePosition": "right",
@@ -409,7 +409,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "risk-6b",
-      "data": { "label": "Fraud: STL & QR" },
+      "data": { "label": "Fin Crime: Blocks" },
       "position": { "x": COL_RISK, "y": 1850 },
       "className": "risk-node",
       "sourcePosition": "right",
@@ -417,25 +417,16 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "risk-6c",
-      "data": { "label": "Fin/Comp: Cheques" },
+      "data": { "label": "Fraud/Comp: Cheques" },
       "position": { "x": COL_RISK, "y": 1950 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
-    // Added new risks from PDF Page 8 & 16
     {
       "id": "risk-6d",
-      "data": { "label": "Fraud: Salary Source" },
+      "data": { "label": "Fraud/Ops: Salary Source" },
       "position": { "x": COL_RISK, "y": 2050 },
-      "className": "risk-node",
-      "sourcePosition": "right",
-      "targetPosition": "left"
-    },
-    {
-      "id": "risk-6e",
-      "data": { "label": "Ops: Doc Storage" },
-      "position": { "x": COL_RISK, "y": 2150 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -444,7 +435,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Controls
     {
       "id": "ctrl-6a",
-      "data": { "label": "IBAN Validation (A)\nDisbursal Block (A)" },
+      "data": { "label": "IBAN Validation (A)\nDMS Storage (A)" },
       "position": { "x": COL_CTRL, "y": 1750 },
       "className": "control-node",
       "sourcePosition": "right",
@@ -452,7 +443,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "ctrl-6b",
-      "data": { "label": "Non eSTLs Filing (M)\nQR Code Validation (M)" },
+      "data": { "label": "Disbursal Block (A)\nQR Val for eSTL (M)" },
       "position": { "x": COL_CTRL, "y": 1850 },
       "className": "control-node",
       "sourcePosition": "right",
@@ -460,7 +451,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "ctrl-6c",
-      "data": { "label": "Signature Validation (M)\nCheque Acct = Salary Acct (M)" },
+      "data": { "label": "Filing / Sig Val (M)\nCheque Acct Match (M)" },
       "position": { "x": COL_CTRL, "y": 1950 },
       "className": "control-node",
       "sourcePosition": "right",
@@ -468,16 +459,8 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     },
     {
       "id": "ctrl-6d",
-      "data": { "label": "Salary Source Valid. (T24) (M)\nVariance Check (M)" },
+      "data": { "label": "Source Val (T24) (M)\n10% Variance Check (M)" },
       "position": { "x": COL_CTRL, "y": 2050 },
-      "className": "control-node",
-      "sourcePosition": "right",
-      "targetPosition": "left"
-    },
-    {
-      "id": "ctrl-6e",
-      "data": { "label": "DMS Storage (A)" },
-      "position": { "x": COL_CTRL, "y": 2150 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -485,20 +468,20 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
 
     /* ------------------------------------------------------------------
        ROW 7: Loan disbursal / funds release
-       Base Y: 2450 -> Shifted down
+       Base Y: 2350
        ------------------------------------------------------------------ */
     {
       "id": "l2-7",
       "data": { "label": "7. Loan disbursal / funds release" },
-      "position": { "x": COL_L2, "y": 2450 },
+      "position": { "x": COL_L2, "y": 2350 },
       "className": "l2-process-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "data-7",
-      "data": { "label": "Loan Record\nTransactional Data\nContracts & Consents" },
-      "position": { "x": COL_DATA, "y": 2450 },
+      "data": { "label": "PIL record\nTransactional Data\nContracts & Consents" },
+      "position": { "x": COL_DATA, "y": 2350 },
       "className": "data-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -506,24 +489,16 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Risks
     {
       "id": "risk-7a",
-      "data": { "label": "Ops: Maker Checker" },
-      "position": { "x": COL_RISK, "y": 2350 },
+      "data": { "label": "Operational: Manual Processes" },
+      "position": { "x": COL_RISK, "y": 2300 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "risk-7b",
-      "data": { "label": "Fin Crime: Documentation" },
-      "position": { "x": COL_RISK, "y": 2450 },
-      "className": "risk-node",
-      "sourcePosition": "right",
-      "targetPosition": "left"
-    },
-    {
-      "id": "risk-7c",
-      "data": { "label": "Ops: Manual Process" },
-      "position": { "x": COL_RISK, "y": 2550 },
+      "data": { "label": "Fin Crime/Ops: Files" },
+      "position": { "x": COL_RISK, "y": 2400 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -531,24 +506,16 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Controls
     {
       "id": "ctrl-7a",
-      "data": { "label": "Maker Checker Process (M)\nSalary Variance Check (M)" },
-      "position": { "x": COL_CTRL, "y": 2350 },
+      "data": { "label": "Maker-checker (T24) (M)\nEmail unblock (M)\nVariance Val (M)" },
+      "position": { "x": COL_CTRL, "y": 2300 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "ctrl-7b",
-      "data": { "label": "Customer Summary Attached (M)\nFile Mgmt Submission (2 days) (M)" },
-      "position": { "x": COL_CTRL, "y": 2450 },
-      "className": "control-node",
-      "sourcePosition": "right",
-      "targetPosition": "left"
-    },
-    {
-      "id": "ctrl-7c",
-      "data": { "label": "Manual Unblock via Email (M)" },
-      "position": { "x": COL_CTRL, "y": 2550 },
+      "data": { "label": "Workflow Summary (M)\nFile Transfer (2 days) (M)" },
+      "position": { "x": COL_CTRL, "y": 2400 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -595,19 +562,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     { "id": "e6-3", "source": "data-6", "target": "risk-6b", "type": "step", "style": { "stroke": "#f43f5e" } },
     { "id": "e6-4", "source": "data-6", "target": "risk-6c", "type": "step", "style": { "stroke": "#f43f5e" } },
     { "id": "e6-5", "source": "data-6", "target": "risk-6d", "type": "step", "style": { "stroke": "#f43f5e" } },
-    { "id": "e6-6", "source": "data-6", "target": "risk-6e", "type": "step", "style": { "stroke": "#f43f5e" } },
     { "id": "e6-7", "source": "risk-6a", "target": "ctrl-6a", "type": "step", "style": { "stroke": "#10b981" } },
     { "id": "e6-8", "source": "risk-6b", "target": "ctrl-6b", "type": "step", "style": { "stroke": "#10b981" } },
     { "id": "e6-9", "source": "risk-6c", "target": "ctrl-6c", "type": "step", "style": { "stroke": "#10b981" } },
     { "id": "e6-10", "source": "risk-6d", "target": "ctrl-6d", "type": "step", "style": { "stroke": "#10b981" } },
-    { "id": "e6-11", "source": "risk-6e", "target": "ctrl-6e", "type": "step", "style": { "stroke": "#10b981" } },
     // Row 7
     { "id": "e7-1", "source": "l2-7", "target": "data-7", "type": "step", "style": { "stroke": "#94a3b8" } },
     { "id": "e7-2", "source": "data-7", "target": "risk-7a", "type": "step", "style": { "stroke": "#f43f5e" } },
     { "id": "e7-3", "source": "data-7", "target": "risk-7b", "type": "step", "style": { "stroke": "#f43f5e" } },
-    { "id": "e7-4", "source": "data-7", "target": "risk-7c", "type": "step", "style": { "stroke": "#f43f5e" } },
     { "id": "e7-5", "source": "risk-7a", "target": "ctrl-7a", "type": "step", "style": { "stroke": "#10b981" } },
     { "id": "e7-6", "source": "risk-7b", "target": "ctrl-7b", "type": "step", "style": { "stroke": "#10b981" } },
-    { "id": "e7-7", "source": "risk-7c", "target": "ctrl-7c", "type": "step", "style": { "stroke": "#10b981" } }
   ]
 };
