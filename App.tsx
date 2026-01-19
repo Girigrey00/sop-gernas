@@ -190,6 +190,9 @@ const HomePage = ({
     const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchProducts = useCallback(async (isPolling = false) => {
+        // If in Analysis Mode, we don't need to fetch from API as we use hardcoded dummy
+        if (isAnalysisMode) return;
+
         if (!isPolling) setIsLoading(true);
         try {
             const data = await apiService.getProducts();
@@ -206,7 +209,7 @@ const HomePage = ({
         } finally {
             if (!isPolling) setIsLoading(false);
         }
-    }, []);
+    }, [isAnalysisMode]);
 
     useEffect(() => {
         fetchProducts();

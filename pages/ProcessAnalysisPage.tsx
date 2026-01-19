@@ -34,10 +34,16 @@ const ProcessAnalysisContent: React.FC<ProcessAnalysisPageProps> = ({ product, o
         const init = async () => {
             // Check if this is the dummy product
             if (product.id === 'dummy-analysis' || product.product_name.includes('Analysis Demo')) {
-                // Open config modal immediately for demo
+                // For demo: Load full dummy view immediately so the background is populated
+                const { nodes: dummyNodes, edges: dummyEdges } = filterDummyData(['process', 'data', 'risk', 'control']);
+                setNodes(dummyNodes as Node[]);
+                setEdges(dummyEdges as Edge[]);
+                setTimeout(() => fitView({ padding: 0.2 }), 100);
+                
+                // Then open the config modal to allow customization
                 setIsConfigOpen(true);
             } else {
-                // Load real data immediately
+                // Load real data immediately for normal products
                 fetchRealData();
             }
         };
@@ -66,7 +72,7 @@ const ProcessAnalysisContent: React.FC<ProcessAnalysisPageProps> = ({ product, o
         setIsConfigOpen(false);
         setIsLoading(true);
 
-        // Simulate processing delay for effect
+        // Simulate processing delay for effect (No API Call)
         setTimeout(() => {
             const { nodes: newNodes, edges: newEdges } = filterDummyData(selectedComponents);
             setNodes(newNodes as Node[]);
@@ -82,8 +88,6 @@ const ProcessAnalysisContent: React.FC<ProcessAnalysisPageProps> = ({ product, o
                 return prev.filter(t => t !== type);
             } else {
                 // Add to end to preserve selection order if we want ordered selection
-                // Or insert in fixed order? The prompt implies "arrange custom"
-                // Let's just append for now to allow order customization by clicking sequence
                 return [...prev, type];
             }
         });
