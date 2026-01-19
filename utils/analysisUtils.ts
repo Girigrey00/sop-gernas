@@ -1,6 +1,10 @@
 
 import { Node, Edge, MarkerType } from 'reactflow';
 import { SopResponse } from '../types';
+import { DUMMY_PROCESS_ANALYSIS_DATA } from '../constants';
+
+// Type mapping for the custom filter
+export type FlowNodeType = 'process' | 'data' | 'risk' | 'control';
 
 export const convertSopToAnalysisData = (data: SopResponse) => {
     const nodes: Node[] = [];
@@ -24,7 +28,7 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
             data: { label: `${index + 1}. ${stage.stageName}` },
             position: { x: xPos, y: Y_START },
             type: 'default', // Using default type but with custom class
-            className: 'process-node',
+            className: 'l2-process-node',
         });
 
         // 2. Data Node - Aggregated Inputs
@@ -95,18 +99,21 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
             source: stagePrefix,
             target: `data-${index + 1}`,
             animated: true,
+            type: 'step',
             style: { stroke: '#94a3b8' }
         });
         edges.push({
             id: `e-data-risk-${index + 1}`,
             source: `data-${index + 1}`,
             target: `risk-${index + 1}`,
+            type: 'step',
             style: { stroke: '#94a3b8' }
         });
         edges.push({
             id: `e-risk-control-${index + 1}`,
             source: `risk-${index + 1}`,
             target: `control-${index + 1}`,
+            type: 'step',
             style: { stroke: '#94a3b8' }
         });
 
@@ -117,7 +124,7 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
                 source: stagePrefix,
                 target: `l2-${index + 2}`,
                 label: 'next step',
-                type: 'smoothstep',
+                type: 'step',
                 markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
                 style: { stroke: '#3b82f6', strokeWidth: 2 }
             });
@@ -125,4 +132,90 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
     });
 
     return { nodes, edges };
+};
+
+/**
+ * Filters and re-layouts the dummy data based on selected column types.
+ * @param selectedTypes Array of selected node types in desired order.
+ */
+export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
+    // 1. Config
+    const COL_WIDTH = 400;
+    const CLASS_MAP: Record<FlowNodeType, string> = {
+        'process': 'l2-process-node',
+        'data': 'data-node',
+        'risk': 'risk-node',
+        'control': 'control-node'
+    };
+
+    // 2. Filter Nodes
+    const originalNodes = DUMMY_PROCESS_ANALYSIS_DATA.nodes;
+    const selectedClasses = selectedTypes.map(t => CLASS_MAP[t]);
+    
+    // Create a map of rowId -> { type -> nodes[] }
+    // We assume ID structure: prefix-ROWid... e.g. "l2-1", "risk-1a"
+    const rowMap: Record<string, Record<string, any[]>> = {};
+
+    const filteredNodes = originalNodes.filter(n => {
+        return selectedClasses.includes(n.className);
+    }).map(n => {
+        // Determine new X position
+        // Find which column index this node belongs to based on its class
+        const typeIndex = selectedTypes.findIndex(t => CLASS_MAP[t] === n.className);
+        const newX = typeIndex * COL_WIDTH;
+        
+        // Extract Row ID for edge generation later
+        // Regex looks for the first number after a hyphen
+        const match = n.id.match(/-(\d+)/);
+        const rowId = match ? match[1] : 'unknown';
+        
+        if (!rowMap[rowId]) rowMap[rowId] = {};
+        if (!rowMap[rowId][n.className]) rowMap[rowId][n.className] = [];
+        rowMap[rowId][n.className].push(n.id);
+
+        return {
+            ...n,
+            position: {
+                ...n.position,
+                x: newX
+            }
+        };
+    });
+
+    // 3. Generate Edges
+    const newEdges: any[] = [];
+    
+    // For each row, connect columns in the order of selectedTypes
+    Object.keys(rowMap).forEach(rowId => {
+        const rowData = rowMap[rowId];
+        
+        // Iterate through selected columns to create links between adjacent selections
+        for (let i = 0; i < selectedTypes.length - 1; i++) {
+            const sourceType = selectedTypes[i];
+            const targetType = selectedTypes[i+1];
+            
+            const sourceClass = CLASS_MAP[sourceType];
+            const targetClass = CLASS_MAP[targetType];
+
+            const sourceIds = rowData[sourceClass] || [];
+            const targetIds = rowData[targetClass] || [];
+
+            // Create Full Mesh connections between adjacent columns in the same row
+            // (e.g. Data Node connects to all Risks in that row)
+            sourceIds.forEach((srcId: string) => {
+                targetIds.forEach((tgtId: string) => {
+                    newEdges.push({
+                        id: `e-${srcId}-${tgtId}`,
+                        source: srcId,
+                        target: tgtId,
+                        type: 'step',
+                        style: { stroke: '#94a3b8', strokeWidth: 2 },
+                        animated: false
+                    });
+                });
+            });
+        }
+    });
+
+    return { nodes: filteredNodes, edges: newEdges };
 };
