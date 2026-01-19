@@ -33,15 +33,14 @@ body {
 /* --- Database ERD Style Nodes --- */
 
 /* Base Card Style */
-.l2-process-node, .process-node, .data-node, .risk-node, .control-node {
+.l2-process-node, .data-node, .risk-node, .control-node {
   background: #ffffff;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   color: #334155;
-  width: 280px;
+  width: 260px;
   min-height: 80px;
   padding: 12px;
-  padding-top: 20px; /* Space for the label inside the content area if needed, but we use ::before */
   text-align: left;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   display: flex;
@@ -49,57 +48,51 @@ body {
   justify-content: flex-start;
   position: relative;
   font-family: 'Inter', sans-serif;
-  overflow: visible; 
+  overflow: visible; /* Allow header text to show */
   transition: all 0.2s ease-in-out;
-  white-space: pre-wrap;
+  white-space: pre-wrap; /* Allow newlines in labels */
 }
 
-.l2-process-node:hover, .process-node:hover, .data-node:hover, .risk-node:hover, .control-node:hover {
+.l2-process-node:hover, .data-node:hover, .risk-node:hover, .control-node:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   z-index: 10;
 }
 
 /* Header Text (Pseudo-element) Common */
-.l2-process-node::before, .process-node::before, .data-node::before, .risk-node::before, .control-node::before {
+.l2-process-node::before, .data-node::before, .risk-node::before, .control-node::before {
   position: absolute;
-  top: -24px;
-  left: -1px; /* Align with border */
-  width: calc(100% + 2px); /* Cover full width including borders */
-  padding: 4px 8px;
+  top: -22px;
+  left: 8px;
   color: #ffffff;
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-family: 'JetBrains Mono', monospace;
-  border-radius: 5px 5px 0 0;
-  z-index: 1;
-  box-sizing: border-box;
+  z-index: 5;
 }
 
 /* 1. Process Node (Blue Header) */
-.l2-process-node, .process-node {
-  border-top: 24px solid #3b82f6; /* fab-blue */
+.l2-process-node {
+  border-top: 28px solid #3b82f6; /* fab-blue */
   border-color: #93c5fd;
 }
-.l2-process-node::before, .process-node::before {
+.l2-process-node::before {
   content: 'PROCESS STEP';
-  top: -24px; /* Move up into the border area */
 }
-.l2-process-node .react-flow__handle, .process-node .react-flow__handle {
+.l2-process-node .react-flow__handle {
   background: #3b82f6;
 }
 
 /* 2. Data Node (Slate Header) */
 .data-node {
-  border-top: 24px solid #64748b; /* slate-500 */
+  border-top: 28px solid #64748b; /* slate-500 */
   border-color: #cbd5e1;
   background: #f8fafc;
 }
 .data-node::before {
   content: 'DATA INPUTS';
-  top: -24px;
 }
 .data-node .react-flow__handle {
   background: #64748b;
@@ -107,13 +100,12 @@ body {
 
 /* 3. Risk Node (Red Header) */
 .risk-node {
-  border-top: 24px solid #ef4444; /* rose-500 */
+  border-top: 28px solid #ef4444; /* rose-500 */
   border-color: #fca5a5;
   background: #fff1f2;
 }
 .risk-node::before {
   content: 'RISK / HAZARD';
-  top: -24px;
 }
 .risk-node .react-flow__handle {
   background: #ef4444;
@@ -121,13 +113,12 @@ body {
 
 /* 4. Control Node (Emerald Header) */
 .control-node {
-  border-top: 24px solid #10b981; /* emerald-500 */
+  border-top: 28px solid #10b981; /* emerald-500 */
   border-color: #6ee7b7;
   background: #f0fdf4;
 }
 .control-node::before {
   content: 'CONTROL / LOGIC';
-  top: -24px;
 }
 .control-node .react-flow__handle {
   background: #10b981;
