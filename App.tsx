@@ -677,28 +677,24 @@ const App: React.FC = () => {
         return <HomePage onStart={() => {}} onSelectProduct={handleProcessAnalysisSelect} onNotification={showNotification} isAnalysisMode={true} pageTitle="Process Lineage" pageSubtitle="Visual Analysis of Process Flows" />;
       
       case 'PROCESS_LINEAGE': // Now Policy Standards (Chat)
+      case 'LINEAGE_CHAT':
         return (
-            <HomePage
-                onStart={() => {}}
-                onSelectProduct={handleProcessLineageSelect}
-                onNotification={showNotification}
-                pageTitle="Policy Standards"
-                pageSubtitle="Interactive Policy Knowledge Base"
+            <ProcessLineagePage 
+                product={{
+                    _id: 'policy-standards-dummy',
+                    id: 'policy-standards-dummy',
+                    product_name: 'Group Info Sec Policy',
+                    index_name: 'policy-index',
+                    has_index: 'Yes',
+                    has_flow: 'No',
+                    document_count: 1
+                }}
+                onBack={() => {
+                    setCurrentView('HOME');
+                    setSelectedContextProduct(null);
+                }}
             />
         );
-      case 'LINEAGE_CHAT':
-        if (selectedContextProduct) {
-            return (
-                <ProcessLineagePage 
-                    product={selectedContextProduct}
-                    onBack={() => {
-                        setCurrentView('PROCESS_LINEAGE');
-                        setSelectedContextProduct(null);
-                    }}
-                />
-            );
-        }
-        return <HomePage onStart={() => {}} onSelectProduct={handleProcessLineageSelect} onNotification={showNotification} pageTitle="Policy Standards" pageSubtitle="Interactive Policy Knowledge Base" />;
 
       case 'IMPACT_ASSESSMENT':
         // Placeholder or future implementation
