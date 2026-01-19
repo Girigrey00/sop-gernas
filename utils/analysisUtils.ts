@@ -14,10 +14,6 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
         return { nodes: [], edges: [] };
     }
 
-    const X_GAP = 350; // Horizontal gap between stages (for vertical swimlanes if any) - NOT USED much in this specific view
-    const Y_START = 0;
-    const Y_GAP = 100; // Vertical gap between node types in a single column group
-
     // Column X positions
     const COL_PROCESS = 0;
     const COL_DATA = 400;
@@ -106,11 +102,9 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
         });
 
         // 5. Output Node (Data Produced)
-        // Since generic SOP response doesn't strictly have "Output Data" field, we derive or use generic placeholder
-        // In a real scenario, this would come from a specific field in the API response
         nodes.push({
             id: `output-${index + 1}`,
-            data: { label: "Stage Completion Record" }, // Generic placeholder for dynamic flows
+            data: { label: "Stage Completion Record" },
             position: { x: COL_OUTPUT, y: rowY },
             className: 'output-node',
             sourcePosition: Position.Right,
@@ -118,10 +112,12 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
         });
 
         // --- Edges within the row ---
-        edges.push({ id: `e-${stagePrefix}-data`, source: stagePrefix, target: `data-${index + 1}`, type: 'smoothstep', style: { stroke: '#94a3b8' } });
-        edges.push({ id: `e-data-risk-${index + 1}`, source: `data-${index + 1}`, target: `risk-${index + 1}`, type: 'smoothstep', style: { stroke: '#94a3b8' } });
-        edges.push({ id: `e-risk-ctrl-${index + 1}`, source: `risk-${index + 1}`, target: `control-${index + 1}`, type: 'smoothstep', style: { stroke: '#94a3b8' } });
-        edges.push({ id: `e-ctrl-out-${index + 1}`, source: `control-${index + 1}`, target: `output-${index + 1}`, type: 'smoothstep', style: { stroke: '#8b5cf6' } });
+        const edgeStyle = { stroke: '#94a3b8', strokeWidth: 1.5 };
+        
+        edges.push({ id: `e-${stagePrefix}-data`, source: stagePrefix, target: `data-${index + 1}`, type: 'smoothstep', style: edgeStyle });
+        edges.push({ id: `e-data-risk-${index + 1}`, source: `data-${index + 1}`, target: `risk-${index + 1}`, type: 'smoothstep', style: edgeStyle });
+        edges.push({ id: `e-risk-ctrl-${index + 1}`, source: `risk-${index + 1}`, target: `control-${index + 1}`, type: 'smoothstep', style: edgeStyle });
+        edges.push({ id: `e-ctrl-out-${index + 1}`, source: `control-${index + 1}`, target: `output-${index + 1}`, type: 'smoothstep', style: edgeStyle });
 
         // --- Edge to next row (Process Sequence) ---
         if (index < data.processFlow.stages.length - 1) {
@@ -129,7 +125,7 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
                 id: `p-${index + 1}-${index + 2}`,
                 source: stagePrefix,
                 target: `l2-${index + 2}`,
-                label: 'next step',
+                label: 'Next Stage',
                 type: 'smoothstep',
                 markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
                 style: { stroke: '#3b82f6', strokeWidth: 2 }
@@ -167,12 +163,10 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
         return selectedClasses.includes(n.className);
     }).map(n => {
         // Determine new X position
-        // Find which column index this node belongs to based on its class
         const typeIndex = selectedTypes.findIndex(t => CLASS_MAP[t] === n.className);
         const newX = typeIndex * COL_WIDTH;
         
-        // Extract Row ID for edge generation later
-        // Regex looks for the first number after a hyphen or sometimes just the number
+        // Extract Row ID
         const match = n.id.match(/-(\d+)/);
         const rowId = match ? match[1] : 'unknown';
         
@@ -183,9 +177,12 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
         return {
             ...n,
             position: {
-                ...n.position,
-                x: newX
-            }
+                x: newX,
+                y: n.position.y // Keep original Y
+            },
+            sourcePosition: Position.Right,
+            targetPosition: Position.Left,
+            type: 'default' // Ensure we use default node type to respect styles
         };
     });
 
@@ -208,19 +205,40 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
             const targetIds = rowData[targetClass] || [];
 
             // Create Full Mesh connections between adjacent columns in the same row
-            // (e.g. Data Node connects to all Risks in that row)
             sourceIds.forEach((srcId: string) => {
                 targetIds.forEach((tgtId: string) => {
                     newEdges.push({
                         id: `e-${srcId}-${tgtId}`,
                         source: srcId,
                         target: tgtId,
-                        type: 'smoothstep', // Changed to smoothstep for neat lines
-                        style: { stroke: '#94a3b8', strokeWidth: 2 },
-                        animated: false
+                        type: 'smoothstep', // Ensure neat 90-degree lines
+                        style: { stroke: '#94a3b8', strokeWidth: 1.5 },
+                        animated: false,
+                        markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' }
                     });
                 });
             });
+        }
+        
+        // Connect Process Nodes across Rows (Sequence) if 'process' column is present
+        if (selectedTypes.includes('process')) {
+            const currentRowProcess = rowData['l2-process-node']?.[0];
+            const nextRowId = (parseInt(rowId) + 1).toString();
+            const nextRowProcess = rowMap[nextRowId]?.['l2-process-node']?.[0];
+            
+            if (currentRowProcess && nextRowProcess) {
+                newEdges.push({
+                    id: `seq-${currentRowProcess}-${nextRowProcess}`,
+                    source: currentRowProcess,
+                    target: nextRowProcess,
+                    type: 'smoothstep',
+                    style: { stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '5 5' },
+                    label: 'Next Stage',
+                    labelStyle: { fill: '#3b82f6', fontWeight: 700, fontSize: 10 },
+                    labelBgStyle: { fill: '#eff6ff' },
+                    markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' }
+                });
+            }
         }
     });
 

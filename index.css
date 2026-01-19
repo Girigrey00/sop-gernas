@@ -29,80 +29,117 @@ body {
   font-size: 12px;
 }
 
-/* Base Card Style for all nodes */
+/* --- Process Analysis Card Styles (Database Entity Look) --- */
+
 .l2-process-node, .data-node, .risk-node, .control-node, .output-node {
   border-radius: 8px;
-  padding: 12px;
+  padding: 0; /* Remove padding to handle internal structure via CSS if needed, but here we keep simple */
   font-size: 11px;
   font-weight: 500;
-  width: 280px; /* Wider cards */
+  width: 260px; /* Slightly narrower for better spacing */
+  min-height: 70px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease-in-out;
   position: relative;
-  min-height: 60px;
+  background: white;
+  z-index: 10; /* Ensure nodes sit above edges */
+}
+
+/* Inner padding for text */
+.l2-process-node, .data-node, .risk-node, .control-node, .output-node {
+    padding: 12px 16px;
 }
 
 .l2-process-node:hover, .data-node:hover, .risk-node:hover, .control-node:hover, .output-node:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  z-index: 10;
+  z-index: 20;
 }
 
-/* Specific Styles */
+/* Node Specific Themes */
 
-/* Process - Blue Theme */
+/* Process: Blue Header */
 .l2-process-node {
   background: #ffffff;
-  border: 1px solid #bfdbfe; /* blue-200 */
-  border-top: 4px solid #3b82f6; /* blue-500 */
+  border: 1px solid #bfdbfe; 
+  border-top: 4px solid #3b82f6; 
   color: #1e3a8a;
   font-weight: 700;
 }
 
-/* Data Input - Slate/Gray Theme */
+/* Data: Slate Header */
 .data-node {
   background: #ffffff;
-  border: 1px solid #cbd5e1; /* slate-300 */
-  border-top: 4px solid #64748b; /* slate-500 */
+  border: 1px solid #cbd5e1; 
+  border-top: 4px solid #64748b; 
   color: #334155;
 }
 
-/* Risk - Rose/Red Theme */
+/* Risk: Red Header (Left Accent removed to match Card style) */
 .risk-node {
-  background: #fff1f2; /* rose-50 */
-  border: 1px solid #fecdd3; /* rose-200 */
-  border-left: 4px solid #f43f5e; /* rose-500 - Keep left border for risk to distinguish */
+  background: #fff1f2;
+  border: 1px solid #fecdd3; 
+  border-top: 4px solid #f43f5e; 
   color: #881337;
   text-align: left;
-  justify-content: flex-start;
+  align-items: flex-start; /* Left align text */
 }
 
-/* Control - Emerald/Green Theme */
+/* Control: Green Header */
 .control-node {
-  background: #f0fdf4; /* emerald-50 */
-  border: 1px solid #a7f3d0; /* emerald-200 */
-  border-right: 4px solid #10b981; /* emerald-500 - Right border for control */
+  background: #f0fdf4;
+  border: 1px solid #a7f3d0; 
+  border-top: 4px solid #10b981; 
   color: #064e3b;
   text-align: left;
-  justify-content: flex-start;
+  align-items: flex-start;
 }
 
-/* Output - Violet/Purple Theme */
+/* Output: Purple Header */
 .output-node {
   background: #ffffff;
-  border: 1px solid #ddd6fe; /* violet-200 */
-  border-top: 4px solid #8b5cf6; /* violet-500 */
+  border: 1px solid #ddd6fe; 
+  border-top: 4px solid #8b5cf6; 
   color: #4c1d95;
+  text-align: right;
+  align-items: flex-end;
+}
+
+/* --- React Flow Handle Customization --- */
+/* Make handles slightly larger and ensure they are centered vertically */
+.react-flow__handle {
+  width: 8px;
+  height: 8px;
+  background: #94a3b8;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.react-flow__handle:hover {
+  background: #3b82f6;
+  width: 10px;
+  height: 10px;
+}
+
+/* Fix Handle Positions if needed */
+.react-flow__handle-left {
+  left: -4px;
+}
+.react-flow__handle-right {
+  right: -4px;
 }
 
 /* React Flow Edge Label Styling */
 .react-flow__edge-text {
   font-size: 10px;
   fill: #64748b;
+  font-weight: 600;
 }
 
 @keyframes shimmer {
