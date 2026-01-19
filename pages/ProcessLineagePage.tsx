@@ -1,9 +1,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Loader2, ShieldCheck } from 'lucide-react';
-import ChatAssistant from '../components/ChatAssistant';
+import PolicyChat from '../components/PolicyChat';
 import { Product, SopResponse } from '../types';
-import { apiService } from '../services/apiService';
 
 interface ProcessLineagePageProps {
     product: Product;
@@ -50,16 +49,6 @@ const DUMMY_POLICY_SOP: SopResponse = {
     }
 };
 
-const POLICY_WELCOME_MSG = `### Policy Standards Assistant
-Welcome to the Policy Standards AI.
-
-I can assist you with:
-- **Policy Queries**: Ask about specific clauses or rules.
-- **Compliance Checks**: Verify procedures against standards.
-- **Risk Mapping**: Identify risks associated with policies.
-
-*This session is using a simulated policy context for demonstration.*`;
-
 const ProcessLineagePage: React.FC<ProcessLineagePageProps> = ({ product, onBack }) => {
     const [sopData, setSopData] = useState<SopResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -74,44 +63,31 @@ const ProcessLineagePage: React.FC<ProcessLineagePageProps> = ({ product, onBack
     }, [product]);
 
     return (
-        <div className="flex h-full w-full bg-slate-50 flex-col">
-            {/* Header */}
-            <div className="px-6 py-4 bg-white border-b border-slate-200 flex items-center justify-between shadow-sm z-10 shrink-0">
-                <div className="flex items-center gap-4">
-                    <button 
-                        onClick={onBack}
-                        className="p-2 text-slate-500 hover:text-fab-royal hover:bg-slate-50 rounded-full transition-all border border-transparent hover:border-slate-200"
-                        title="Back to Product List"
-                    >
-                        <ArrowLeft size={20} />
-                    </button>
-                    <div>
-                        <h2 className="text-lg font-bold text-fab-navy flex items-center gap-2">
-                            <ShieldCheck size={20} className="text-fab-royal" />
-                            Policy Standards
-                        </h2>
-                        <p className="text-xs text-slate-500 font-medium">AI-Powered Policy Assistant for <span className="font-bold text-slate-700">{product.product_name}</span></p>
-                    </div>
-                </div>
+        <div className="flex h-full w-full bg-slate-50 flex-col relative">
+            
+            {/* Absolute Back Button for Cleaner Full-Screen Look */}
+            <div className="absolute top-4 left-4 z-20">
+                <button 
+                    onClick={onBack}
+                    className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-fab-royal px-4 py-2 rounded-full shadow-sm hover:shadow-md transition-all text-sm font-bold"
+                >
+                    <ArrowLeft size={16} />
+                    Back
+                </button>
             </div>
 
             {/* Content */}
             <div className="flex-1 relative overflow-hidden">
                 {isLoading ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm">
-                        <Loader2 className="w-10 h-10 text-fab-royal animate-spin mb-3" />
-                        <p className="text-sm font-medium text-slate-600">Initializing Policy Context...</p>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white">
+                        <Loader2 className="w-12 h-12 text-fab-royal animate-spin mb-4" />
+                        <p className="text-lg font-medium text-slate-600">Loading Policy Context...</p>
                     </div>
                 ) : sopData ? (
-                    <div className="h-full w-full">
-                        <ChatAssistant 
-                            sopData={sopData}
-                            onClose={onBack}
-                            productContext={product}
-                            isMaximized={true} // Force maximized styling if supported
-                            welcomeMessage={POLICY_WELCOME_MSG}
-                        />
-                    </div>
+                    <PolicyChat 
+                        sopData={sopData}
+                        productContext={product}
+                    />
                 ) : (
                     <div className="flex items-center justify-center h-full text-slate-400">
                         <p>Failed to load context.</p>
