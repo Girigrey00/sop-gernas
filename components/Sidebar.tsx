@@ -49,8 +49,8 @@ const Sidebar = ({
 
   const navItems = [
     { id: 'HOME', label: 'Procedure', icon: FileText },
-    { id: 'PROCESS_ANALYSIS', label: 'Process Lineage', icon: GitMerge },
     { id: 'PROCESS_LINEAGE', label: 'Policy Standard', icon: ShieldCheck },
+    { id: 'PROCESS_ANALYSIS', label: 'Process Lineage', icon: GitMerge },
     { id: 'IMPACT_ASSESSMENT', label: 'Impact Assessment', icon: AlertOctagon, badge: 'Coming Soon' },
     // Only show Library/History if a product context is selected
     ...(productContext ? [
