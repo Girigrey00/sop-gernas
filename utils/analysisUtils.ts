@@ -118,10 +118,10 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
         });
 
         // --- Edges within the row ---
-        edges.push({ id: `e-${stagePrefix}-data`, source: stagePrefix, target: `data-${index + 1}`, type: 'step', style: { stroke: '#94a3b8' } });
-        edges.push({ id: `e-data-risk-${index + 1}`, source: `data-${index + 1}`, target: `risk-${index + 1}`, type: 'step', style: { stroke: '#94a3b8' } });
-        edges.push({ id: `e-risk-ctrl-${index + 1}`, source: `risk-${index + 1}`, target: `control-${index + 1}`, type: 'step', style: { stroke: '#94a3b8' } });
-        edges.push({ id: `e-ctrl-out-${index + 1}`, source: `control-${index + 1}`, target: `output-${index + 1}`, type: 'step', style: { stroke: '#8b5cf6' } });
+        edges.push({ id: `e-${stagePrefix}-data`, source: stagePrefix, target: `data-${index + 1}`, type: 'smoothstep', style: { stroke: '#94a3b8' } });
+        edges.push({ id: `e-data-risk-${index + 1}`, source: `data-${index + 1}`, target: `risk-${index + 1}`, type: 'smoothstep', style: { stroke: '#94a3b8' } });
+        edges.push({ id: `e-risk-ctrl-${index + 1}`, source: `risk-${index + 1}`, target: `control-${index + 1}`, type: 'smoothstep', style: { stroke: '#94a3b8' } });
+        edges.push({ id: `e-ctrl-out-${index + 1}`, source: `control-${index + 1}`, target: `output-${index + 1}`, type: 'smoothstep', style: { stroke: '#8b5cf6' } });
 
         // --- Edge to next row (Process Sequence) ---
         if (index < data.processFlow.stages.length - 1) {
@@ -130,7 +130,7 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
                 source: stagePrefix,
                 target: `l2-${index + 2}`,
                 label: 'next step',
-                type: 'step',
+                type: 'smoothstep',
                 markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
                 style: { stroke: '#3b82f6', strokeWidth: 2 }
             });
@@ -215,7 +215,7 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
                         id: `e-${srcId}-${tgtId}`,
                         source: srcId,
                         target: tgtId,
-                        type: 'step',
+                        type: 'smoothstep', // Changed to smoothstep for neat lines
                         style: { stroke: '#94a3b8', strokeWidth: 2 },
                         animated: false
                     });
