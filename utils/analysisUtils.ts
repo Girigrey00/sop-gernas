@@ -1,10 +1,10 @@
 
-import { Node, Edge, MarkerType } from 'reactflow';
+import { Node, Edge, MarkerType, Position } from 'reactflow';
 import { SopResponse } from '../types';
 import { DUMMY_PROCESS_ANALYSIS_DATA } from '../constants';
 
 // Type mapping for the custom filter
-export type FlowNodeType = 'process' | 'data' | 'risk' | 'control';
+export type FlowNodeType = 'process' | 'data' | 'risk' | 'control' | 'output';
 
 export const convertSopToAnalysisData = (data: SopResponse) => {
     const nodes: Node[] = [];
@@ -14,44 +14,60 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
         return { nodes: [], edges: [] };
     }
 
-    const X_GAP = 350; // Horizontal gap between stages
+    const X_GAP = 400; // Horizontal gap between stages
     const Y_START = 0;
     const Y_GAP = 100; // Vertical gap between nodes
 
     data.processFlow.stages.forEach((stage, index) => {
-        const xPos = index * X_GAP;
+        const xPos = index * X_GAP; // In real flow, usually we layout horizontally for L2? No, this function generates Vertical stages? 
+        // Wait, the dummy data is Row based. This function generates 1 column per stage.
+        // Let's stick to the column structure: 1 column per L2 process containing all its attributes vertically.
+        // Actually, the dummy data puts L2, Data, Risk, Control in separate columns horizontally.
+        // Let's follow the dummy data structure for consistency.
+        
+        // Structure: Rows = Stages. Columns = Type.
+        // Y position = index * 400 (approx height of row)
+        // X position = Fixed based on Type.
+        
+        const rowY = index * 400 + 100;
+        const COL_L2 = 0;
+        const COL_DATA = 400;
+        const COL_RISK = 800;
+        const COL_CTRL = 1200;
+        const COL_OUTPUT = 1600;
+
         const stagePrefix = `l2-${index + 1}`;
 
-        // 1. Process Node (Top) - L2 Process Name
+        // 1. Process Node (L2)
         nodes.push({
             id: stagePrefix,
             data: { label: `${index + 1}. ${stage.stageName}` },
-            position: { x: xPos, y: Y_START },
-            type: 'default', // Using default type but with custom class
+            position: { x: COL_L2, y: rowY },
+            type: 'default', 
             className: 'l2-process-node',
+            sourcePosition: Position.Right,
+            targetPosition: Position.Left
         });
 
-        // 2. Data Node - Aggregated Inputs
-        // Logic: Find steps that imply data collection or "Input" type
+        // 2. Data Node (Inputs)
         let dataLabels: string[] = [];
         stage.steps.forEach(s => {
             const desc = s.description.toLowerCase();
             const type = s.stepType.toLowerCase();
-            if (type.includes('input') || type.includes('capture') || desc.includes('details') || desc.includes('document')) {
-                // Heuristic: Extract useful nouns or use step name if short
+            if (type.includes('input') || type.includes('capture') || desc.includes('provide') || desc.includes('submit')) {
                 if (s.stepName.length < 40) dataLabels.push(s.stepName);
             }
         });
-        // Fallback if no specific input steps found
-        if (dataLabels.length === 0) dataLabels.push("Standard Stage Data");
-        // Dedup and limit
-        const uniqueData = Array.from(new Set(dataLabels)).slice(0, 3).join(', ');
+        if (dataLabels.length === 0) dataLabels.push("Standard Stage Inputs");
+        const uniqueData = Array.from(new Set(dataLabels)).slice(0, 3).join('\n');
 
         nodes.push({
             id: `data-${index + 1}`,
             data: { label: uniqueData || "Data Inputs" },
-            position: { x: xPos, y: Y_START + Y_GAP },
+            position: { x: COL_DATA, y: rowY },
             className: 'data-node',
+            sourcePosition: Position.Right,
+            targetPosition: Position.Left
         });
 
         // 3. Risk Node
@@ -66,15 +82,16 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
                 });
             }
         });
-        const uniqueRiskIds = Array.from(new Set(riskIds)).join(', ');
         const uniqueRiskCats = Array.from(new Set(risks)).slice(0, 2).join(' / ');
-        const riskLabel = uniqueRiskIds ? `${uniqueRiskCats} Risk (${uniqueRiskIds})` : "Operational Risk";
+        const riskLabel = uniqueRiskCats ? `${uniqueRiskCats} Risk` : "Operational Risk";
 
         nodes.push({
             id: `risk-${index + 1}`,
             data: { label: riskLabel },
-            position: { x: xPos, y: Y_START + (Y_GAP * 2) },
+            position: { x: COL_RISK, y: rowY },
             className: 'risk-node',
+            sourcePosition: Position.Right,
+            targetPosition: Position.Left
         });
 
         // 4. Control Node
@@ -84,51 +101,42 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
                 s.controls.forEach(c => controls.push(c.name));
             }
         });
-        const uniqueControls = Array.from(new Set(controls)).slice(0, 3).join(', ');
+        const uniqueControls = Array.from(new Set(controls)).slice(0, 2).join('\n');
 
         nodes.push({
             id: `control-${index + 1}`,
-            data: { label: uniqueControls || "Standard Process Controls" },
-            position: { x: xPos, y: Y_START + (Y_GAP * 3) },
+            data: { label: uniqueControls || "Standard Controls" },
+            position: { x: COL_CTRL, y: rowY },
             className: 'control-node',
+            sourcePosition: Position.Right,
+            targetPosition: Position.Left
         });
 
-        // --- Edges within the column ---
-        edges.push({
-            id: `e-${stagePrefix}-data`,
-            source: stagePrefix,
-            target: `data-${index + 1}`,
-            animated: true,
-            type: 'step',
-            style: { stroke: '#94a3b8' }
+        // 5. Output Node (Data Produced) - Synthetic/Heuristic
+        let outputLabels: string[] = [];
+        stage.steps.forEach(s => {
+             const desc = s.description.toLowerCase();
+             if (desc.includes('generate') || desc.includes('create') || desc.includes('output') || desc.includes('result')) {
+                 outputLabels.push(s.stepName + " Record");
+             }
         });
-        edges.push({
-            id: `e-data-risk-${index + 1}`,
-            source: `data-${index + 1}`,
-            target: `risk-${index + 1}`,
-            type: 'step',
-            style: { stroke: '#94a3b8' }
-        });
-        edges.push({
-            id: `e-risk-control-${index + 1}`,
-            source: `risk-${index + 1}`,
-            target: `control-${index + 1}`,
-            type: 'step',
-            style: { stroke: '#94a3b8' }
+        if (outputLabels.length === 0) outputLabels.push("Stage Completion Record");
+        const uniqueOutput = Array.from(new Set(outputLabels)).slice(0, 2).join('\n');
+
+        nodes.push({
+            id: `output-${index + 1}`,
+            data: { label: uniqueOutput },
+            position: { x: COL_OUTPUT, y: rowY },
+            className: 'output-node',
+            sourcePosition: Position.Right,
+            targetPosition: Position.Left
         });
 
-        // --- Edge to next column (Process Sequence) ---
-        if (index < data.processFlow.stages.length - 1) {
-            edges.push({
-                id: `p-${index + 1}-${index + 2}`,
-                source: stagePrefix,
-                target: `l2-${index + 2}`,
-                label: 'next step',
-                type: 'step',
-                markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
-                style: { stroke: '#3b82f6', strokeWidth: 2 }
-            });
-        }
+        // --- Edges within the row (Left to Right) ---
+        edges.push({ id: `e-${stagePrefix}-data`, source: stagePrefix, target: `data-${index + 1}`, type: 'step', style: { stroke: '#94a3b8' } });
+        edges.push({ id: `e-data-risk-${index + 1}`, source: `data-${index + 1}`, target: `risk-${index + 1}`, type: 'step', style: { stroke: '#f43f5e' } });
+        edges.push({ id: `e-risk-control-${index + 1}`, source: `risk-${index + 1}`, target: `control-${index + 1}`, type: 'step', style: { stroke: '#10b981' } });
+        edges.push({ id: `e-control-output-${index + 1}`, source: `control-${index + 1}`, target: `output-${index + 1}`, type: 'step', style: { stroke: '#8b5cf6' } });
     });
 
     return { nodes, edges };
@@ -145,7 +153,8 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
         'process': 'l2-process-node',
         'data': 'data-node',
         'risk': 'risk-node',
-        'control': 'control-node'
+        'control': 'control-node',
+        'output': 'output-node'
     };
 
     // 2. Filter Nodes
@@ -154,6 +163,7 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
     
     // Create a map of rowId -> { type -> nodes[] }
     // We assume ID structure: prefix-ROWid... e.g. "l2-1", "risk-1a"
+    // For output, it might be output-1.
     const rowMap: Record<string, Record<string, any[]>> = {};
 
     const filteredNodes = originalNodes.filter(n => {

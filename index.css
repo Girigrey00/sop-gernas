@@ -89,6 +89,21 @@ body {
   align-items: center;
 }
 
+.output-node {
+  background: #f5f3ff; /* violet-50 */
+  border: 1px solid #8b5cf6; /* violet-500 */
+  border-left: 4px solid #8b5cf6;
+  color: #4c1d95; /* violet-900 */
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: left;
+  width: 250px;
+  display: flex;
+  align-items: center;
+}
+
 @keyframes shimmer {
   100% {
     transform: translateX(100%);

@@ -68,6 +68,7 @@ const COL_L2 = 0;
 const COL_DATA = 400;
 const COL_RISK = 800;
 const COL_CTRL = 1200;
+const COL_OUTPUT = 1600;
 
 export const DUMMY_PROCESS_ANALYSIS_DATA = {
   "nodes": [
@@ -125,6 +126,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "sourcePosition": "right",
       "targetPosition": "left"
     },
+    // Output
+    {
+      "id": "output-1",
+      "data": { "label": "New application record" },
+      "position": { "x": COL_OUTPUT, "y": 100 },
+      "className": "output-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
 
     /* ------------------------------------------------------------------
        ROW 2: Pre-eligibility & ID&V
@@ -177,6 +187,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "data": { "label": "Income/Age/AECB (711+) (A)\nWatchlists (OFS/Mubadara) (A)" },
       "position": { "x": COL_CTRL, "y": 450 },
       "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    // Output
+    {
+      "id": "output-2",
+      "data": { "label": "Affordability assessment results" },
+      "position": { "x": COL_OUTPUT, "y": 400 },
+      "className": "output-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
@@ -251,6 +270,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "sourcePosition": "right",
       "targetPosition": "left"
     },
+    // Output
+    {
+      "id": "output-3",
+      "data": { "label": "Employer/Salary validation response\nTML enrichment\nAECB report" },
+      "position": { "x": COL_OUTPUT, "y": 750 },
+      "className": "output-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
 
     /* ------------------------------------------------------------------
        ROW 4: Credit underwriting
@@ -303,6 +331,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "data": { "label": "Mandatory Selection (A)\nRegistration (M) / Linking (A)" },
       "position": { "x": COL_CTRL, "y": 1150 },
       "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    // Output
+    {
+      "id": "output-4",
+      "data": { "label": "Internal credit score\nDBR\nPIL offer letter" },
+      "position": { "x": COL_OUTPUT, "y": 1100 },
+      "className": "output-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
@@ -374,6 +411,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "data": { "label": "NTB Capture (A)\nCRAM Verification (A)" },
       "position": { "x": COL_CTRL, "y": 1550 },
       "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    // Output
+    {
+      "id": "output-5",
+      "data": { "label": "Insurance form" },
+      "position": { "x": COL_OUTPUT, "y": 1450 },
+      "className": "output-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
@@ -465,6 +511,13 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "sourcePosition": "right",
       "targetPosition": "left"
     },
+    // Output - None for Step 6 as per CSV
+    // {
+    //   "id": "output-6",
+    //   "data": { "label": "None" },
+    //   "position": { "x": COL_OUTPUT, "y": 1850 },
+    //   "className": "output-node",
+    // },
 
     /* ------------------------------------------------------------------
        ROW 7: Loan disbursal / funds release
@@ -519,6 +572,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
+    },
+    // Output
+    {
+      "id": "output-7",
+      "data": { "label": "PIL record\nTransactional data\nContract\nConsent evidence" },
+      "position": { "x": COL_OUTPUT, "y": 2350 },
+      "className": "output-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
     }
   ],
   "edges": [
@@ -528,12 +590,14 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     { "id": "e1-3", "source": "data-1", "target": "risk-1b", "type": "step", "style": { "stroke": "#f43f5e" } },
     { "id": "e1-4", "source": "risk-1a", "target": "ctrl-1a", "type": "step", "style": { "stroke": "#10b981" } },
     { "id": "e1-5", "source": "risk-1b", "target": "ctrl-1b", "type": "step", "style": { "stroke": "#10b981" } },
+    { "id": "e1-6", "source": "ctrl-1a", "target": "output-1", "type": "step", "style": { "stroke": "#8b5cf6" } },
     // Row 2
     { "id": "e2-1", "source": "l2-2", "target": "data-2", "type": "step", "style": { "stroke": "#94a3b8" } },
     { "id": "e2-2", "source": "data-2", "target": "risk-2a", "type": "step", "style": { "stroke": "#f43f5e" } },
     { "id": "e2-3", "source": "data-2", "target": "risk-2b", "type": "step", "style": { "stroke": "#f43f5e" } },
     { "id": "e2-4", "source": "risk-2a", "target": "ctrl-2a", "type": "step", "style": { "stroke": "#10b981" } },
     { "id": "e2-5", "source": "risk-2b", "target": "ctrl-2b", "type": "step", "style": { "stroke": "#10b981" } },
+    { "id": "e2-6", "source": "ctrl-2a", "target": "output-2", "type": "step", "style": { "stroke": "#8b5cf6" } },
     // Row 3
     { "id": "e3-1", "source": "l2-3", "target": "data-3", "type": "step", "style": { "stroke": "#94a3b8" } },
     { "id": "e3-2", "source": "data-3", "target": "risk-3a", "type": "step", "style": { "stroke": "#f43f5e" } },
@@ -542,12 +606,14 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     { "id": "e3-5", "source": "risk-3a", "target": "ctrl-3a", "type": "step", "style": { "stroke": "#10b981" } },
     { "id": "e3-6", "source": "risk-3b", "target": "ctrl-3b", "type": "step", "style": { "stroke": "#10b981" } },
     { "id": "e3-7", "source": "risk-3c", "target": "ctrl-3c", "type": "step", "style": { "stroke": "#10b981" } },
+    { "id": "e3-8", "source": "ctrl-3a", "target": "output-3", "type": "step", "style": { "stroke": "#8b5cf6" } },
     // Row 4
     { "id": "e4-1", "source": "l2-4", "target": "data-4", "type": "step", "style": { "stroke": "#94a3b8" } },
     { "id": "e4-2", "source": "data-4", "target": "risk-4a", "type": "step", "style": { "stroke": "#f43f5e" } },
     { "id": "e4-3", "source": "data-4", "target": "risk-4b", "type": "step", "style": { "stroke": "#f43f5e" } },
     { "id": "e4-4", "source": "risk-4a", "target": "ctrl-4a", "type": "step", "style": { "stroke": "#10b981" } },
     { "id": "e4-5", "source": "risk-4b", "target": "ctrl-4b", "type": "step", "style": { "stroke": "#10b981" } },
+    { "id": "e4-6", "source": "ctrl-4a", "target": "output-4", "type": "step", "style": { "stroke": "#8b5cf6" } },
     // Row 5
     { "id": "e5-1", "source": "l2-5", "target": "data-5", "type": "step", "style": { "stroke": "#94a3b8" } },
     { "id": "e5-2", "source": "data-5", "target": "risk-5a", "type": "step", "style": { "stroke": "#f43f5e" } },
@@ -556,6 +622,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     { "id": "e5-5", "source": "risk-5a", "target": "ctrl-5a", "type": "step", "style": { "stroke": "#10b981" } },
     { "id": "e5-6", "source": "risk-5b", "target": "ctrl-5b", "type": "step", "style": { "stroke": "#10b981" } },
     { "id": "e5-7", "source": "risk-5c", "target": "ctrl-5c", "type": "step", "style": { "stroke": "#10b981" } },
+    { "id": "e5-8", "source": "ctrl-5a", "target": "output-5", "type": "step", "style": { "stroke": "#8b5cf6" } },
     // Row 6
     { "id": "e6-1", "source": "l2-6", "target": "data-6", "type": "step", "style": { "stroke": "#94a3b8" } },
     { "id": "e6-2", "source": "data-6", "target": "risk-6a", "type": "step", "style": { "stroke": "#f43f5e" } },
@@ -572,5 +639,6 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     { "id": "e7-3", "source": "data-7", "target": "risk-7b", "type": "step", "style": { "stroke": "#f43f5e" } },
     { "id": "e7-5", "source": "risk-7a", "target": "ctrl-7a", "type": "step", "style": { "stroke": "#10b981" } },
     { "id": "e7-6", "source": "risk-7b", "target": "ctrl-7b", "type": "step", "style": { "stroke": "#10b981" } },
+    { "id": "e7-7", "source": "ctrl-7a", "target": "output-7", "type": "step", "style": { "stroke": "#8b5cf6" } },
   ]
 };
