@@ -4,7 +4,6 @@
 @tailwind utilities;
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
 body {
   font-family: 'Inter', sans-serif;
@@ -30,98 +29,64 @@ body {
   font-size: 12px;
 }
 
-/* --- Database ERD Style Nodes --- */
-
-/* Base Card Style */
-.l2-process-node, .data-node, .risk-node, .control-node {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  color: #334155;
-  width: 260px;
-  min-height: 80px;
-  padding: 12px;
-  text-align: left;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+/* Process Analysis Node Styles */
+.process-node, .l2-process-node {
+  background: #eff6ff; /* blue-50 */
+  border: 1px solid #3b82f6; /* blue-500 */
+  color: #1e3a8a; /* blue-900 */
+  border-radius: 8px;
+  padding: 10px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
+  width: 250px;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  position: relative;
-  font-family: 'Inter', sans-serif;
-  overflow: visible; /* Allow header text to show */
-  transition: all 0.2s ease-in-out;
-  white-space: pre-wrap; /* Allow newlines in labels */
+  align-items: center;
+  justify-content: center;
 }
 
-.l2-process-node:hover, .data-node:hover, .risk-node:hover, .control-node:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  z-index: 10;
-}
-
-/* Header Text (Pseudo-element) Common */
-.l2-process-node::before, .data-node::before, .risk-node::before, .control-node::before {
-  position: absolute;
-  top: -22px;
-  left: 8px;
-  color: #ffffff;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-family: 'JetBrains Mono', monospace;
-  z-index: 5;
-}
-
-/* 1. Process Node (Blue Header) */
-.l2-process-node {
-  border-top: 28px solid #3b82f6; /* fab-blue */
-  border-color: #93c5fd;
-}
-.l2-process-node::before {
-  content: 'PROCESS STEP';
-}
-.l2-process-node .react-flow__handle {
-  background: #3b82f6;
-}
-
-/* 2. Data Node (Slate Header) */
 .data-node {
-  border-top: 28px solid #64748b; /* slate-500 */
-  border-color: #cbd5e1;
-  background: #f8fafc;
-}
-.data-node::before {
-  content: 'DATA INPUTS';
-}
-.data-node .react-flow__handle {
-  background: #64748b;
+  background: #f8fafc; /* slate-50 */
+  border: 1px dashed #64748b; /* slate-500 */
+  color: #334155; /* slate-700 */
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 11px;
+  text-align: center;
+  width: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* 3. Risk Node (Red Header) */
 .risk-node {
-  border-top: 28px solid #ef4444; /* rose-500 */
-  border-color: #fca5a5;
-  background: #fff1f2;
-}
-.risk-node::before {
-  content: 'RISK / HAZARD';
-}
-.risk-node .react-flow__handle {
-  background: #ef4444;
+  background: #fff1f2; /* rose-50 */
+  border: 1px solid #f43f5e; /* rose-500 */
+  border-left: 4px solid #f43f5e;
+  color: #881337; /* rose-900 */
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+  width: 250px;
+  display: flex;
+  align-items: center;
 }
 
-/* 4. Control Node (Emerald Header) */
 .control-node {
-  border-top: 28px solid #10b981; /* emerald-500 */
-  border-color: #6ee7b7;
-  background: #f0fdf4;
-}
-.control-node::before {
-  content: 'CONTROL / LOGIC';
-}
-.control-node .react-flow__handle {
-  background: #10b981;
+  background: #f0fdf4; /* emerald-50 */
+  border: 1px solid #10b981; /* emerald-500 */
+  border-left: 4px solid #10b981;
+  color: #064e3b; /* emerald-900 */
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: left;
+  width: 250px;
+  display: flex;
+  align-items: center;
 }
 
 @keyframes shimmer {
