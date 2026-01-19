@@ -27,15 +27,15 @@ const ProcessAnalysisContent: React.FC<ProcessAnalysisPageProps> = ({ product, o
     const [sopData, setSopData] = useState<SopResponse | null>(null);
     const { fitView } = useReactFlow();
 
-    // Custom Flow Config State
-    const [selectedComponents, setSelectedComponents] = useState<FlowNodeType[]>(['process', 'data', 'risk', 'control']);
+    // Custom Flow Config State - Added 'output' by default for the 5-column view
+    const [selectedComponents, setSelectedComponents] = useState<FlowNodeType[]>(['process', 'data', 'risk', 'control', 'output']);
 
     useEffect(() => {
         const init = async () => {
             // Check if this is the dummy product
             if (product.id === 'dummy-analysis' || product.product_name.includes('Analysis Demo')) {
                 // For demo: Load full dummy view immediately so the background is populated
-                const { nodes: dummyNodes, edges: dummyEdges } = filterDummyData(['process', 'data', 'risk', 'control']);
+                const { nodes: dummyNodes, edges: dummyEdges } = filterDummyData(['process', 'data', 'risk', 'control', 'output']);
                 setNodes(dummyNodes as Node[]);
                 setEdges(dummyEdges as Edge[]);
                 setTimeout(() => fitView({ padding: 0.2 }), 100);
@@ -159,6 +159,12 @@ const ProcessAnalysisContent: React.FC<ProcessAnalysisPageProps> = ({ product, o
                             <span className="text-[10px] font-medium text-slate-600">Controls</span>
                         </div>
                     )}
+                    {selectedComponents.includes('output') && (
+                        <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded bg-purple-50 border border-purple-500"></div>
+                            <span className="text-[10px] font-medium text-slate-600">Data Produced</span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -184,7 +190,8 @@ const ProcessAnalysisContent: React.FC<ProcessAnalysisPageProps> = ({ product, o
                                     { id: 'process', label: 'Process Steps', desc: 'Core workflow actions' },
                                     { id: 'data', label: 'Data Inputs', desc: 'Information collected' },
                                     { id: 'risk', label: 'Risks', desc: 'Hazards & compliance' },
-                                    { id: 'control', label: 'Controls', desc: 'Mitigation logic' }
+                                    { id: 'control', label: 'Controls', desc: 'Mitigation logic' },
+                                    { id: 'output', label: 'Data Produced', desc: 'Outputs & records' }
                                 ].map((item) => {
                                     const active = isSelected(item.id as FlowNodeType);
                                     return (
