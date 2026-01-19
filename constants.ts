@@ -380,7 +380,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
 
     /* ------------------------------------------------------------------
        ROW 6: Loan conditions validation
-       Base Y: 1850
+       Base Y: 1850 -> Expanded Layout
        ------------------------------------------------------------------ */
     {
       "id": "l2-6",
@@ -423,6 +423,24 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "sourcePosition": "right",
       "targetPosition": "left"
     },
+    // Added new risks from PDF Page 8 & 16
+    {
+      "id": "risk-6d",
+      "data": { "label": "Fraud: Salary Source" },
+      "position": { "x": COL_RISK, "y": 2050 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-6e",
+      "data": { "label": "Ops: Doc Storage" },
+      "position": { "x": COL_RISK, "y": 2150 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+
     // Controls
     {
       "id": "ctrl-6a",
@@ -448,15 +466,31 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "sourcePosition": "right",
       "targetPosition": "left"
     },
+    {
+      "id": "ctrl-6d",
+      "data": { "label": "Salary Source Valid. (T24) (M)\nVariance Check (M)" },
+      "position": { "x": COL_CTRL, "y": 2050 },
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "ctrl-6e",
+      "data": { "label": "DMS Storage (A)" },
+      "position": { "x": COL_CTRL, "y": 2150 },
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
 
     /* ------------------------------------------------------------------
        ROW 7: Loan disbursal / funds release
-       Base Y: 2250
+       Base Y: 2450 -> Shifted down
        ------------------------------------------------------------------ */
     {
       "id": "l2-7",
       "data": { "label": "7. Loan disbursal / funds release" },
-      "position": { "x": COL_L2, "y": 2250 },
+      "position": { "x": COL_L2, "y": 2450 },
       "className": "l2-process-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -464,7 +498,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "data-7",
       "data": { "label": "Loan Record\nTransactional Data\nContracts & Consents" },
-      "position": { "x": COL_DATA, "y": 2250 },
+      "position": { "x": COL_DATA, "y": 2450 },
       "className": "data-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -473,7 +507,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "risk-7a",
       "data": { "label": "Ops: Maker Checker" },
-      "position": { "x": COL_RISK, "y": 2200 },
+      "position": { "x": COL_RISK, "y": 2350 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -481,7 +515,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "risk-7b",
       "data": { "label": "Fin Crime: Documentation" },
-      "position": { "x": COL_RISK, "y": 2300 },
+      "position": { "x": COL_RISK, "y": 2450 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-7c",
+      "data": { "label": "Ops: Manual Process" },
+      "position": { "x": COL_RISK, "y": 2550 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -490,7 +532,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "ctrl-7a",
       "data": { "label": "Maker Checker Process (M)\nSalary Variance Check (M)" },
-      "position": { "x": COL_CTRL, "y": 2200 },
+      "position": { "x": COL_CTRL, "y": 2350 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -498,7 +540,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "ctrl-7b",
       "data": { "label": "Customer Summary Attached (M)\nFile Mgmt Submission (2 days) (M)" },
-      "position": { "x": COL_CTRL, "y": 2300 },
+      "position": { "x": COL_CTRL, "y": 2450 },
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "ctrl-7c",
+      "data": { "label": "Manual Unblock via Email (M)" },
+      "position": { "x": COL_CTRL, "y": 2550 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -544,14 +594,20 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     { "id": "e6-2", "source": "data-6", "target": "risk-6a", "type": "step", "style": { "stroke": "#f43f5e" } },
     { "id": "e6-3", "source": "data-6", "target": "risk-6b", "type": "step", "style": { "stroke": "#f43f5e" } },
     { "id": "e6-4", "source": "data-6", "target": "risk-6c", "type": "step", "style": { "stroke": "#f43f5e" } },
-    { "id": "e6-5", "source": "risk-6a", "target": "ctrl-6a", "type": "step", "style": { "stroke": "#10b981" } },
-    { "id": "e6-6", "source": "risk-6b", "target": "ctrl-6b", "type": "step", "style": { "stroke": "#10b981" } },
-    { "id": "e6-7", "source": "risk-6c", "target": "ctrl-6c", "type": "step", "style": { "stroke": "#10b981" } },
+    { "id": "e6-5", "source": "data-6", "target": "risk-6d", "type": "step", "style": { "stroke": "#f43f5e" } },
+    { "id": "e6-6", "source": "data-6", "target": "risk-6e", "type": "step", "style": { "stroke": "#f43f5e" } },
+    { "id": "e6-7", "source": "risk-6a", "target": "ctrl-6a", "type": "step", "style": { "stroke": "#10b981" } },
+    { "id": "e6-8", "source": "risk-6b", "target": "ctrl-6b", "type": "step", "style": { "stroke": "#10b981" } },
+    { "id": "e6-9", "source": "risk-6c", "target": "ctrl-6c", "type": "step", "style": { "stroke": "#10b981" } },
+    { "id": "e6-10", "source": "risk-6d", "target": "ctrl-6d", "type": "step", "style": { "stroke": "#10b981" } },
+    { "id": "e6-11", "source": "risk-6e", "target": "ctrl-6e", "type": "step", "style": { "stroke": "#10b981" } },
     // Row 7
     { "id": "e7-1", "source": "l2-7", "target": "data-7", "type": "step", "style": { "stroke": "#94a3b8" } },
     { "id": "e7-2", "source": "data-7", "target": "risk-7a", "type": "step", "style": { "stroke": "#f43f5e" } },
     { "id": "e7-3", "source": "data-7", "target": "risk-7b", "type": "step", "style": { "stroke": "#f43f5e" } },
-    { "id": "e7-4", "source": "risk-7a", "target": "ctrl-7a", "type": "step", "style": { "stroke": "#10b981" } },
-    { "id": "e7-5", "source": "risk-7b", "target": "ctrl-7b", "type": "step", "style": { "stroke": "#10b981" } }
+    { "id": "e7-4", "source": "data-7", "target": "risk-7c", "type": "step", "style": { "stroke": "#f43f5e" } },
+    { "id": "e7-5", "source": "risk-7a", "target": "ctrl-7a", "type": "step", "style": { "stroke": "#10b981" } },
+    { "id": "e7-6", "source": "risk-7b", "target": "ctrl-7b", "type": "step", "style": { "stroke": "#10b981" } },
+    { "id": "e7-7", "source": "risk-7c", "target": "ctrl-7c", "type": "step", "style": { "stroke": "#10b981" } }
   ]
 };

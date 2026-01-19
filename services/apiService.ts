@@ -36,6 +36,9 @@ const mockChatStream = async (payload: any) => {
     } else if (question.includes('summarize') || question.includes('loan disbursal')) {
         answer = "### Loan Disbursal Process Summary\n\n**Step 7: Loan Disbursal / Funds Release**\n\nThis is the final stage of the workflow where funds are released to the customer.\n\n**Key Actions:**\n1. **Final Sanctioning**: Credit officer reviews all conditions.\n2. **Funds Transfer**: Automated instruction sent to Core Banking (T24).\n3. **Customer Notification**: SMS and Email triggered upon success.\n\n**SLA**: Funds are typically available within 2 hours of final approval.";
         related = ["What are the prerequisites for disbursal?", "Who authorizes the transfer?"];
+    } else if (question.includes('loan condition') || question.includes('step 6')) {
+        answer = "### Step 6: Loan Conditions Validation\n\nThis step involves rigorous checks before final approval. Key risks and controls include:\n\n**Risks:**\n- **Financial Risk:** IBAN mismatches between CASA and PIL.\n- **Fraud:** STL/QR code manipulation, Salary source discrepancy.\n- **Operational:** Document storage failures.\n\n**Controls:**\n- **IBAN Validation (Automated)**\n- **Non-eSTL Filing (Manual)**\n- **Signature Verification (Manual)**\n- **Salary Source Validation via T24 (Manual)**\n- **DMS Storage (Automated/Manual)**";
+        related = ["What data is consumed in Step 6?", "Explain the salary source check"];
     } else if (question.includes('hello') || question.includes('hi')) {
         answer = "Hello! I am your Policy Standards Assistant. I can help you navigate the Group Information Security Policy and other standard operating procedures. What would you like to know?";
         related = ["What risks are in this policy?", "List the key controls"];
