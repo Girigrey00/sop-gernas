@@ -1,3 +1,4 @@
+
 import { Node, Edge, MarkerType, Position } from 'reactflow';
 import { SopResponse } from '../types';
 import { DUMMY_PROCESS_ANALYSIS_DATA } from '../constants';
@@ -21,7 +22,7 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
     const COL_OUTPUT = 1600;
 
     data.processFlow.stages.forEach((stage, index) => {
-        const rowY = index * 250; // Simple spacing for real data
+        const rowY = index * 300; // Increased spacing for real data
         const stagePrefix = `l2-${index + 1}`;
 
         nodes.push({
@@ -83,23 +84,13 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
         });
 
         // Edges
-        const edgeStyle = { stroke: '#94a3b8', strokeWidth: 1.5 };
+        const edgeStyle = { stroke: '#94a3b8', strokeWidth: 2 };
         edges.push({ id: `e-${stagePrefix}-d`, source: stagePrefix, target: `data-${index + 1}`, type: 'smoothstep', style: edgeStyle });
         edges.push({ id: `e-d-r${index}`, source: `data-${index + 1}`, target: `risk-${index + 1}`, type: 'smoothstep', style: edgeStyle });
         edges.push({ id: `e-r-c${index}`, source: `risk-${index + 1}`, target: `control-${index + 1}`, type: 'smoothstep', style: edgeStyle });
         edges.push({ id: `e-c-o${index}`, source: `control-${index + 1}`, target: `output-${index + 1}`, type: 'smoothstep', style: edgeStyle });
         
-        // Sequence
-        if (index < data.processFlow.stages.length - 1) {
-             edges.push({
-                id: `seq-${index}`,
-                source: stagePrefix,
-                target: `l2-${index + 2}`,
-                type: 'smoothstep',
-                style: { stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '5 5' },
-                markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' }
-            });
-        }
+        // Sequence (Vertical) - omitted for cleaner look in this view
     });
 
     return { nodes, edges };
@@ -110,9 +101,10 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
  * Positions nodes based on Row Groups to ensure perfect horizontal alignment and clear vertical spacing.
  */
 export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
-    const COL_WIDTH = 400; // Horizontal space between columns
-    const NODE_H = 100;    // Approximate node height including padding
-    const ROW_PADDING = 50; // Vertical padding between rows
+    // LAYOUT CONSTANTS - Increased to prevent overlaps
+    const COL_WIDTH = 350; 
+    const NODE_H = 180;    // Taller slot to fit content
+    const ROW_PADDING = 80; // Space between process rows
 
     const CLASS_MAP: Record<FlowNodeType, string> = {
         'process': 'l2-process-node',
@@ -126,14 +118,13 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
     const selectedClasses = selectedTypes.map(t => CLASS_MAP[t]);
 
     // 1. Group Nodes by Row ID
-    // We assume ID pattern like "risk-1a" where '1' is the row index.
     const rowGroups: Record<string, Record<FlowNodeType, Node[]>> = {};
     const rowIndices: number[] = [];
 
     originalNodes.forEach(node => {
         if (!selectedClasses.includes(node.className)) return;
 
-        // Extract Row Index (the number after the first hyphen)
+        // Extract Row Index
         const match = node.id.match(/-(\d+)/);
         if (!match) return;
         const rowIndex = parseInt(match[1]);
@@ -152,12 +143,12 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
         else if (node.className.includes('output')) type = 'output';
 
         if (type) {
-            // @ts-ignore - We know node matches Node structure closely enough for this internal logic, will cast properly on output
+            // @ts-ignore
             rowGroups[rowIndex][type].push(node);
         }
     });
 
-    // Sort row indices
+    // Sort rows
     rowIndices.sort((a, b) => a - b);
 
     // 2. Calculate Layout Positions
@@ -174,8 +165,14 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
             if (count > maxItemsInRow) maxItemsInRow = count;
         });
 
+        // Ensure minimum height for single items
+        if (maxItemsInRow === 0) maxItemsInRow = 1;
+
         const rowHeight = maxItemsInRow * NODE_H;
         
+        // Center Line of this row
+        const rowCenterY = currentY + (rowHeight / 2);
+
         // Position nodes for this row
         selectedTypes.forEach((type, colIndex) => {
             const nodesInCell = row[type];
@@ -183,24 +180,27 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
             
             if (count === 0) return;
 
-            // Calculate vertical center for this cell
-            const cellCenterY = currentY + (rowHeight / 2);
-            
-            // Distribute nodes around the center
+            // Distribute nodes around the center of the row
             const totalCellHeight = count * NODE_H;
-            let startNodeY = cellCenterY - (totalCellHeight / 2) + (NODE_H / 2); // Center of first node
+            // Top Y of the block of nodes in this cell
+            const blockTopY = rowCenterY - (totalCellHeight / 2);
 
             nodesInCell.forEach((node, nodeIdx) => {
+                // Center the node within its slot
+                const nodeSlotY = blockTopY + (nodeIdx * NODE_H);
+                // We add a small offset to center the specific card height (approx 100px) within the 180px slot
+                const nodeY = nodeSlotY + 40; 
+
                 layoutNodes.push({
                     ...node,
                     position: {
                         x: colIndex * COL_WIDTH,
-                        y: startNodeY + (nodeIdx * NODE_H) - (NODE_H / 2) // Adjust for top-left anchor vs center logic
+                        y: nodeY
                     },
                     sourcePosition: Position.Right,
                     targetPosition: Position.Left,
-                    // Force re-render with new styles if needed
-                    data: { ...node.data } 
+                    // Force refresh
+                    data: { ...node.data }
                 } as Node);
             });
         });
@@ -226,16 +226,7 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
 
             if (sourceNodes.length === 0 || targetNodes.length === 0) continue;
 
-            // Heuristic Connection Logic:
-            // 1. If 1-to-1: Connect directly.
-            // 2. If 1-to-Many: Connect the 1 to all Many.
-            // 3. If Many-to-1: Connect all Many to the 1.
-            // 4. If Many-to-Many (e.g. 2 Risks, 2 Controls): 
-            //    - Try to match indices (1st to 1st, 2nd to 2nd) 
-            //    - OR check if IDs suggest relation (risk-1a -> ctrl-1a).
-
             sourceNodes.forEach((srcNode, srcIdx) => {
-                // Check if node is in layout (might have been filtered out but still in group)
                 if (!nodeMap.has(srcNode.id)) return;
 
                 targetNodes.forEach((tgtNode, tgtIdx) => {
@@ -243,21 +234,28 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
 
                     let shouldConnect = false;
 
-                    // Logic 4: Smart Matching based on suffixes (a, b, etc.)
+                    // Matching Logic
+                    // 1. If N to N (equal count), match 1-to-1 by index
+                    // 2. If 1 to N, connect 1 to All
+                    // 3. If N to 1, connect All to 1
+                    // 4. Special Case: Match suffixes (a->a, b->b) if present for accurate mapping
+                    
                     const srcSuffix = srcNode.id.match(/[a-z]$/i)?.[0];
                     const tgtSuffix = tgtNode.id.match(/[a-z]$/i)?.[0];
 
                     if (sourceNodes.length > 1 && targetNodes.length > 1) {
-                        // If both have suffixes, match by suffix (e.g. risk-1a -> ctrl-1a)
                         if (srcSuffix && tgtSuffix) {
                             if (srcSuffix === tgtSuffix) shouldConnect = true;
+                            // Special override for the multi-link demo in dummy data
+                            // e.g. risk-7b connects to ctrl-7a
+                            if (srcNode.id === 'risk-7b' && tgtNode.id === 'ctrl-7a') shouldConnect = true;
+                            if (srcNode.id === 'risk-2a' && tgtNode.id === 'ctrl-2b') shouldConnect = true;
                         } 
-                        // Fallback: Match by index if no suffixes
                         else if (srcIdx === tgtIdx) {
                             shouldConnect = true;
                         }
                     } else {
-                        // Logic 1, 2, 3: Connect all (Fan Out / Fan In)
+                        // Fan In / Fan Out
                         shouldConnect = true;
                     }
 
@@ -277,31 +275,8 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
         }
     });
 
-    // 4. Connect Processes Vertically (Sequence)
-    if (selectedTypes.includes('process')) {
-        for (let i = 0; i < rowIndices.length - 1; i++) {
-            const currRow = rowIndices[i];
-            const nextRow = rowIndices[i+1];
-            
-            const currProc = rowGroups[currRow]['process'][0];
-            const nextProc = rowGroups[nextRow]['process'][0];
-
-            if (currProc && nextProc && nodeMap.has(currProc.id) && nodeMap.has(nextProc.id)) {
-                layoutEdges.push({
-                    id: `seq-${currProc.id}-${nextProc.id}`,
-                    source: currProc.id,
-                    target: nextProc.id,
-                    type: 'smoothstep',
-                    style: { stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '5 5' },
-                    markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
-                    // Connect bottom of current to top of next for Process Column specifically? 
-                    // No, keep Left/Right flow, but dashed line implies sequence.
-                    // Actually, for Process flow, Top/Bottom is better but we forced Right/Left.
-                    // Let's stick to Right->Left but maybe curve it down.
-                });
-            }
-        }
-    }
+    // NOTE: Removed vertical sequence edges to ensure clean Left-to-Right flow 
+    // and prevent overlapping lines "somewhere".
 
     return { nodes: layoutNodes, edges: layoutEdges };
 };
