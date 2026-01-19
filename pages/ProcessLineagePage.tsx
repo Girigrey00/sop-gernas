@@ -4,7 +4,7 @@ import {
     ArrowLeft, Send, Sparkles, User, Bot, 
     MoreVertical, ThumbsUp, ThumbsDown, Copy, 
     RotateCcw, Paperclip, Mic, Image as ImageIcon,
-    ShieldCheck, Lock, FileText, AlertTriangle
+    ShieldCheck, Lock, FileText, AlertTriangle, Plus
 } from 'lucide-react';
 import { Product } from '../types';
 
@@ -131,6 +131,12 @@ const ProcessLineagePage: React.FC<ProcessLineagePageProps> = ({ product, onBack
         }
     };
 
+    const handleNewChat = () => {
+        setMessages([]);
+        setInput('');
+        setIsLoading(false);
+    };
+
     return (
         <div className="flex h-full w-full bg-[#f0f4f9] flex-col font-sans relative overflow-hidden">
             
@@ -140,16 +146,27 @@ const ProcessLineagePage: React.FC<ProcessLineagePageProps> = ({ product, onBack
                     <button 
                         onClick={onBack} 
                         className="p-2 hover:bg-black/5 rounded-full transition-colors text-slate-600"
+                        title="Back"
                     >
                         <ArrowLeft size={20} />
                     </button>
-                    <span className="text-lg font-medium text-slate-600">Policy Standards AI</span>
+                    <span className="text-lg font-medium text-slate-600">{product.product_name}</span>
                     <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full uppercase tracking-wide">
-                        Beta
+                        Knowledge Base
                     </span>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
-                    AD
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={handleNewChat}
+                        className="p-2 bg-slate-200 hover:bg-slate-300 rounded-full transition-colors text-slate-600 flex items-center gap-2 px-3"
+                        title="Start New Chat"
+                    >
+                        <Plus size={18} />
+                        <span className="text-xs font-bold hidden sm:inline">New Chat</span>
+                    </button>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                        AD
+                    </div>
                 </div>
             </div>
 
@@ -162,10 +179,10 @@ const ProcessLineagePage: React.FC<ProcessLineagePageProps> = ({ product, onBack
                         <div className="flex flex-col items-start gap-8 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
                             <div>
                                 <h1 className="text-5xl font-semibold text-[#c4c7c5] mb-2 tracking-tight">
-                                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-rose-500">Hello, Policy Owner.</span>
+                                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-rose-500">Interactive Policy</span>
                                 </h1>
                                 <h1 className="text-5xl font-semibold text-[#c4c7c5] tracking-tight">
-                                    How can I help you today?
+                                    Knowledge Base
                                 </h1>
                             </div>
 
