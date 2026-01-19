@@ -68,6 +68,7 @@ const COL_L2 = 0;
 const COL_DATA = 400;
 const COL_RISK = 800;
 const COL_CTRL = 1200;
+const COL_OUTPUT = 1600;
 
 export const DUMMY_PROCESS_ANALYSIS_DATA = {
   "nodes": [
@@ -125,6 +126,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "sourcePosition": "right",
       "targetPosition": "left"
     },
+    // Output
+    {
+      "id": "out-1",
+      "data": { "label": "New application record" },
+      "position": { "x": COL_OUTPUT, "y": 150 },
+      "className": "output-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
 
     /* ------------------------------------------------------------------
        ROW 2: Pre-eligibility + customer ID&V
@@ -177,6 +187,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "data": { "label": "Income (+7K), Age, AECB (711+) (A)\nNegative Checklist (Mubadara) (A)\nFraud Watchlist (OFS) (A)" },
       "position": { "x": COL_CTRL, "y": 500 },
       "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    // Output
+    {
+      "id": "out-2",
+      "data": { "label": "Affordability assessment results" },
+      "position": { "x": COL_OUTPUT, "y": 450 },
+      "className": "output-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
@@ -251,6 +270,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "sourcePosition": "right",
       "targetPosition": "left"
     },
+    // Output
+    {
+      "id": "out-3",
+      "data": { "label": "Employer/Salary validation response (y/n)\nTML data points\nAECB report" },
+      "position": { "x": COL_OUTPUT, "y": 750 },
+      "className": "output-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
 
     /* ------------------------------------------------------------------
        ROW 4: Credit underwriting
@@ -303,6 +331,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "data": { "label": "Mandatory Life insurance selection (A)\nInsurance onboarding (M)\nLink insurance to CIN/CIF (A)" },
       "position": { "x": COL_CTRL, "y": 1200 },
       "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    // Output
+    {
+      "id": "out-4",
+      "data": { "label": "Internal credit score\nDBR\nPIL offer letter" },
+      "position": { "x": COL_OUTPUT, "y": 1150 },
+      "className": "output-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
@@ -441,6 +478,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "sourcePosition": "right",
       "targetPosition": "left"
     },
+    // Output
+    {
+      "id": "out-5",
+      "data": { "label": "Insurance form" },
+      "position": { "x": COL_OUTPUT, "y": 1650 },
+      "className": "output-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
 
     /* ------------------------------------------------------------------
        ROW 6: Loan conditions validation
@@ -576,6 +622,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "sourcePosition": "right",
       "targetPosition": "left"
     },
+    // Output
+    {
+      "id": "out-6",
+      "data": { "label": "None" },
+      "position": { "x": COL_OUTPUT, "y": 2500 },
+      "className": "output-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
 
     /* ------------------------------------------------------------------
        ROW 7: Loan disbursal / funds release
@@ -662,6 +717,15 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
+    },
+    // Output
+    {
+      "id": "out-7",
+      "data": { "label": "Personal loan record\nTransactional data\nPIL contract\nSigned T&Cs" },
+      "position": { "x": COL_OUTPUT, "y": 3200 },
+      "className": "output-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
     }
   ],
   "edges": [
@@ -671,6 +735,8 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     { "id": "e1-r2", "source": "data-1", "target": "risk-1b", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
     { "id": "e1-c1", "source": "risk-1a", "target": "ctrl-1a", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
     { "id": "e1-c2", "source": "risk-1b", "target": "ctrl-1b", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e1-o1", "source": "ctrl-1a", "target": "out-1", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e1-o2", "source": "ctrl-1b", "target": "out-1", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
 
     // Link R1 -> R2
     { "id": "p-1-2", "source": "l2-1", "target": "l2-2", "type": "step", "markerEnd": { "type": "arrowclosed", "color": "#3b82f6" }, "style": { "stroke": "#3b82f6", "strokeWidth": 2 } },
@@ -681,6 +747,8 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     { "id": "e2-r2", "source": "data-2", "target": "risk-2b", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
     { "id": "e2-c1", "source": "risk-2a", "target": "ctrl-2a", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
     { "id": "e2-c2", "source": "risk-2b", "target": "ctrl-2b", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e2-o1", "source": "ctrl-2a", "target": "out-2", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e2-o2", "source": "ctrl-2b", "target": "out-2", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
 
     // Link R2 -> R3
     { "id": "p-2-3", "source": "l2-2", "target": "l2-3", "type": "step", "markerEnd": { "type": "arrowclosed", "color": "#3b82f6" }, "style": { "stroke": "#3b82f6", "strokeWidth": 2 } },
@@ -693,6 +761,9 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     { "id": "e3-c1", "source": "risk-3a", "target": "ctrl-3a", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
     { "id": "e3-c2", "source": "risk-3b", "target": "ctrl-3b", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
     { "id": "e3-c3", "source": "risk-3c", "target": "ctrl-3c", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e3-o1", "source": "ctrl-3a", "target": "out-3", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e3-o2", "source": "ctrl-3b", "target": "out-3", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e3-o3", "source": "ctrl-3c", "target": "out-3", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
 
     // Link R3 -> R4
     { "id": "p-3-4", "source": "l2-3", "target": "l2-4", "type": "step", "markerEnd": { "type": "arrowclosed", "color": "#3b82f6" }, "style": { "stroke": "#3b82f6", "strokeWidth": 2 } },
@@ -703,6 +774,8 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     { "id": "e4-r2", "source": "data-4", "target": "risk-4b", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
     { "id": "e4-c1", "source": "risk-4a", "target": "ctrl-4a", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
     { "id": "e4-c2", "source": "risk-4b", "target": "ctrl-4b", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e4-o1", "source": "ctrl-4a", "target": "out-4", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e4-o2", "source": "ctrl-4b", "target": "out-4", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
 
     // Link R4 -> R5
     { "id": "p-4-5", "source": "l2-4", "target": "l2-5", "type": "step", "markerEnd": { "type": "arrowclosed", "color": "#3b82f6" }, "style": { "stroke": "#3b82f6", "strokeWidth": 2 } },
@@ -723,6 +796,13 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     { "id": "e5-c5", "source": "risk-5e", "target": "ctrl-5e", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
     { "id": "e5-c6", "source": "risk-5f", "target": "ctrl-5f", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
     { "id": "e5-c7", "source": "risk-5g", "target": "ctrl-5g", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e5-o1", "source": "ctrl-5a", "target": "out-5", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e5-o2", "source": "ctrl-5b", "target": "out-5", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e5-o3", "source": "ctrl-5c", "target": "out-5", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e5-o4", "source": "ctrl-5d", "target": "out-5", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e5-o5", "source": "ctrl-5e", "target": "out-5", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e5-o6", "source": "ctrl-5f", "target": "out-5", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e5-o7", "source": "ctrl-5g", "target": "out-5", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
 
     // Link R5 -> R6
     { "id": "p-5-6", "source": "l2-5", "target": "l2-6", "type": "step", "markerEnd": { "type": "arrowclosed", "color": "#3b82f6" }, "style": { "stroke": "#3b82f6", "strokeWidth": 2 } },
@@ -743,6 +823,13 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     { "id": "e6-c5", "source": "risk-6e", "target": "ctrl-6e", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
     { "id": "e6-c6", "source": "risk-6f", "target": "ctrl-6f", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
     { "id": "e6-c7", "source": "risk-6g", "target": "ctrl-6g", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e6-o1", "source": "ctrl-6a", "target": "out-6", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e6-o2", "source": "ctrl-6b", "target": "out-6", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e6-o3", "source": "ctrl-6c", "target": "out-6", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e6-o4", "source": "ctrl-6d", "target": "out-6", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e6-o5", "source": "ctrl-6e", "target": "out-6", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e6-o6", "source": "ctrl-6f", "target": "out-6", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e6-o7", "source": "ctrl-6g", "target": "out-6", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
 
     // Link R6 -> R7
     { "id": "p-6-7", "source": "l2-6", "target": "l2-7", "type": "step", "markerEnd": { "type": "arrowclosed", "color": "#3b82f6" }, "style": { "stroke": "#3b82f6", "strokeWidth": 2 } },
@@ -756,6 +843,10 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     { "id": "e7-c1", "source": "risk-7a", "target": "ctrl-7a", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
     { "id": "e7-c2", "source": "risk-7b", "target": "ctrl-7b", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
     { "id": "e7-c3", "source": "risk-7c", "target": "ctrl-7c", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
-    { "id": "e7-c4", "source": "risk-7d", "target": "ctrl-7d", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } }
+    { "id": "e7-c4", "source": "risk-7d", "target": "ctrl-7d", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e7-o1", "source": "ctrl-7a", "target": "out-7", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e7-o2", "source": "ctrl-7b", "target": "out-7", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e7-o3", "source": "ctrl-7c", "target": "out-7", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } },
+    { "id": "e7-o4", "source": "ctrl-7d", "target": "out-7", "type": "step", "style": { "stroke": "#8b5cf6", "strokeWidth": 2 } }
   ]
 };
