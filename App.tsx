@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import CanvasPage from './pages/CanvasPage';
 import LibraryPage from './pages/LibraryPage';
 import ProcessAnalysisPage from './pages/ProcessAnalysisPage';
+import ProcessLineagePage from './pages/ProcessLineagePage';
 import { View, SopResponse, Product, ChatSession } from './types';
 import { apiService } from './services/apiService';
 import { 
@@ -13,7 +14,8 @@ import {
     PieChart, TrendingUp, Globe, Building2, Scale, FileSignature, Calculator, 
     Receipt, Gem, Key, Database, Smartphone, Award, Target, BarChart, Stamp, BadgeDollarSign, 
     Vault, ScrollText, Truck, ShoppingCart, Anchor, Gavel, FileCheck, Layers, Trash2,
-    X, CheckCircle, AlertTriangle, MessageSquareText, Calendar, Hash, MessageCircle, Filter, ArrowLeft
+    X, CheckCircle, AlertTriangle, MessageSquareText, Calendar, Hash, MessageCircle, Filter, ArrowLeft,
+    AlertOctagon
 } from 'lucide-react';
 
 // --- Icon Helper ---
@@ -36,7 +38,6 @@ const getProductIcon = (name: string) => {
 };
 
 // --- Helper: Create Fallback SOP Data ---
-// Used when real flow data cannot be fetched but we still need to open the Chat Interface
 const createFallbackSop = (productName: string, indexName: string): SopResponse => ({
     startNode: { stepId: 'START', stepName: 'Start', description: 'Process Start', actor: 'System', stepType: 'Start', nextStep: null },
     endNode: { stepId: 'END', stepName: 'End', description: 'Process End', actor: 'System', stepType: 'End', nextStep: null },
@@ -159,27 +160,32 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
     );
 };
 
-// --- Home Page (CBG Knowledge Hub) ---
-const HomePage = ({ onStart, onSelectProduct, onNotification, isAnalysisMode = false }: { 
-    onStart: (data: any) => void, 
-    onSelectProduct: (product: Product, redirect: boolean) => void,
-    onNotification: (msg: string, type: 'success' | 'error') => void,
-    isAnalysisMode?: boolean
-}) => {
+// --- Home Page (Generic Product List) ---
+interface HomePageProps {
+    onStart: (data: any) => void;
+    onSelectProduct: (product: Product, redirect: boolean) => void;
+    onNotification: (msg: string, type: 'success' | 'error') => void;
+    pageTitle?: string;
+    pageSubtitle?: string;
+    isAnalysisMode?: boolean; // Keep for legacy compatibility if needed
+}
+
+const HomePage = ({ 
+    onStart, 
+    onSelectProduct, 
+    onNotification, 
+    pageTitle = 'Procedures', 
+    pageSubtitle = 'Select a product to view its operational flow.',
+    isAnalysisMode = false 
+}: HomePageProps) => {
     const [products, setProducts] = useState<Product[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    
-    // Polling Logic
     const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    
-    // Create Product State
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [newProductName, setNewProductName] = useState('');
     const [newProductDesc, setNewProductDesc] = useState('');
     const [isCreating, setIsCreating] = useState(false);
-
-    // Delete Confirmation State
     const [productToDelete, setProductToDelete] = useState<Product | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -188,7 +194,6 @@ const HomePage = ({ onStart, onSelectProduct, onNotification, isAnalysisMode = f
         try {
             const data = await apiService.getProducts();
             setProducts(data);
-
             if (!pollingRef.current) {
                pollingRef.current = setInterval(() => fetchProducts(true), 5000);
             }
@@ -219,7 +224,7 @@ const HomePage = ({ onStart, onSelectProduct, onNotification, isAnalysisMode = f
                 folder_name: newProductName.toLowerCase().replace(/\s+/g, '_') + '_folder',
                 product_description: newProductDesc || 'No description'
             });
-            await fetchProducts(); // Refresh list immediately
+            await fetchProducts(); 
             setIsCreateOpen(false);
             setNewProductName('');
             setNewProductDesc('');
@@ -255,16 +260,17 @@ const HomePage = ({ onStart, onSelectProduct, onNotification, isAnalysisMode = f
     const handleCardClick = async (product: Product, e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('.delete-btn')) return;
 
-        // Specialized behavior for Analysis Mode
-        if (isAnalysisMode) {
-            onSelectProduct(product, false);
-            return;
-        }
-
-        // Standard Home Behavior
+        // If specific mode flags are set, just notify parent immediately
+        // The parent determines navigation based on current view
         onSelectProduct(product, false);
 
-        if (product.flow_status === 'Completed') {
+        // Logic for standard Flow viewing (only needed if NOT in analysis/lineage mode)
+        // But since we want to trigger the "onSelectProduct" for routing, we can simplify this.
+        // If it's a standard flow view, the parent will handle navigation to CANVAS.
+        // We only check for flow status if we intend to open the canvas.
+        // For simplicity here, we assume standard behavior unless overridden.
+        
+        if (!isAnalysisMode && product.flow_status === 'Completed') {
             setIsLoading(true);
             try {
                 const flowData = await apiService.getProcessFlow(product.product_name);
@@ -275,19 +281,17 @@ const HomePage = ({ onStart, onSelectProduct, onNotification, isAnalysisMode = f
                 }
             } catch (error) {
                 console.error("Flow fetch error:", error);
-                onNotification("Failed to load the process flow.", 'error');
+                // Allow proceeding to upload even if flow fails
             } finally {
                 setIsLoading(false);
             }
         } else if (!product.flow_status) {
+            // New product, might need upload
             onSelectProduct(product, true); 
-        } else {
-            onNotification(`Flow is currently: ${product.flow_status}. Please wait.`, 'error');
-        }
+        } 
     };
 
     const filteredProducts = [
-        // Inject Dummy Product for Analysis View Only
         ...(isAnalysisMode ? [{
             _id: 'dummy-analysis',
             id: 'dummy-analysis',
@@ -317,8 +321,8 @@ const HomePage = ({ onStart, onSelectProduct, onNotification, isAnalysisMode = f
             <div className="px-8 pt-8 pb-6 flex flex-col gap-6 bg-white border-b border-slate-200">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                     <div>
-                        <h2 className="text-2xl font-bold text-fab-navy mb-1">{isAnalysisMode ? 'Process Analysis' : 'CBG Knowledge Hub'}</h2>
-                        <p className="text-slate-500 text-sm">{isAnalysisMode ? 'Select a product to view specific process risk and control analysis.' : 'Select a product to view its workflow or upload new documents.'}</p>
+                        <h2 className="text-2xl font-bold text-fab-navy mb-1">{pageTitle}</h2>
+                        <p className="text-slate-500 text-sm">{pageSubtitle}</p>
                     </div>
                     
                     <div className="flex items-center gap-3 w-full md:w-auto">
@@ -362,7 +366,6 @@ const HomePage = ({ onStart, onSelectProduct, onNotification, isAnalysisMode = f
                             const isEmpty = !item.flow_status;
                             const DynamicIcon = getProductIcon(item.product_name);
 
-                            // Log Data logic
                             const latestLog = item.flow_logs && item.flow_logs.length > 0 ? item.flow_logs[item.flow_logs.length - 1] : null;
                             const progress = item.flow_progress || 0;
                             const currentStep = item.flow_current_step || (latestLog ? latestLog.step : 'Processing');
@@ -394,7 +397,6 @@ const HomePage = ({ onStart, onSelectProduct, onNotification, isAnalysisMode = f
                                     
                                     <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-2 pr-6">{item.product_name}</h3>
                                     
-                                    {/* Conditional Content: Description vs Processing Logs */}
                                     {isProcessing ? (
                                         <div className="mt-2 mb-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 w-full">
                                             <div className="flex justify-between items-center mb-1.5">
@@ -432,7 +434,7 @@ const HomePage = ({ onStart, onSelectProduct, onNotification, isAnalysisMode = f
                                     <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-auto w-full">
                                         <span className="text-[10px] font-medium text-slate-400 truncate max-w-[100px]">Docs: {item.document_count}</span>
                                         <div className="flex items-center gap-1 text-xs font-bold text-fab-royal opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
-                                            {isCompleted ? (isAnalysisMode ? 'View Analysis' : 'View Flow') : isEmpty ? 'Upload Docs' : isFailed ? 'Retry' : 'Wait...'} <ArrowRight size={14} />
+                                            <ArrowRight size={14} />
                                         </div>
                                     </div>
                                 </button>
@@ -442,6 +444,7 @@ const HomePage = ({ onStart, onSelectProduct, onNotification, isAnalysisMode = f
                 )}
             </div>
 
+            {/* Create Product Modal & Delete Confirmation Modal (Same as before) */}
             {isCreateOpen && (
                 <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
@@ -564,7 +567,7 @@ const App: React.FC = () => {
   const handleStartWithData = (data: SopResponse) => {
       setSelectedSop(data);
       setInitialPrompt('');
-      setCurrentSessionId(undefined); // Clear session ID for new flow
+      setCurrentSessionId(undefined);
       setCurrentView('CANVAS');
       setIsSidebarOpen(false);
   };
@@ -585,62 +588,72 @@ const App: React.FC = () => {
       }
   };
 
-  // UPDATED: Robust Session Opener
+  // Handler for Lineage Mode
+  const handleProcessLineageSelect = (product: Product, redirect: boolean) => {
+      setSelectedContextProduct(product);
+      if(!redirect) {
+          setCurrentView('LINEAGE_CHAT');
+      }
+  };
+
   const handleOpenSession = async (session: ChatSession) => {
-      // 1. Determine product context (fallback if missing)
       const productName = session.product || "General Chat";
       const indexName = session.index_name || "cbgknowledgehub";
 
-      // 2. Set context immediately (critical for ChatAssistant to load)
       setCurrentSessionId(session._id);
       setSelectedContextProduct({ 
           product_name: productName, 
           index_name: indexName,
-          // minimal product info needed for context
           _id: session._id, id: session._id, has_index: 'Yes', has_flow: 'No', document_count: 0 
       }); 
 
-      // 3. Try to fetch flow data (Bonus context)
-      // Even if this fails, we proceed to open the Canvas so the Chat works.
       try {
-          // Attempt to load flow if we have a product name
           if (productName && productName !== "General Chat") {
                const flowData = await apiService.getProcessFlow(productName);
                if (flowData && flowData.processFlow) {
                    setSelectedSop(flowData);
                } else {
-                   // Flow structure missing/invalid -> Use Fallback
-                   console.warn("Flow data incomplete, using fallback for chat view.");
                    setSelectedSop(createFallbackSop(productName, indexName));
                }
           } else {
-               // No product linked -> Use Fallback
                setSelectedSop(createFallbackSop(productName, indexName));
           }
       } catch (e) {
           console.warn("Failed to load flow for this session. Opening in Chat-Only mode.", e);
-          // 4. Fallback on Error: Create dummy SOP data so CanvasPage renders and ChatAssistant mounts
           setSelectedSop(createFallbackSop(productName, indexName));
       }
 
-      // 5. Navigate
       setCurrentView('CANVAS');
       setIsSidebarOpen(false);
   };
 
-  const handleFlowGenerated = (_data: SopResponse, _prompt: string) => {
-      // Legacy handler, not really needed if using new Chat/History API mostly
-      // But useful if generating flow from scratch via prompt
-  };
+  const handleFlowGenerated = (_data: SopResponse, _prompt: string) => {};
 
   const renderContent = () => {
     switch (currentView) {
       case 'HOME':
-        return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} onNotification={showNotification} />;
       case 'SOPS':
-        return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} onNotification={showNotification} />;
+        return (
+            <HomePage 
+                onStart={handleStartWithData} 
+                onSelectProduct={handleProductSelect} 
+                onNotification={showNotification} 
+                pageTitle="Procedures"
+                pageSubtitle="View Operational Procedures and Flows"
+            />
+        );
+      
       case 'PROCESS_ANALYSIS':
-        return <HomePage onStart={() => {}} onSelectProduct={handleProcessAnalysisSelect} onNotification={showNotification} isAnalysisMode={true} />;
+        return (
+            <HomePage 
+                onStart={() => {}} 
+                onSelectProduct={handleProcessAnalysisSelect} 
+                onNotification={showNotification} 
+                isAnalysisMode={true}
+                pageTitle="Policy Standards"
+                pageSubtitle="Risk & Control Framework Analysis"
+            />
+        );
       case 'ANALYSIS_CANVAS':
         if(selectedContextProduct) {
             return (
@@ -653,7 +666,42 @@ const App: React.FC = () => {
                 />
             );
         }
-        return <HomePage onStart={() => {}} onSelectProduct={handleProcessAnalysisSelect} onNotification={showNotification} isAnalysisMode={true} />;
+        return <HomePage onStart={() => {}} onSelectProduct={handleProcessAnalysisSelect} onNotification={showNotification} isAnalysisMode={true} pageTitle="Policy Standards" pageSubtitle="Risk & Control Framework Analysis" />;
+      
+      case 'PROCESS_LINEAGE':
+        return (
+            <HomePage
+                onStart={() => {}}
+                onSelectProduct={handleProcessLineageSelect}
+                onNotification={showNotification}
+                pageTitle="Process Lineage"
+                pageSubtitle="Trace process dependencies and history."
+            />
+        );
+      case 'LINEAGE_CHAT':
+        if (selectedContextProduct) {
+            return (
+                <ProcessLineagePage 
+                    product={selectedContextProduct}
+                    onBack={() => {
+                        setCurrentView('PROCESS_LINEAGE');
+                        setSelectedContextProduct(null);
+                    }}
+                />
+            );
+        }
+        return <HomePage onStart={() => {}} onSelectProduct={handleProcessLineageSelect} onNotification={showNotification} pageTitle="Process Lineage" pageSubtitle="Trace process dependencies and history." />;
+
+      case 'IMPACT_ASSESSMENT':
+        // Placeholder or future implementation
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                <AlertOctagon size={48} className="mb-4 text-fab-royal opacity-50" />
+                <h2 className="text-2xl font-bold text-fab-navy mb-2">Impact Assessment</h2>
+                <p className="text-sm font-medium">This module is coming soon.</p>
+            </div>
+        );
+
       case 'LIBRARY':
         return (
             <LibraryPage 
@@ -664,8 +712,6 @@ const App: React.FC = () => {
                 preselectedProduct={selectedContextProduct}
                 onBack={async () => {
                     if (selectedContextProduct) {
-                        // Just navigate back. CanvasPage will handle the data fetching/polling based on context.
-                        // We ensure selectedSop is null so CanvasPage triggers its fetch logic.
                         setSelectedSop(null); 
                         setCurrentView('CANVAS');
                     } else {
@@ -698,7 +744,6 @@ const App: React.FC = () => {
                 initialData={selectedSop}
                 onFlowGenerated={handleFlowGenerated}
                 onBack={() => {
-                    // Back from Canvas (Hub Navigation) always goes Home and clears context
                     setCurrentView('HOME');
                     setSelectedContextProduct(null);
                     setCurrentSessionId(undefined);
@@ -735,8 +780,7 @@ const App: React.FC = () => {
             currentView={currentView === 'SOPS' ? 'HOME' : currentView} 
             onNavigate={(view) => { 
                 if (view === 'HISTORY') {
-                    setIsCollapsed(false); // Expand sidebar when History is clicked
-                    // Do not change current view, stay on previous page
+                    setIsCollapsed(false); 
                 } else {
                     setCurrentView(view);
                     setIsSidebarOpen(false);

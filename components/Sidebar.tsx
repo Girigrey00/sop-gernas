@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Compass, LogOut, ChevronRight, BookOpen, ChevronLeft, User, Clock, MessageSquare, LayoutDashboard, Activity } from 'lucide-react';
+import { Compass, LogOut, ChevronRight, BookOpen, ChevronLeft, User, Clock, MessageSquare, LayoutDashboard, Activity, FileText, ShieldCheck, GitMerge, AlertOctagon } from 'lucide-react';
 import { View, ChatSession, Product } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -48,8 +48,10 @@ const Sidebar = ({
   }, [currentView, productContext]); // Refresh when view changes or product context changes
 
   const navItems = [
-    { id: 'HOME', label: 'CBG Knowledge Hub', icon: LayoutDashboard },
-    { id: 'PROCESS_ANALYSIS', label: 'Process Analysis', icon: Activity },
+    { id: 'HOME', label: 'Procedure', icon: FileText },
+    { id: 'PROCESS_ANALYSIS', label: 'Policy Standard', icon: ShieldCheck },
+    { id: 'PROCESS_LINEAGE', label: 'Process Lineage', icon: GitMerge },
+    { id: 'IMPACT_ASSESSMENT', label: 'Impact Assessment', icon: AlertOctagon, badge: 'Coming Soon' },
     // Only show Library/History if a product context is selected
     ...(productContext ? [
         { id: 'LIBRARY', label: 'Library', icon: BookOpen },
@@ -98,10 +100,10 @@ const Sidebar = ({
             {navItems.map(item => {
                 const Icon = item.icon;
                 // Map CANVAS/SOPS view to HOME for highlighting if no specific match
-                // Note: HISTORY is now treated as a toggle/expand action
                 let isActive = currentView === item.id;
                 if (item.id === 'HOME' && (currentView === 'CANVAS' || currentView === 'SOPS')) isActive = true;
                 if (item.id === 'PROCESS_ANALYSIS' && currentView === 'ANALYSIS_CANVAS') isActive = true;
+                if (item.id === 'PROCESS_LINEAGE' && currentView === 'LINEAGE_CHAT') isActive = true;
 
                 return (
                   <button
@@ -114,11 +116,14 @@ const Sidebar = ({
                         : 'hover:bg-fab-royal/40 text-fab-sky/70 hover:text-white'
                     }`}
                   >
-                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} relative`}>
                       <Icon size={isCollapsed ? 22 : 18} className={`${isActive ? 'text-white' : 'text-fab-sky/50 group-hover:text-fab-sky'} transition-colors`} />
                       {!isCollapsed && <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>}
                     </div>
-                    {!isCollapsed && isActive && <ChevronRight size={14} className="text-fab-sky" />}
+                    {!isCollapsed && item.badge && (
+                       <span className="text-[9px] bg-fab-sky/20 text-fab-sky border border-fab-sky/20 px-1.5 py-0.5 rounded font-bold">{item.badge}</span>
+                    )}
+                    {!isCollapsed && !item.badge && isActive && <ChevronRight size={14} className="text-fab-sky" />}
                     
                     {/* Active Bar Indicator for Collapsed Mode */}
                     {isCollapsed && isActive && (
