@@ -4,7 +4,7 @@ import { SopResponse } from '../types';
 import { DUMMY_PROCESS_ANALYSIS_DATA } from '../constants';
 
 // Type mapping for the custom filter
-export type FlowNodeType = 'process' | 'data' | 'risk' | 'control';
+export type FlowNodeType = 'process' | 'data' | 'risk' | 'control' | 'output';
 
 export const convertSopToAnalysisData = (data: SopResponse) => {
     const nodes: Node[] = [];
@@ -140,12 +140,13 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
  */
 export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
     // 1. Config
-    const COL_WIDTH = 400;
+    const COL_WIDTH = 380;
     const CLASS_MAP: Record<FlowNodeType, string> = {
         'process': 'l2-process-node',
         'data': 'data-node',
         'risk': 'risk-node',
-        'control': 'control-node'
+        'control': 'control-node',
+        'output': 'data-produced-node'
     };
 
     // 2. Filter Nodes
