@@ -291,8 +291,9 @@ const HomePage = ({
         } 
     };
 
-    const filteredProducts = [
-        ...(isAnalysisMode ? [{
+    // If isAnalysisMode is true, strictly show only the dummy product and nothing else from API.
+    const displayList = isAnalysisMode 
+        ? [{
             _id: 'dummy-analysis',
             id: 'dummy-analysis',
             product_name: 'Personal Loan (Analysis Demo)',
@@ -303,9 +304,10 @@ const HomePage = ({
             description: 'Demo product for Risk & Control Analysis visualization.',
             flow_status: 'Completed',
             created_at: new Date().toISOString()
-        } as Product] : []),
-        ...products
-    ]
+        } as Product]
+        : products;
+
+    const filteredProducts = displayList
         .filter(item => {
             return item.product_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                    (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -325,24 +327,27 @@ const HomePage = ({
                         <p className="text-slate-500 text-sm">{pageSubtitle}</p>
                     </div>
                     
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        <button 
-                            onClick={() => setIsCreateOpen(true)}
-                            className="px-4 py-2 bg-fab-royal text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-fab-blue transition-colors"
-                        >
-                            <Plus size={16} /> New Product
-                        </button>
-                        <div className="relative w-full md:w-64">
-                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input 
-                                type="text" 
-                                placeholder="Search products..." 
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-fab-royal/50 text-sm"
-                            />
+                    {/* Hide Create New Button in Analysis Mode if strictly demo */}
+                    {!isAnalysisMode && (
+                        <div className="flex items-center gap-3 w-full md:w-auto">
+                            <button 
+                                onClick={() => setIsCreateOpen(true)}
+                                className="px-4 py-2 bg-fab-royal text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-fab-blue transition-colors"
+                            >
+                                <Plus size={16} /> New Product
+                            </button>
+                            <div className="relative w-full md:w-64">
+                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search products..." 
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-fab-royal/50 text-sm"
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
 
@@ -376,18 +381,21 @@ const HomePage = ({
                                     onClick={(e) => handleCardClick(item, e)}
                                     className="p-5 rounded-xl border border-slate-200 bg-white hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all text-left group flex flex-col h-full relative overflow-hidden"
                                 >
-                                    <div className="absolute top-3 right-3 z-20 delete-btn">
-                                         <div 
-                                            onClick={(e) => {
-                                                e.stopPropagation(); 
-                                                handleDeleteClick(item);
-                                            }}
-                                            className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors bg-white/50 backdrop-blur-sm"
-                                            title="Delete Product"
-                                         >
-                                            <Trash2 size={16} />
-                                         </div>
-                                    </div>
+                                    {/* Hide Delete button for Dummy Analysis Item */}
+                                    {item.id !== 'dummy-analysis' && (
+                                        <div className="absolute top-3 right-3 z-20 delete-btn">
+                                             <div 
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); 
+                                                    handleDeleteClick(item);
+                                                }}
+                                                className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors bg-white/50 backdrop-blur-sm"
+                                                title="Delete Product"
+                                             >
+                                                <Trash2 size={16} />
+                                             </div>
+                                        </div>
+                                    )}
 
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="p-2.5 rounded-xl transition-colors border bg-fab-royal/5 text-fab-royal border-fab-royal/10">
