@@ -531,14 +531,8 @@ export const apiService: ApiServiceInterface = {
                 description: p.metadata?.product_description || p.description || 'No description available'
             }));
         } catch (e) {
-            console.warn("Failed to fetch products, returning mock list.");
-            return [
-                {
-                    _id: 'prod-1', id: 'prod-1', product_name: 'Personal Loan', index_name: 'idx-1',
-                    has_index: 'Yes', has_flow: 'Yes', document_count: 5, flow_status: 'Completed',
-                    description: 'Standard consumer lending product.'
-                }
-            ];
+            console.warn("Failed to fetch products, returning empty list.");
+            return [];
         }
     },
 
