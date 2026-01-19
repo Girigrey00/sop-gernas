@@ -95,18 +95,21 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
             source: stagePrefix,
             target: `data-${index + 1}`,
             animated: true,
+            type: 'step',
             style: { stroke: '#94a3b8' }
         });
         edges.push({
             id: `e-data-risk-${index + 1}`,
             source: `data-${index + 1}`,
             target: `risk-${index + 1}`,
+            type: 'step',
             style: { stroke: '#94a3b8' }
         });
         edges.push({
             id: `e-risk-control-${index + 1}`,
             source: `risk-${index + 1}`,
             target: `control-${index + 1}`,
+            type: 'step',
             style: { stroke: '#94a3b8' }
         });
 
@@ -117,7 +120,7 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
                 source: stagePrefix,
                 target: `l2-${index + 2}`,
                 label: 'next step',
-                type: 'smoothstep',
+                type: 'step',
                 markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
                 style: { stroke: '#3b82f6', strokeWidth: 2 }
             });
