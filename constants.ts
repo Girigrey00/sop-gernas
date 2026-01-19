@@ -334,12 +334,12 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
 
     /* ------------------------------------------------------------------
        STEP 5: CASA account opening & insurance selection
-       Base: 2500 (Gap 600)
+       Base: 2700 (Increased Gap for Grouping)
        ------------------------------------------------------------------ */
     {
       "id": "l2-5",
       "data": { "label": "5. CASA account opening & insurance selection" },
-      "position": { "x": COL_L2, "y": 2500 },
+      "position": { "x": COL_L2, "y": 2700 },
       "className": "l2-process-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -347,11 +347,13 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "data-5",
       "data": { "label": "None" },
-      "position": { "x": COL_DATA, "y": 2500 },
+      "position": { "x": COL_DATA, "y": 2700 },
       "className": "data-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
+    
+    // Group A (Operational/Fin Crime -> Control)
     {
       "id": "risk-5a1",
       "data": { "label": "Operational" },
@@ -363,7 +365,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "risk-5a2",
       "data": { "label": "Financial Crime" },
-      "position": { "x": COL_RISK, "y": 2400 }, // Spaced +100
+      "position": { "x": COL_RISK, "y": 2400 }, 
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -371,15 +373,17 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "ctrl-5a",
       "data": { "label": "Life insurance selection is mandatory (A)\nGenerate Insurance acceptance form and sent to customer (A)\nInsurance onboarding, registration & document registration(as per BAU Insurance group process) (M)\nLink insurance product to CIN/CIF (A)\nCreating Current account for the same customer via BAU CASA Onboarding journey (A)" },
-      "position": { "x": COL_CTRL, "y": 2350 }, // Centered to 2300/2400
+      "position": { "x": COL_CTRL, "y": 2350 }, // Centered between 2300 and 2400
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
+
+    // Group B (Reputation/Compliance -> Control)
     {
       "id": "risk-5b1",
       "data": { "label": "Reputation" },
-      "position": { "x": COL_RISK, "y": 2500 },
+      "position": { "x": COL_RISK, "y": 2600 }, // +200 Gap
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -387,7 +391,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "risk-5b2",
       "data": { "label": "Compliance" },
-      "position": { "x": COL_RISK, "y": 2600 },
+      "position": { "x": COL_RISK, "y": 2700 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -395,15 +399,17 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "ctrl-5b",
       "data": { "label": "Signed Ts & Cs (A)\nDigital application form (A)\nAccount & PIL product linking (A)\nCooling off waiver / opt in (M)\nAbility to cancel application in cooling off period (M)" },
-      "position": { "x": COL_CTRL, "y": 2550 },
+      "position": { "x": COL_CTRL, "y": 2650 }, // Centered
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
+
+    // Group C (Financial/Fraud -> Control)
     {
       "id": "risk-5c1",
       "data": { "label": "Financial" },
-      "position": { "x": COL_RISK, "y": 2700 },
+      "position": { "x": COL_RISK, "y": 2900 }, // +200 Gap
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -411,7 +417,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "risk-5c2",
       "data": { "label": "Fraud" },
-      "position": { "x": COL_RISK, "y": 2800 },
+      "position": { "x": COL_RISK, "y": 3000 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -419,7 +425,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "ctrl-5c",
       "data": { "label": "New To Bank CASA application capture (A)\nFATCA CRS declaration & tax status (A)\nFSK + Silent8 screening (A)\nBBL verification (A)\nCRAM risk rating verification (A)" },
-      "position": { "x": COL_CTRL, "y": 2750 },
+      "position": { "x": COL_CTRL, "y": 2950 }, // Centered
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -427,7 +433,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "output-5",
       "data": { "label": "Insurance form" },
-      "position": { "x": COL_OUTPUT, "y": 2500 },
+      "position": { "x": COL_OUTPUT, "y": 2700 },
       "className": "output-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -435,12 +441,12 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
 
     /* ------------------------------------------------------------------
        STEP 6: Loan conditions validation
-       Base: 3300 (Gap 550)
+       Base: 3600 (Gap 600)
        ------------------------------------------------------------------ */
     {
       "id": "l2-6",
       "data": { "label": "6. Loan conditions validation" },
-      "position": { "x": COL_L2, "y": 3300 },
+      "position": { "x": COL_L2, "y": 3600 },
       "className": "l2-process-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -448,15 +454,16 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "data-6",
       "data": { "label": "STL record (image &/or hard copy)\nActual salary (amount)\nSalary credit date\nSource of salary\nSecurity cheque record (image & hard copy)" },
-      "position": { "x": COL_DATA, "y": 3300 },
+      "position": { "x": COL_DATA, "y": 3600 },
       "className": "data-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
+    // Group A
     {
       "id": "risk-6a1",
       "data": { "label": "Financial" },
-      "position": { "x": COL_RISK, "y": 3000 },
+      "position": { "x": COL_RISK, "y": 3300 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -464,7 +471,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "risk-6a2",
       "data": { "label": "Operational" },
-      "position": { "x": COL_RISK, "y": 3100 },
+      "position": { "x": COL_RISK, "y": 3400 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -472,7 +479,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "risk-6a3",
       "data": { "label": "Financial Crime" },
-      "position": { "x": COL_RISK, "y": 3200 },
+      "position": { "x": COL_RISK, "y": 3500 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -480,15 +487,16 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "ctrl-6a",
       "data": { "label": "IBAN validation (CASA Vs PIL) (A)\nBlock placed on disbursed loan (T24) for non-waiver customers wherein the sec chq and first salary credit is not waived off (A)\nDocuments acquired from customers or captured during journey are stored in DMS (A)" },
-      "position": { "x": COL_CTRL, "y": 3100 },
+      "position": { "x": COL_CTRL, "y": 3400 }, // Centered to 3300-3500
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
+    // Group B
     {
       "id": "risk-6b1",
       "data": { "label": "Fraud" },
-      "position": { "x": COL_RISK, "y": 3300 },
+      "position": { "x": COL_RISK, "y": 3700 }, // Gap
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -496,7 +504,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "risk-6b2",
       "data": { "label": "Compliance" },
-      "position": { "x": COL_RISK, "y": 3400 },
+      "position": { "x": COL_RISK, "y": 3800 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -504,7 +512,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "risk-6b3",
       "data": { "label": "Financial" },
-      "position": { "x": COL_RISK, "y": 3500 },
+      "position": { "x": COL_RISK, "y": 3900 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -512,15 +520,16 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "ctrl-6b",
       "data": { "label": "Non eSTLs are filed on customer file (M)\nQR code validation for eSTLs (M)\nSignature validation at point of cheque collection (M)\nCheques are filed on customer file (M)\nCheque account number = salary account number (M)" },
-      "position": { "x": COL_CTRL, "y": 3400 },
+      "position": { "x": COL_CTRL, "y": 3800 }, // Centered
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
+    // Group C
     {
       "id": "risk-6c1",
       "data": { "label": "Fraud" },
-      "position": { "x": COL_RISK, "y": 3600 },
+      "position": { "x": COL_RISK, "y": 4100 }, // Gap
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -528,7 +537,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "risk-6c2",
       "data": { "label": "Operational" },
-      "position": { "x": COL_RISK, "y": 3700 },
+      "position": { "x": COL_RISK, "y": 4200 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -536,7 +545,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "ctrl-6c",
       "data": { "label": "Salary amount and source of salary validation (T24) (M)\nValidate the variance for salary credited is not beyond 10% from T24 and calculated salary (M)\nVerify Source of employer for salary credit in T24 should be same as that Employer Validation outcome (M)" },
-      "position": { "x": COL_CTRL, "y": 3650 },
+      "position": { "x": COL_CTRL, "y": 4150 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -544,7 +553,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "output-6",
       "data": { "label": "None" },
-      "position": { "x": COL_OUTPUT, "y": 3300 },
+      "position": { "x": COL_OUTPUT, "y": 3600 },
       "className": "output-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -552,12 +561,12 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
 
     /* ------------------------------------------------------------------
        STEP 7: Loan disbursal / funds release
-       Base: 4000 (Gap 300)
+       Base: 4500 (Gap 300)
        ------------------------------------------------------------------ */
     {
       "id": "l2-7",
       "data": { "label": "7. Loan disbursal / funds release" },
-      "position": { "x": COL_L2, "y": 4000 },
+      "position": { "x": COL_L2, "y": 4500 },
       "className": "l2-process-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -565,7 +574,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "data-7",
       "data": { "label": "None" },
-      "position": { "x": COL_DATA, "y": 4000 },
+      "position": { "x": COL_DATA, "y": 4500 },
       "className": "data-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -573,7 +582,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "risk-7a",
       "data": { "label": "Operational" },
-      "position": { "x": COL_RISK, "y": 3900 },
+      "position": { "x": COL_RISK, "y": 4400 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -581,7 +590,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "ctrl-7a",
       "data": { "label": "Maker checker process (T24) (M)\nValidate the variance for salary credited is not beyond 10% from T24 and calculated salary (M)\nManual sub processes be followed outside the workflow system via emails to unblock funds in T24 (M)" },
-      "position": { "x": COL_CTRL, "y": 3900 },
+      "position": { "x": COL_CTRL, "y": 4400 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -589,7 +598,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "risk-7b1",
       "data": { "label": "Financial Crime" },
-      "position": { "x": COL_RISK, "y": 4100 },
+      "position": { "x": COL_RISK, "y": 4600 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -597,7 +606,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "risk-7b2",
       "data": { "label": "Operational" },
-      "position": { "x": COL_RISK, "y": 4200 },
+      "position": { "x": COL_RISK, "y": 4700 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -605,7 +614,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "ctrl-7b",
       "data": { "label": "Customer summary from workflow system that show application is completed and approved must be attached (M)\nDocuments must be sent to File Management within 2 business days of the application being fully approved (M)" },
-      "position": { "x": COL_CTRL, "y": 4150 },
+      "position": { "x": COL_CTRL, "y": 4650 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -613,7 +622,7 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     {
       "id": "output-7",
       "data": { "label": "PIL record, Transactional data, PIL contract, Evidence of customer consents" },
-      "position": { "x": COL_OUTPUT, "y": 4000 },
+      "position": { "x": COL_OUTPUT, "y": 4500 },
       "className": "output-node",
       "sourcePosition": "right",
       "targetPosition": "left"
