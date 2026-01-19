@@ -1,4 +1,3 @@
-
 import { Node, Edge, MarkerType, Position } from 'reactflow';
 import { SopResponse } from '../types';
 import { DUMMY_PROCESS_ANALYSIS_DATA } from '../constants';
@@ -7,6 +6,7 @@ import { DUMMY_PROCESS_ANALYSIS_DATA } from '../constants';
 export type FlowNodeType = 'process' | 'data' | 'risk' | 'control' | 'output';
 
 export const convertSopToAnalysisData = (data: SopResponse) => {
+    // Basic conversion for real API data - mostly linear
     const nodes: Node[] = [];
     const edges: Edge[] = [];
 
@@ -14,7 +14,6 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
         return { nodes: [], edges: [] };
     }
 
-    // Column X positions
     const COL_PROCESS = 0;
     const COL_DATA = 400;
     const COL_RISK = 800;
@@ -22,11 +21,9 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
     const COL_OUTPUT = 1600;
 
     data.processFlow.stages.forEach((stage, index) => {
-        // Vertical spacing between rows (stages)
-        const rowY = index * 400; // Adequate space between rows
+        const rowY = index * 250; // Simple spacing for real data
         const stagePrefix = `l2-${index + 1}`;
 
-        // 1. Process Node (L2 Process Name)
         nodes.push({
             id: stagePrefix,
             data: { label: `${index + 1}. ${stage.stageName}` },
@@ -37,42 +34,26 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
             targetPosition: Position.Left
         });
 
-        // 2. Data Node - Aggregated Inputs
+        // Simplified extraction for real data visualization
         let dataLabels: string[] = [];
         stage.steps.forEach(s => {
-            const desc = s.description.toLowerCase();
-            const type = s.stepType.toLowerCase();
-            if (type.includes('input') || type.includes('capture') || desc.includes('details') || desc.includes('document')) {
-                if (s.stepName.length < 40) dataLabels.push(s.stepName);
+            if (s.stepType.toLowerCase().includes('input') || s.description.toLowerCase().includes('details')) {
+                dataLabels.push(s.stepName);
             }
         });
-        if (dataLabels.length === 0) dataLabels.push("Standard Stage Data");
-        const uniqueData = Array.from(new Set(dataLabels)).slice(0, 3).join(', ');
+        const uniqueData = Array.from(new Set(dataLabels)).slice(0, 3).join('\n');
 
         nodes.push({
             id: `data-${index + 1}`,
-            data: { label: uniqueData || "Data Inputs" },
+            data: { label: uniqueData || "Standard Inputs" },
             position: { x: COL_DATA, y: rowY },
             className: 'data-node',
             sourcePosition: Position.Right,
             targetPosition: Position.Left
         });
 
-        // 3. Risk Node
-        let risks: string[] = [];
-        let riskIds: string[] = [];
-        stage.steps.forEach(s => {
-            if (s.risksMitigated) {
-                s.risksMitigated.forEach(rId => {
-                    riskIds.push(rId);
-                    const riskDef = data.inherentRisks.find(ir => ir.riskId === rId);
-                    if (riskDef) risks.push(riskDef.category); 
-                });
-            }
-        });
-        const uniqueRiskIds = Array.from(new Set(riskIds)).join(', ');
-        const uniqueRiskCats = Array.from(new Set(risks)).slice(0, 2).join(' / ');
-        const riskLabel = uniqueRiskIds ? `${uniqueRiskCats} Risk (${uniqueRiskIds})` : "Operational Risk";
+        let riskLabel = "Operational Risk";
+        if(data.inherentRisks.length > 0) riskLabel = data.inherentRisks[index % data.inherentRisks.length].riskType;
 
         nodes.push({
             id: `risk-${index + 1}`,
@@ -83,52 +64,40 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
             targetPosition: Position.Left
         });
 
-        // 4. Control Node
-        let controls: string[] = [];
-        stage.steps.forEach(s => {
-            if (s.controls) {
-                s.controls.forEach(c => controls.push(c.name));
-            }
-        });
-        const uniqueControls = Array.from(new Set(controls)).slice(0, 3).join(', ');
-
         nodes.push({
             id: `control-${index + 1}`,
-            data: { label: uniqueControls || "Standard Process Controls" },
+            data: { label: "Standard Controls" },
             position: { x: COL_CONTROL, y: rowY },
             className: 'control-node',
             sourcePosition: Position.Right,
             targetPosition: Position.Left
         });
 
-        // 5. Output Node (Data Produced)
         nodes.push({
             id: `output-${index + 1}`,
-            data: { label: "Stage Completion Record" },
+            data: { label: "Process Record" },
             position: { x: COL_OUTPUT, y: rowY },
             className: 'output-node',
             sourcePosition: Position.Right,
             targetPosition: Position.Left
         });
 
-        // --- Edges within the row ---
+        // Edges
         const edgeStyle = { stroke: '#94a3b8', strokeWidth: 1.5 };
+        edges.push({ id: `e-${stagePrefix}-d`, source: stagePrefix, target: `data-${index + 1}`, type: 'smoothstep', style: edgeStyle });
+        edges.push({ id: `e-d-r${index}`, source: `data-${index + 1}`, target: `risk-${index + 1}`, type: 'smoothstep', style: edgeStyle });
+        edges.push({ id: `e-r-c${index}`, source: `risk-${index + 1}`, target: `control-${index + 1}`, type: 'smoothstep', style: edgeStyle });
+        edges.push({ id: `e-c-o${index}`, source: `control-${index + 1}`, target: `output-${index + 1}`, type: 'smoothstep', style: edgeStyle });
         
-        edges.push({ id: `e-${stagePrefix}-data`, source: stagePrefix, target: `data-${index + 1}`, type: 'smoothstep', style: edgeStyle });
-        edges.push({ id: `e-data-risk-${index + 1}`, source: `data-${index + 1}`, target: `risk-${index + 1}`, type: 'smoothstep', style: edgeStyle });
-        edges.push({ id: `e-risk-ctrl-${index + 1}`, source: `risk-${index + 1}`, target: `control-${index + 1}`, type: 'smoothstep', style: edgeStyle });
-        edges.push({ id: `e-ctrl-out-${index + 1}`, source: `control-${index + 1}`, target: `output-${index + 1}`, type: 'smoothstep', style: edgeStyle });
-
-        // --- Edge to next row (Process Sequence) ---
+        // Sequence
         if (index < data.processFlow.stages.length - 1) {
-            edges.push({
-                id: `p-${index + 1}-${index + 2}`,
+             edges.push({
+                id: `seq-${index}`,
                 source: stagePrefix,
                 target: `l2-${index + 2}`,
-                label: 'Next Stage',
                 type: 'smoothstep',
-                markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
-                style: { stroke: '#3b82f6', strokeWidth: 2 }
+                style: { stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '5 5' },
+                markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' }
             });
         }
     });
@@ -137,12 +106,14 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
 };
 
 /**
- * Filters and re-layouts the dummy data based on selected column types.
- * @param selectedTypes Array of selected node types in desired order.
+ * Grid Layout Engine for Dummy Data
+ * Positions nodes based on Row Groups to ensure perfect horizontal alignment and clear vertical spacing.
  */
 export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
-    // 1. Config
-    const COL_WIDTH = 400;
+    const COL_WIDTH = 400; // Horizontal space between columns
+    const NODE_H = 100;    // Approximate node height including padding
+    const ROW_PADDING = 50; // Vertical padding between rows
+
     const CLASS_MAP: Record<FlowNodeType, string> = {
         'process': 'l2-process-node',
         'data': 'data-node',
@@ -151,96 +122,186 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
         'output': 'output-node'
     };
 
-    // 2. Filter Nodes
     const originalNodes = DUMMY_PROCESS_ANALYSIS_DATA.nodes;
     const selectedClasses = selectedTypes.map(t => CLASS_MAP[t]);
-    
-    // Create a map of rowId -> { type -> nodes[] }
-    // We assume ID structure: prefix-ROWid... e.g. "l2-1", "risk-1a"
-    const rowMap: Record<string, Record<string, any[]>> = {};
 
-    const filteredNodes = originalNodes.filter(n => {
-        return selectedClasses.includes(n.className);
-    }).map(n => {
-        // Determine new X position
-        const typeIndex = selectedTypes.findIndex(t => CLASS_MAP[t] === n.className);
-        const newX = typeIndex * COL_WIDTH;
-        
-        // Extract Row ID
-        const match = n.id.match(/-(\d+)/);
-        const rowId = match ? match[1] : 'unknown';
-        
-        if (!rowMap[rowId]) rowMap[rowId] = {};
-        if (!rowMap[rowId][n.className]) rowMap[rowId][n.className] = [];
-        rowMap[rowId][n.className].push(n.id);
+    // 1. Group Nodes by Row ID
+    // We assume ID pattern like "risk-1a" where '1' is the row index.
+    const rowGroups: Record<string, Record<FlowNodeType, Node[]>> = {};
+    const rowIndices: number[] = [];
 
-        return {
-            ...n,
-            position: {
-                x: newX,
-                y: n.position.y // Keep original Y
-            },
-            sourcePosition: Position.Right,
-            targetPosition: Position.Left,
-            type: 'default' // Ensure we use default node type to respect styles
-        };
+    originalNodes.forEach(node => {
+        if (!selectedClasses.includes(node.className)) return;
+
+        // Extract Row Index (the number after the first hyphen)
+        const match = node.id.match(/-(\d+)/);
+        if (!match) return;
+        const rowIndex = parseInt(match[1]);
+
+        if (!rowGroups[rowIndex]) {
+            rowGroups[rowIndex] = { process: [], data: [], risk: [], control: [], output: [] };
+            rowIndices.push(rowIndex);
+        }
+
+        // Identify Type
+        let type: FlowNodeType | undefined;
+        if (node.className.includes('process')) type = 'process';
+        else if (node.className.includes('data')) type = 'data';
+        else if (node.className.includes('risk')) type = 'risk';
+        else if (node.className.includes('control')) type = 'control';
+        else if (node.className.includes('output')) type = 'output';
+
+        if (type) {
+            // @ts-ignore - We know node matches Node structure closely enough for this internal logic, will cast properly on output
+            rowGroups[rowIndex][type].push(node);
+        }
     });
 
-    // 3. Generate Edges
-    const newEdges: any[] = [];
-    
-    // For each row, connect columns in the order of selectedTypes
-    Object.keys(rowMap).forEach(rowId => {
-        const rowData = rowMap[rowId];
+    // Sort row indices
+    rowIndices.sort((a, b) => a - b);
+
+    // 2. Calculate Layout Positions
+    const layoutNodes: Node[] = [];
+    let currentY = 50; // Start Y
+
+    rowIndices.forEach(rowIndex => {
+        const row = rowGroups[rowIndex];
         
-        // Iterate through selected columns to create links between adjacent selections
+        // Find maximum items in any visible column for this row to determine Row Height
+        let maxItemsInRow = 0;
+        selectedTypes.forEach(type => {
+            const count = row[type].length;
+            if (count > maxItemsInRow) maxItemsInRow = count;
+        });
+
+        const rowHeight = maxItemsInRow * NODE_H;
+        
+        // Position nodes for this row
+        selectedTypes.forEach((type, colIndex) => {
+            const nodesInCell = row[type];
+            const count = nodesInCell.length;
+            
+            if (count === 0) return;
+
+            // Calculate vertical center for this cell
+            const cellCenterY = currentY + (rowHeight / 2);
+            
+            // Distribute nodes around the center
+            const totalCellHeight = count * NODE_H;
+            let startNodeY = cellCenterY - (totalCellHeight / 2) + (NODE_H / 2); // Center of first node
+
+            nodesInCell.forEach((node, nodeIdx) => {
+                layoutNodes.push({
+                    ...node,
+                    position: {
+                        x: colIndex * COL_WIDTH,
+                        y: startNodeY + (nodeIdx * NODE_H) - (NODE_H / 2) // Adjust for top-left anchor vs center logic
+                    },
+                    sourcePosition: Position.Right,
+                    targetPosition: Position.Left,
+                    // Force re-render with new styles if needed
+                    data: { ...node.data } 
+                } as Node);
+            });
+        });
+
+        // Increment Y for next row
+        currentY += rowHeight + ROW_PADDING;
+    });
+
+    // 3. Generate Smart Edges
+    const layoutEdges: Edge[] = [];
+    const nodeMap = new Map(layoutNodes.map(n => [n.id, n]));
+
+    rowIndices.forEach(rowIndex => {
+        const row = rowGroups[rowIndex];
+
+        // Connect adjacent visible columns
         for (let i = 0; i < selectedTypes.length - 1; i++) {
             const sourceType = selectedTypes[i];
             const targetType = selectedTypes[i+1];
-            
-            const sourceClass = CLASS_MAP[sourceType];
-            const targetClass = CLASS_MAP[targetType];
 
-            const sourceIds = rowData[sourceClass] || [];
-            const targetIds = rowData[targetClass] || [];
+            const sourceNodes = row[sourceType];
+            const targetNodes = row[targetType];
 
-            // Create Full Mesh connections between adjacent columns in the same row
-            sourceIds.forEach((srcId: string) => {
-                targetIds.forEach((tgtId: string) => {
-                    newEdges.push({
-                        id: `e-${srcId}-${tgtId}`,
-                        source: srcId,
-                        target: tgtId,
-                        type: 'smoothstep', // Ensure neat 90-degree lines
-                        style: { stroke: '#94a3b8', strokeWidth: 1.5 },
-                        animated: false,
-                        markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' }
-                    });
+            if (sourceNodes.length === 0 || targetNodes.length === 0) continue;
+
+            // Heuristic Connection Logic:
+            // 1. If 1-to-1: Connect directly.
+            // 2. If 1-to-Many: Connect the 1 to all Many.
+            // 3. If Many-to-1: Connect all Many to the 1.
+            // 4. If Many-to-Many (e.g. 2 Risks, 2 Controls): 
+            //    - Try to match indices (1st to 1st, 2nd to 2nd) 
+            //    - OR check if IDs suggest relation (risk-1a -> ctrl-1a).
+
+            sourceNodes.forEach((srcNode, srcIdx) => {
+                // Check if node is in layout (might have been filtered out but still in group)
+                if (!nodeMap.has(srcNode.id)) return;
+
+                targetNodes.forEach((tgtNode, tgtIdx) => {
+                    if (!nodeMap.has(tgtNode.id)) return;
+
+                    let shouldConnect = false;
+
+                    // Logic 4: Smart Matching based on suffixes (a, b, etc.)
+                    const srcSuffix = srcNode.id.match(/[a-z]$/i)?.[0];
+                    const tgtSuffix = tgtNode.id.match(/[a-z]$/i)?.[0];
+
+                    if (sourceNodes.length > 1 && targetNodes.length > 1) {
+                        // If both have suffixes, match by suffix (e.g. risk-1a -> ctrl-1a)
+                        if (srcSuffix && tgtSuffix) {
+                            if (srcSuffix === tgtSuffix) shouldConnect = true;
+                        } 
+                        // Fallback: Match by index if no suffixes
+                        else if (srcIdx === tgtIdx) {
+                            shouldConnect = true;
+                        }
+                    } else {
+                        // Logic 1, 2, 3: Connect all (Fan Out / Fan In)
+                        shouldConnect = true;
+                    }
+
+                    if (shouldConnect) {
+                        layoutEdges.push({
+                            id: `e-${srcNode.id}-${tgtNode.id}`,
+                            source: srcNode.id,
+                            target: tgtNode.id,
+                            type: 'smoothstep',
+                            style: { stroke: '#94a3b8', strokeWidth: 2 },
+                            animated: false,
+                            markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' }
+                        });
+                    }
                 });
             });
         }
-        
-        // Connect Process Nodes across Rows (Sequence) if 'process' column is present
-        if (selectedTypes.includes('process')) {
-            const currentRowProcess = rowData['l2-process-node']?.[0];
-            const nextRowId = (parseInt(rowId) + 1).toString();
-            const nextRowProcess = rowMap[nextRowId]?.['l2-process-node']?.[0];
+    });
+
+    // 4. Connect Processes Vertically (Sequence)
+    if (selectedTypes.includes('process')) {
+        for (let i = 0; i < rowIndices.length - 1; i++) {
+            const currRow = rowIndices[i];
+            const nextRow = rowIndices[i+1];
             
-            if (currentRowProcess && nextRowProcess) {
-                newEdges.push({
-                    id: `seq-${currentRowProcess}-${nextRowProcess}`,
-                    source: currentRowProcess,
-                    target: nextRowProcess,
+            const currProc = rowGroups[currRow]['process'][0];
+            const nextProc = rowGroups[nextRow]['process'][0];
+
+            if (currProc && nextProc && nodeMap.has(currProc.id) && nodeMap.has(nextProc.id)) {
+                layoutEdges.push({
+                    id: `seq-${currProc.id}-${nextProc.id}`,
+                    source: currProc.id,
+                    target: nextProc.id,
                     type: 'smoothstep',
                     style: { stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '5 5' },
-                    label: 'Next Stage',
-                    labelStyle: { fill: '#3b82f6', fontWeight: 700, fontSize: 10 },
-                    labelBgStyle: { fill: '#eff6ff' },
-                    markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' }
+                    markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
+                    // Connect bottom of current to top of next for Process Column specifically? 
+                    // No, keep Left/Right flow, but dashed line implies sequence.
+                    // Actually, for Process flow, Top/Bottom is better but we forced Right/Left.
+                    // Let's stick to Right->Left but maybe curve it down.
                 });
             }
         }
-    });
+    }
 
-    return { nodes: filteredNodes, edges: newEdges };
+    return { nodes: layoutNodes, edges: layoutEdges };
 };

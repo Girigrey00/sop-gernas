@@ -33,11 +33,11 @@ body {
 
 .l2-process-node, .data-node, .risk-node, .control-node, .output-node {
   border-radius: 8px;
-  padding: 0; /* Remove padding to handle internal structure via CSS if needed, but here we keep simple */
+  padding: 0; 
   font-size: 11px;
   font-weight: 500;
-  width: 260px; /* Slightly narrower for better spacing */
-  min-height: 70px;
+  width: 260px;
+  min-height: 80px; /* Slightly taller for database card look */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -47,10 +47,10 @@ body {
   transition: all 0.2s ease-in-out;
   position: relative;
   background: white;
-  z-index: 10; /* Ensure nodes sit above edges */
+  z-index: 10;
 }
 
-/* Inner padding for text */
+/* Content Padding */
 .l2-process-node, .data-node, .risk-node, .control-node, .output-node {
     padding: 12px 16px;
 }
@@ -61,9 +61,9 @@ body {
   z-index: 20;
 }
 
-/* Node Specific Themes */
+/* Node Specific Themes with "Header" borders */
 
-/* Process: Blue Header */
+/* Process: Blue */
 .l2-process-node {
   background: #ffffff;
   border: 1px solid #bfdbfe; 
@@ -72,7 +72,7 @@ body {
   font-weight: 700;
 }
 
-/* Data: Slate Header */
+/* Data: Slate */
 .data-node {
   background: #ffffff;
   border: 1px solid #cbd5e1; 
@@ -80,17 +80,17 @@ body {
   color: #334155;
 }
 
-/* Risk: Red Header (Left Accent removed to match Card style) */
+/* Risk: Red */
 .risk-node {
   background: #fff1f2;
   border: 1px solid #fecdd3; 
   border-top: 4px solid #f43f5e; 
   color: #881337;
   text-align: left;
-  align-items: flex-start; /* Left align text */
+  align-items: flex-start;
 }
 
-/* Control: Green Header */
+/* Control: Green */
 .control-node {
   background: #f0fdf4;
   border: 1px solid #a7f3d0; 
@@ -100,7 +100,7 @@ body {
   align-items: flex-start;
 }
 
-/* Output: Purple Header */
+/* Output: Purple */
 .output-node {
   background: #ffffff;
   border: 1px solid #ddd6fe; 
@@ -111,35 +111,40 @@ body {
 }
 
 /* --- React Flow Handle Customization --- */
-/* Make handles slightly larger and ensure they are centered vertically */
+/* Invisible large touch targets for perfect center alignment */
 .react-flow__handle {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   background: #94a3b8;
-  border: 2px solid #ffffff;
+  border: 1px solid #fff;
   border-radius: 50%;
-  transition: background 0.2s;
+  opacity: 0; /* Hidden by default, clean look */
+  transition: opacity 0.2s;
 }
 
-.react-flow__handle:hover {
-  background: #3b82f6;
-  width: 10px;
-  height: 10px;
+/* Show handles on hover for debugging or editing if needed */
+.react-flow__node:hover .react-flow__handle {
+    opacity: 1;
 }
 
-/* Fix Handle Positions if needed */
 .react-flow__handle-left {
-  left: -4px;
+  left: -3px; 
+  top: 50%;
+  transform: translateY(-50%);
 }
 .react-flow__handle-right {
-  right: -4px;
+  right: -3px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
-/* React Flow Edge Label Styling */
 .react-flow__edge-text {
   font-size: 10px;
   fill: #64748b;
   font-weight: 600;
+  background-color: white;
+  padding: 2px 4px;
+  border-radius: 4px;
 }
 
 @keyframes shimmer {
