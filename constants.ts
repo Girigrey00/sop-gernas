@@ -63,7 +63,7 @@ export const WIDGET_DEMO_DATA = {
   "related_questions": []
 };
 
-// FULL PDF DATA EXTRACTION
+// FULL PDF DATA EXTRACTION - STRUCTURED FOR GRID LAYOUT
 export const DUMMY_PROCESS_ANALYSIS_DATA = {
   "nodes": [
     /* ------------------------------------------------------------------

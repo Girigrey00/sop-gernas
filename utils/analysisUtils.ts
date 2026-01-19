@@ -100,7 +100,7 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
 export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
     // LAYOUT CONSTANTS
     const COL_WIDTH = 350; 
-    const SLOT_HEIGHT = 220; // Increased height per slot to accommodate detailed control text
+    const SLOT_HEIGHT = 200; // Fixed height per "slot" (e.g. Risk A, Risk B)
     const GROUP_PADDING = 80; // Padding between Process Rows
 
     const CLASS_MAP: Record<FlowNodeType, string> = {
@@ -185,6 +185,7 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
                 if (isFullColumn) {
                     // Place exactly in the slot. 
                     // Slot 0 starts at currentY.
+                    // Center the node within the slot height.
                     const slotTop = currentY + (nodeIdx * SLOT_HEIGHT);
                     nodeY = slotTop + (SLOT_HEIGHT / 2) - 40; // -40 approx half node height
                 } else {
