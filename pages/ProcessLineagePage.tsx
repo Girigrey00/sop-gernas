@@ -10,34 +10,67 @@ interface ProcessLineagePageProps {
     onBack: () => void;
 }
 
+// DUMMY DATA FOR POLICY STANDARDS
+const DUMMY_POLICY_SOP: SopResponse = {
+    startNode: { stepId: 'START', stepName: 'Effective Date', description: '01/01/2025', actor: 'Policy Owner', stepType: 'Start', nextStep: 'S1' },
+    endNode: { stepId: 'END', stepName: 'Review Date', description: '31/12/2025', actor: 'Compliance', stepType: 'End', nextStep: null },
+    processDefinition: { 
+        title: "Group Information Security Policy", 
+        version: "3.0", 
+        classification: "Internal / Confidential", 
+        documentLink: "#" 
+    },
+    processObjectives: [
+        { description: "Define the information security framework." },
+        { description: "Protect bank information assets from threats." }
+    ],
+    inherentRisks: [
+        { riskId: "R-SEC-01", riskType: "Data Leakage", description: "Unauthorized transmission of sensitive data.", category: "Security" },
+        { riskId: "R-SEC-02", riskType: "Unauth Access", description: "Access to systems without approval.", category: "Security" }
+    ],
+    processFlow: { 
+        stages: [
+            {
+                stageId: "S1",
+                stageName: "Policy Governance",
+                description: "Governance structure.",
+                steps: []
+            }
+        ]
+    },
+    metadata: { 
+        index_name: "policy-index", 
+        product_name: "Group Info Sec Policy",
+        suggested_questions: [
+            "What is the data classification policy?",
+            "How do I report a security incident?",
+            "What are the password requirements?",
+            "Who approves access to critical systems?"
+        ]
+    }
+};
+
+const POLICY_WELCOME_MSG = `### Policy Standards Assistant
+Welcome to the Policy Standards AI.
+
+I can assist you with:
+- **Policy Queries**: Ask about specific clauses or rules.
+- **Compliance Checks**: Verify procedures against standards.
+- **Risk Mapping**: Identify risks associated with policies.
+
+*This session is using a simulated policy context for demonstration.*`;
+
 const ProcessLineagePage: React.FC<ProcessLineagePageProps> = ({ product, onBack }) => {
     const [sopData, setSopData] = useState<SopResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchContext = async () => {
-            setIsLoading(true);
-            try {
-                // Try fetching real flow data for context
-                const flowData = await apiService.getProcessFlow(product.product_name);
-                setSopData(flowData);
-            } catch (e) {
-                console.warn("Could not fetch detailed flow for lineage chat, using fallback context.", e);
-                // Fallback context if flow doesn't exist yet, essential for chat to work
-                setSopData({
-                    startNode: { stepId: 'START', stepName: 'Start', description: 'Start', actor: 'System', stepType: 'Start', nextStep: null },
-                    endNode: { stepId: 'END', stepName: 'End', description: 'End', actor: 'System', stepType: 'End', nextStep: null },
-                    processDefinition: { title: product.product_name, version: '1.0', classification: 'N/A', documentLink: '#' },
-                    processObjectives: [],
-                    inherentRisks: [],
-                    processFlow: { stages: [] },
-                    metadata: { index_name: product.index_name, product_name: product.product_name }
-                } as any);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchContext();
+        // Simulate a brief loading state for UX, then load dummy data
+        const timer = setTimeout(() => {
+            setSopData(DUMMY_POLICY_SOP);
+            setIsLoading(false);
+        }, 800);
+        return () => clearTimeout(timer);
     }, [product]);
 
     return (
@@ -67,17 +100,16 @@ const ProcessLineagePage: React.FC<ProcessLineagePageProps> = ({ product, onBack
                 {isLoading ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm">
                         <Loader2 className="w-10 h-10 text-fab-royal animate-spin mb-3" />
-                        <p className="text-sm font-medium text-slate-600">Initializing Context...</p>
+                        <p className="text-sm font-medium text-slate-600">Initializing Policy Context...</p>
                     </div>
                 ) : sopData ? (
                     <div className="h-full w-full">
-                        {/* We reuse ChatAssistant but in a full-page context. 
-                            We pass onClose as onBack to handle the close button inside the chat header if used. */}
                         <ChatAssistant 
                             sopData={sopData}
                             onClose={onBack}
                             productContext={product}
                             isMaximized={true} // Force maximized styling if supported
+                            welcomeMessage={POLICY_WELCOME_MSG}
                         />
                     </div>
                 ) : (

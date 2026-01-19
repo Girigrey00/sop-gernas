@@ -23,6 +23,7 @@ interface ChatAssistantProps {
   isMaximized?: boolean;
   initialSessionId?: string;
   onNavigateToStep?: (stepId: string) => void;
+  welcomeMessage?: string;
 }
 
 interface CitationObject {
@@ -1248,7 +1249,7 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
 };
 
 // --- Main Chat Component ---
-const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, productContext, onToggleMaximize, isMaximized, initialSessionId, onNavigateToStep }) => {
+const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, productContext, onToggleMaximize, isMaximized, initialSessionId, onNavigateToStep, welcomeMessage }) => {
   const [input, setInput] = useState('');
   
   const WELCOME_MSG_ID = 'welcome-sys';
@@ -1267,7 +1268,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
       { 
           id: WELCOME_MSG_ID, 
           role: 'assistant', 
-          content: WELCOME_CONTENT, 
+          content: welcomeMessage || WELCOME_CONTENT, 
           timestamp: new Date(),
           isWelcome: true,
           suggestions: [] 
@@ -1422,7 +1423,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                     mappedMessages.push({ 
                         id: WELCOME_MSG_ID, 
                         role: 'assistant', 
-                        content: WELCOME_CONTENT, 
+                        content: welcomeMessage || WELCOME_CONTENT, 
                         timestamp: new Date(detail.created_at || Date.now()),
                         isWelcome: true,
                     });
@@ -1448,7 +1449,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                      setMessages([{ 
                         id: WELCOME_MSG_ID, 
                         role: 'assistant', 
-                        content: WELCOME_CONTENT, 
+                        content: welcomeMessage || WELCOME_CONTENT, 
                         timestamp: new Date(),
                         isWelcome: true,
                         suggestions: [] 
@@ -1459,7 +1460,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
                  setMessages([{ 
                     id: WELCOME_MSG_ID, 
                     role: 'assistant', 
-                    content: WELCOME_CONTENT, 
+                    content: welcomeMessage || WELCOME_CONTENT, 
                     timestamp: new Date(),
                     isWelcome: true,
                     suggestions: [] 
@@ -1469,7 +1470,7 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
         }
         loadSession();
     } 
-  }, [initialSessionId]);
+  }, [initialSessionId, welcomeMessage]);
 
 
   useEffect(() => {
