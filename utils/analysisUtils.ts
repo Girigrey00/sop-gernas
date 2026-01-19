@@ -22,7 +22,7 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
     const COL_OUTPUT = 1600;
 
     data.processFlow.stages.forEach((stage, index) => {
-        const rowY = index * 300; // Increased spacing for real data
+        const rowY = index * 300; 
         const stagePrefix = `l2-${index + 1}`;
 
         nodes.push({
@@ -35,7 +35,6 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
             targetPosition: Position.Left
         });
 
-        // Simplified extraction for real data visualization
         let dataLabels: string[] = [];
         stage.steps.forEach(s => {
             if (s.stepType.toLowerCase().includes('input') || s.description.toLowerCase().includes('details')) {
@@ -83,14 +82,13 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
             targetPosition: Position.Left
         });
 
-        // Edges
         const edgeStyle = { stroke: '#94a3b8', strokeWidth: 2 };
-        edges.push({ id: `e-${stagePrefix}-d`, source: stagePrefix, target: `data-${index + 1}`, type: 'smoothstep', style: edgeStyle });
-        edges.push({ id: `e-d-r${index}`, source: `data-${index + 1}`, target: `risk-${index + 1}`, type: 'smoothstep', style: edgeStyle });
-        edges.push({ id: `e-r-c${index}`, source: `risk-${index + 1}`, target: `control-${index + 1}`, type: 'smoothstep', style: edgeStyle });
-        edges.push({ id: `e-c-o${index}`, source: `control-${index + 1}`, target: `output-${index + 1}`, type: 'smoothstep', style: edgeStyle });
-        
-        // Sequence (Vertical) - omitted for cleaner look in this view
+        const commonEdgeProps = { type: 'smoothstep', style: edgeStyle, pathOptions: { borderRadius: 20 } };
+
+        edges.push({ id: `e-${stagePrefix}-d`, source: stagePrefix, target: `data-${index + 1}`, ...commonEdgeProps });
+        edges.push({ id: `e-d-r${index}`, source: `data-${index + 1}`, target: `risk-${index + 1}`, ...commonEdgeProps });
+        edges.push({ id: `e-r-c${index}`, source: `risk-${index + 1}`, target: `control-${index + 1}`, ...commonEdgeProps });
+        edges.push({ id: `e-c-o${index}`, source: `control-${index + 1}`, target: `output-${index + 1}`, ...commonEdgeProps });
     });
 
     return { nodes, edges };
@@ -98,13 +96,12 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
 
 /**
  * Grid Layout Engine for Dummy Data
- * Positions nodes based on Row Groups to ensure perfect horizontal alignment and clear vertical spacing.
  */
 export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
-    // LAYOUT CONSTANTS - Increased to prevent overlaps
-    const COL_WIDTH = 350; 
-    const NODE_H = 180;    // Taller slot to fit content
-    const ROW_PADDING = 80; // Space between process rows
+    // LAYOUT CONSTANTS
+    const COL_WIDTH = 400; // Increased spacing between columns
+    const NODE_H = 120;    // Standard node height assumption for layout slots
+    const ROW_PADDING = 60; 
 
     const CLASS_MAP: Record<FlowNodeType, string> = {
         'process': 'l2-process-node',
@@ -148,7 +145,7 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
         }
     });
 
-    // Sort rows
+    // Sort rows numerically
     rowIndices.sort((a, b) => a - b);
 
     // 2. Calculate Layout Positions
@@ -158,6 +155,12 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
     rowIndices.forEach(rowIndex => {
         const row = rowGroups[rowIndex];
         
+        // Sort nodes within each type group alphabetically by ID to ensure A comes before B
+        // This is crucial for parallel edge alignment (Risk A -> Control A)
+        selectedTypes.forEach(type => {
+            row[type].sort((a, b) => a.id.localeCompare(b.id));
+        });
+
         // Find maximum items in any visible column for this row to determine Row Height
         let maxItemsInRow = 0;
         selectedTypes.forEach(type => {
@@ -165,13 +168,12 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
             if (count > maxItemsInRow) maxItemsInRow = count;
         });
 
-        // Ensure minimum height for single items
         if (maxItemsInRow === 0) maxItemsInRow = 1;
 
-        const rowHeight = maxItemsInRow * NODE_H;
+        const rowBlockHeight = maxItemsInRow * NODE_H;
         
-        // Center Line of this row
-        const rowCenterY = currentY + (rowHeight / 2);
+        // The Y center of this entire row block
+        const rowCenterY = currentY + (rowBlockHeight / 2);
 
         // Position nodes for this row
         selectedTypes.forEach((type, colIndex) => {
@@ -180,22 +182,24 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
             
             if (count === 0) return;
 
-            // Distribute nodes around the center of the row
+            // Calculate height occupied by these nodes
             const totalCellHeight = count * NODE_H;
-            // Top Y of the block of nodes in this cell
-            const blockTopY = rowCenterY - (totalCellHeight / 2);
+            
+            // Start Y to center this group within the row block
+            // offset so the middle of totalCellHeight aligns with rowCenterY
+            let startNodeY = rowCenterY - (totalCellHeight / 2);
 
             nodesInCell.forEach((node, nodeIdx) => {
-                // Center the node within its slot
-                const nodeSlotY = blockTopY + (nodeIdx * NODE_H);
-                // We add a small offset to center the specific card height (approx 100px) within the 180px slot
-                const nodeY = nodeSlotY + 40; 
+                // We want the node's vertical center to be at startNodeY + half_node_height
+                // Position in ReactFlow is top-left.
+                // Assuming visual center logic:
+                const nodeTopY = startNodeY + (nodeIdx * NODE_H) + ((NODE_H - 80) / 2); // 80 is roughly card min-height
 
                 layoutNodes.push({
                     ...node,
                     position: {
                         x: colIndex * COL_WIDTH,
-                        y: nodeY
+                        y: nodeTopY
                     },
                     sourcePosition: Position.Right,
                     targetPosition: Position.Left,
@@ -206,7 +210,7 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
         });
 
         // Increment Y for next row
-        currentY += rowHeight + ROW_PADDING;
+        currentY += rowBlockHeight + ROW_PADDING;
     });
 
     // 3. Generate Smart Edges
@@ -221,6 +225,7 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
             const sourceType = selectedTypes[i];
             const targetType = selectedTypes[i+1];
 
+            // Get nodes (already sorted by ID above)
             const sourceNodes = row[sourceType];
             const targetNodes = row[targetType];
 
@@ -235,28 +240,37 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
                     let shouldConnect = false;
 
                     // Matching Logic
-                    // 1. If N to N (equal count), match 1-to-1 by index
-                    // 2. If 1 to N, connect 1 to All
-                    // 3. If N to 1, connect All to 1
-                    // 4. Special Case: Match suffixes (a->a, b->b) if present for accurate mapping
                     
-                    const srcSuffix = srcNode.id.match(/[a-z]$/i)?.[0];
-                    const tgtSuffix = tgtNode.id.match(/[a-z]$/i)?.[0];
-
-                    if (sourceNodes.length > 1 && targetNodes.length > 1) {
-                        if (srcSuffix && tgtSuffix) {
-                            if (srcSuffix === tgtSuffix) shouldConnect = true;
-                            // Special override for the multi-link demo in dummy data
-                            // e.g. risk-7b connects to ctrl-7a
-                            if (srcNode.id === 'risk-7b' && tgtNode.id === 'ctrl-7a') shouldConnect = true;
-                            if (srcNode.id === 'risk-2a' && tgtNode.id === 'ctrl-2b') shouldConnect = true;
+                    // Case 1: N to N (Equal count) -> Parallel 1-to-1 lines
+                    // Since both arrays are sorted by ID, index matching works perfectly for visual parallelism
+                    if (sourceNodes.length === targetNodes.length) {
+                        if (srcIdx === tgtIdx) shouldConnect = true;
+                    } 
+                    // Case 2: 1 to N -> Fan Out
+                    else if (sourceNodes.length === 1) {
+                        shouldConnect = true;
+                    }
+                    // Case 3: N to 1 -> Fan In
+                    else if (targetNodes.length === 1) {
+                        shouldConnect = true;
+                    }
+                    // Case 4: M to N (Uneven) -> Heuristic matching
+                    else {
+                        // Match suffixes if available (e.g. risk-1a -> ctrl-1a)
+                        const srcSuffix = srcNode.id.match(/[a-z]$/i)?.[0];
+                        const tgtSuffix = tgtNode.id.match(/[a-z]$/i)?.[0];
+                        
+                        if (srcSuffix && tgtSuffix && srcSuffix === tgtSuffix) {
+                            shouldConnect = true;
                         } 
-                        else if (srcIdx === tgtIdx) {
+                        // Demo-specific override for explicit multi-link scenario in dummy data
+                        else if (srcNode.id === 'risk-2a' && tgtNode.id === 'ctrl-2b') {
+                            // Example: Risk 2a connects to Ctrl 2b (Cross-link)
                             shouldConnect = true;
                         }
-                    } else {
-                        // Fan In / Fan Out
-                        shouldConnect = true;
+                        else if (srcNode.id === 'risk-7b' && tgtNode.id === 'ctrl-7a') {
+                            shouldConnect = true;
+                        }
                     }
 
                     if (shouldConnect) {
@@ -265,6 +279,7 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
                             source: srcNode.id,
                             target: tgtNode.id,
                             type: 'smoothstep',
+                            pathOptions: { borderRadius: 20 },
                             style: { stroke: '#94a3b8', strokeWidth: 2 },
                             animated: false,
                             markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' }
@@ -274,9 +289,6 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
             });
         }
     });
-
-    // NOTE: Removed vertical sequence edges to ensure clean Left-to-Right flow 
-    // and prevent overlapping lines "somewhere".
 
     return { nodes: layoutNodes, edges: layoutEdges };
 };
