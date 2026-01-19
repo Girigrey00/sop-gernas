@@ -109,7 +109,7 @@ const ProcessAnalysisContent: React.FC<ProcessAnalysisPageProps> = ({ product, o
                     <div className="bg-white/90 backdrop-blur px-4 py-2 rounded-xl shadow-sm border border-slate-200 flex items-center gap-3">
                         <div>
                             <h2 className="text-sm font-bold text-fab-navy">{product.product_name}</h2>
-                            <p className="text-[10px] text-slate-500 uppercase tracking-wide">Risk & Control Analysis</p>
+                            <p className="text-[10px] text-slate-500 uppercase tracking-wide">Process Lineage Analysis</p>
                         </div>
                         {/* Re-open Config Button */}
                         {(product.id === 'dummy-analysis' || product.product_name.includes('Analysis Demo')) && !isConfigOpen && (

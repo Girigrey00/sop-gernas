@@ -580,7 +580,7 @@ const App: React.FC = () => {
       }
   };
 
-  // Handler for Analysis Mode
+  // Handler for Analysis Mode (Now Process Lineage Visual)
   const handleProcessAnalysisSelect = (product: Product, redirect: boolean) => {
       setSelectedContextProduct(product);
       if(!redirect) {
@@ -588,7 +588,7 @@ const App: React.FC = () => {
       }
   };
 
-  // Handler for Lineage Mode
+  // Handler for Lineage Mode (Now Policy Standard Chat)
   const handleProcessLineageSelect = (product: Product, redirect: boolean) => {
       setSelectedContextProduct(product);
       if(!redirect) {
@@ -643,15 +643,15 @@ const App: React.FC = () => {
             />
         );
       
-      case 'PROCESS_ANALYSIS':
+      case 'PROCESS_ANALYSIS': // Now Visual Process Lineage
         return (
             <HomePage 
                 onStart={() => {}} 
                 onSelectProduct={handleProcessAnalysisSelect} 
                 onNotification={showNotification} 
                 isAnalysisMode={true}
-                pageTitle="Policy Standards"
-                pageSubtitle="Risk & Control Framework Analysis"
+                pageTitle="Process Lineage"
+                pageSubtitle="Visual Analysis of Process Flows"
             />
         );
       case 'ANALYSIS_CANVAS':
@@ -666,16 +666,16 @@ const App: React.FC = () => {
                 />
             );
         }
-        return <HomePage onStart={() => {}} onSelectProduct={handleProcessAnalysisSelect} onNotification={showNotification} isAnalysisMode={true} pageTitle="Policy Standards" pageSubtitle="Risk & Control Framework Analysis" />;
+        return <HomePage onStart={() => {}} onSelectProduct={handleProcessAnalysisSelect} onNotification={showNotification} isAnalysisMode={true} pageTitle="Process Lineage" pageSubtitle="Visual Analysis of Process Flows" />;
       
-      case 'PROCESS_LINEAGE':
+      case 'PROCESS_LINEAGE': // Now Policy Standards (Chat)
         return (
             <HomePage
                 onStart={() => {}}
                 onSelectProduct={handleProcessLineageSelect}
                 onNotification={showNotification}
-                pageTitle="Process Lineage"
-                pageSubtitle="Trace process dependencies and history."
+                pageTitle="Policy Standards"
+                pageSubtitle="Interactive Policy Knowledge Base"
             />
         );
       case 'LINEAGE_CHAT':
@@ -690,7 +690,7 @@ const App: React.FC = () => {
                 />
             );
         }
-        return <HomePage onStart={() => {}} onSelectProduct={handleProcessLineageSelect} onNotification={showNotification} pageTitle="Process Lineage" pageSubtitle="Trace process dependencies and history." />;
+        return <HomePage onStart={() => {}} onSelectProduct={handleProcessLineageSelect} onNotification={showNotification} pageTitle="Policy Standards" pageSubtitle="Interactive Policy Knowledge Base" />;
 
       case 'IMPACT_ASSESSMENT':
         // Placeholder or future implementation

@@ -1,5 +1,6 @@
+
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Loader2, GitMerge } from 'lucide-react';
+import { ArrowLeft, Loader2, ShieldCheck } from 'lucide-react';
 import ChatAssistant from '../components/ChatAssistant';
 import { Product, SopResponse } from '../types';
 import { apiService } from '../services/apiService';
@@ -53,10 +54,10 @@ const ProcessLineagePage: React.FC<ProcessLineagePageProps> = ({ product, onBack
                     </button>
                     <div>
                         <h2 className="text-lg font-bold text-fab-navy flex items-center gap-2">
-                            <GitMerge size={20} className="text-fab-royal" />
-                            Process Lineage
+                            <ShieldCheck size={20} className="text-fab-royal" />
+                            Policy Standards
                         </h2>
-                        <p className="text-xs text-slate-500 font-medium">Interactive AI Traceability for <span className="font-bold text-slate-700">{product.product_name}</span></p>
+                        <p className="text-xs text-slate-500 font-medium">AI-Powered Policy Assistant for <span className="font-bold text-slate-700">{product.product_name}</span></p>
                     </div>
                 </div>
             </div>
@@ -66,7 +67,7 @@ const ProcessLineagePage: React.FC<ProcessLineagePageProps> = ({ product, onBack
                 {isLoading ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm">
                         <Loader2 className="w-10 h-10 text-fab-royal animate-spin mb-3" />
-                        <p className="text-sm font-medium text-slate-600">Initializing Lineage Context...</p>
+                        <p className="text-sm font-medium text-slate-600">Initializing Context...</p>
                     </div>
                 ) : sopData ? (
                     <div className="h-full w-full">
