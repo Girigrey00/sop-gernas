@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Loader2, ShieldCheck } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import PolicyChat from '../components/PolicyChat';
 import { Product, SopResponse } from '../types';
 
@@ -63,37 +63,23 @@ const ProcessLineagePage: React.FC<ProcessLineagePageProps> = ({ product, onBack
     }, [product]);
 
     return (
-        <div className="flex h-full w-full bg-slate-50 flex-col relative">
-            
-            {/* Absolute Back Button for Cleaner Full-Screen Look */}
-            <div className="absolute top-4 left-4 z-20">
-                <button 
-                    onClick={onBack}
-                    className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-fab-royal px-4 py-2 rounded-full shadow-sm hover:shadow-md transition-all text-sm font-bold"
-                >
-                    <ArrowLeft size={16} />
-                    Back
-                </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 relative overflow-hidden">
-                {isLoading ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white">
-                        <Loader2 className="w-12 h-12 text-fab-royal animate-spin mb-4" />
-                        <p className="text-lg font-medium text-slate-600">Loading Policy Context...</p>
-                    </div>
-                ) : sopData ? (
-                    <PolicyChat 
-                        sopData={sopData}
-                        productContext={product}
-                    />
-                ) : (
-                    <div className="flex items-center justify-center h-full text-slate-400">
-                        <p>Failed to load context.</p>
-                    </div>
-                )}
-            </div>
+        <div className="flex h-full w-full bg-slate-50 flex-col relative overflow-hidden">
+            {isLoading ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white">
+                    <Loader2 className="w-12 h-12 text-fab-royal animate-spin mb-4" />
+                    <p className="text-lg font-medium text-slate-600">Loading Policy Context...</p>
+                </div>
+            ) : sopData ? (
+                <PolicyChat 
+                    sopData={sopData}
+                    productContext={product}
+                    onBack={onBack}
+                />
+            ) : (
+                <div className="flex items-center justify-center h-full text-slate-400">
+                    <p>Failed to load context.</p>
+                </div>
+            )}
         </div>
     );
 };

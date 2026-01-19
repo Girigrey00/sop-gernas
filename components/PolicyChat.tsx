@@ -2,7 +2,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
     Send, Loader2, Sparkles, ShieldCheck, 
-    ArrowRight, MessageSquare, Copy, ThumbsUp, ThumbsDown, Info
+    ArrowRight, MessageSquare, Copy, ThumbsUp, ThumbsDown, Info,
+    AlertTriangle, FileText, List, Image as ImageIcon, Mic, ArrowLeft
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
@@ -11,6 +12,7 @@ import { MessageRenderer, CitationBlock, GIcon, cleanQuestions } from './ChatAss
 interface PolicyChatProps {
     sopData: SopResponse;
     productContext?: Product | null;
+    onBack?: () => void;
 }
 
 interface Message {
@@ -24,14 +26,7 @@ interface Message {
     feedback?: 'thumbs_up' | 'thumbs_down';
 }
 
-const DEFAULT_SUGGESTIONS = [
-    "What is the Data Classification Policy?",
-    "How do I report a security incident?",
-    "Show me the Access Control Standards",
-    "What are the Password Complexity Requirements?"
-];
-
-const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext }) => {
+const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext, onBack }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -42,21 +37,6 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext }) => {
     const streamInterval = useRef<any>(null);
     const isGenerationComplete = useRef<boolean>(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-
-    // Initial Welcome Message - Runs once on mount
-    useEffect(() => {
-        if (messages.length === 0) {
-            setMessages([
-                {
-                    id: 'init-welcome',
-                    role: 'assistant',
-                    content: `### Policy Standards Assistant\nI am here to help you navigate the ${productContext?.product_name || 'Policy Standards'}. \n\nYou can ask me about specific policies, compliance requirements, or procedures.`,
-                    timestamp: new Date(),
-                    suggestions: sopData.metadata?.suggested_questions || DEFAULT_SUGGESTIONS
-                }
-            ]);
-        }
-    }, []); // Empty dependency array ensures this runs only once
 
     // Scroll to bottom on new message
     useEffect(() => {
@@ -69,7 +49,7 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext }) => {
             if (activeMessageId.current) {
                 const hasData = streamQueue.current.length > 0;
                 if (hasData) {
-                    const chunk = streamQueue.current.substring(0, 5); // Fast consumption
+                    const chunk = streamQueue.current.substring(0, 5); 
                     streamQueue.current = streamQueue.current.substring(chunk.length);
 
                     setMessages(prev => prev.map(msg => 
@@ -150,19 +130,129 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext }) => {
         }
     };
 
-    // --- Chat View (Rendered Immediately) ---
-    return (
-        <div className="flex flex-col h-full bg-slate-50">
-            {/* Minimal Header */}
-            <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-3 shadow-sm z-10 shrink-0">
-                <div className="p-2 bg-fab-royal/10 rounded-lg text-fab-royal">
-                    <ShieldCheck size={20} />
+    // --- Header Component (Shared) ---
+    const Header = () => (
+        <div className="bg-white px-6 py-4 flex items-center gap-4 z-10 shrink-0">
+            {onBack && (
+                <button onClick={onBack} className="text-slate-500 hover:text-slate-800 transition-colors">
+                    <ArrowLeft size={20} />
+                </button>
+            )}
+            <div className="flex items-center gap-3">
+                <h2 className="text-base font-medium text-slate-700">
+                    {productContext?.product_name || sopData.processDefinition.title || 'Policy Standards'}
+                </h2>
+                <span className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">
+                    Knowledge Base
+                </span>
+            </div>
+        </div>
+    );
+
+    // --- Input Component (Shared) ---
+    const InputBar = ({ centered = false }) => (
+        <div className={`w-full ${centered ? 'max-w-3xl mx-auto' : 'bg-white border-t border-slate-100 p-4'}`}>
+            <div className={`relative flex items-center bg-slate-100 rounded-full transition-all focus-within:bg-white focus-within:ring-2 focus-within:ring-slate-200 focus-within:shadow-md ${centered ? 'h-14' : 'h-12'}`}>
+                <div className="flex items-center gap-2 pl-4 text-slate-400">
+                    <button className="p-2 hover:bg-slate-200 rounded-full transition-colors"><ImageIcon size={20} /></button>
+                    <button className="p-2 hover:bg-slate-200 rounded-full transition-colors"><Mic size={20} /></button>
                 </div>
-                <div>
-                    <h2 className="text-sm font-bold text-fab-navy">Policy Standards Assistant</h2>
-                    <p className="text-[10px] text-slate-500">{productContext?.product_name || 'General Policy Context'}</p>
+                <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    disabled={isLoading}
+                    placeholder="Enter a prompt here"
+                    className="flex-1 bg-transparent border-none focus:ring-0 text-slate-700 placeholder:text-slate-400 px-4 h-full outline-none"
+                />
+                <div className="pr-2">
+                    <button 
+                        onClick={() => handleSend()}
+                        disabled={!input.trim() || isLoading}
+                        className={`p-2 rounded-full transition-all ${
+                            input.trim() 
+                            ? 'text-fab-royal hover:bg-blue-50' 
+                            : 'text-slate-300 cursor-not-allowed'
+                        }`}
+                    >
+                        {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+                    </button>
                 </div>
             </div>
+            {centered && (
+                <p className="text-[10px] text-center text-slate-400 mt-4">
+                    Policy Standards AI may display inaccurate info, including about people, so double-check its responses.
+                </p>
+            )}
+        </div>
+    );
+
+    // --- LANDING VIEW ---
+    if (messages.length === 0) {
+        return (
+            <div className="flex flex-col h-full bg-white relative">
+                <Header />
+                
+                <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto">
+                    <div className="w-full max-w-5xl flex flex-col items-center">
+                        
+                        {/* Hero Title */}
+                        <div className="text-center mb-12 space-y-1">
+                            <h1 className="text-5xl md:text-6xl font-medium tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-rose-500 to-rose-500" style={{ lineHeight: 1.1 }}>
+                                Interactive Policy
+                            </h1>
+                            <h1 className="text-5xl md:text-6xl font-medium tracking-tight text-slate-300">
+                                Knowledge Base
+                            </h1>
+                        </div>
+
+                        {/* Suggestion Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full mb-16">
+                            <button onClick={() => handleSend("What are the risks in Step 3?")} className="text-left p-5 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all h-48 flex flex-col justify-between group">
+                                <div className="p-2 bg-white rounded-full w-fit shadow-sm text-slate-700 group-hover:scale-110 transition-transform">
+                                    <AlertTriangle size={20} />
+                                </div>
+                                <span className="text-sm font-medium text-slate-700">What are the risks in Step 3?</span>
+                            </button>
+
+                            <button onClick={() => handleSend("List controls for Credit Underwriting")} className="text-left p-5 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all h-48 flex flex-col justify-between group">
+                                <div className="p-2 bg-white rounded-full w-fit shadow-sm text-slate-700 group-hover:scale-110 transition-transform">
+                                    <ShieldCheck size={20} />
+                                </div>
+                                <span className="text-sm font-medium text-slate-700">List controls for Credit Underwriting</span>
+                            </button>
+
+                            <button onClick={() => handleSend("How is EID validated?")} className="text-left p-5 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all h-48 flex flex-col justify-between group">
+                                <div className="p-2 bg-white rounded-full w-fit shadow-sm text-slate-700 group-hover:scale-110 transition-transform">
+                                    <FileText size={20} />
+                                </div>
+                                <span className="text-sm font-medium text-slate-700">How is EID validated?</span>
+                            </button>
+
+                            <button onClick={() => handleSend("Summarize Loan Disbursal process")} className="text-left p-5 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all h-48 flex flex-col justify-between group">
+                                <div className="p-2 bg-white rounded-full w-fit shadow-sm text-slate-700 group-hover:scale-110 transition-transform">
+                                    <List size={20} />
+                                </div>
+                                <span className="text-sm font-medium text-slate-700">Summarize Loan Disbursal process</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+                {/* Footer Input */}
+                <div className="shrink-0 pb-8 px-4">
+                    <InputBar centered />
+                </div>
+            </div>
+        );
+    }
+
+    // --- CHAT VIEW ---
+    return (
+        <div className="flex flex-col h-full bg-white">
+            <Header />
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -196,7 +286,7 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext }) => {
                                     </div>
                                 )}
 
-                                {/* Suggestions (only for assistant messages that are done typing) */}
+                                {/* Suggestions */}
                                 {msg.role === 'assistant' && !msg.isTyping && msg.suggestions && msg.suggestions.length > 0 && (
                                     <div className="mt-3 flex flex-wrap gap-2 animate-in fade-in delay-300">
                                         {cleanQuestions(msg.suggestions).map((s, i) => (
@@ -237,31 +327,7 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext }) => {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 bg-white border-t border-slate-100 shrink-0">
-                <div className="max-w-3xl mx-auto relative">
-                    <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        disabled={isLoading}
-                        placeholder="Ask about policy details..."
-                        className="w-full pl-5 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-fab-royal/20 focus:border-fab-royal text-sm shadow-inner transition-all"
-                    />
-                    <button 
-                        onClick={() => handleSend()}
-                        disabled={!input.trim() || isLoading}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-fab-royal text-white rounded-full hover:bg-fab-blue transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                    >
-                        {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                    </button>
-                </div>
-                <div className="mt-2 flex justify-center">
-                    <p className="text-[9px] text-slate-400 font-medium flex items-center gap-1">
-                        <Info size={10} /> AI generated responses can be inaccurate. Verify important information.
-                    </p>
-                </div>
-            </div>
+            <InputBar />
         </div>
     );
 };
