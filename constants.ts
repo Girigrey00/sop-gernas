@@ -63,24 +63,30 @@ export const WIDGET_DEMO_DATA = {
   "related_questions": []
 };
 
+// Layout Config
+const COL_L2 = 0;
+const COL_DATA = 400;
+const COL_RISK = 800;
+const COL_CTRL = 1200;
+
 export const DUMMY_PROCESS_ANALYSIS_DATA = {
   "nodes": [
     /* ------------------------------------------------------------------
        ROW 1: Customer details & product selection
+       Base Y: 100
        ------------------------------------------------------------------ */
     {
       "id": "l2-1",
       "data": { "label": "1. Customer details & product selection" },
-      "position": { "x": 0, "y": 100 },
+      "position": { "x": COL_L2, "y": 150 },
       "className": "l2-process-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
-    // Data
     {
       "id": "data-1",
-      "data": { "label": "Data: Customer name, EID, Email, Phone" },
-      "position": { "x": 350, "y": 100 },
+      "data": { "label": "Customer name\nEID\nEmail\nPhone" },
+      "position": { "x": COL_DATA, "y": 150 },
       "className": "data-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -88,16 +94,16 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Risks
     {
       "id": "risk-1a",
-      "data": { "label": "Risk: Fraud (R4) - App WIP" },
-      "position": { "x": 700, "y": 0 },
+      "data": { "label": "R4: Fraud - App WIP" },
+      "position": { "x": COL_RISK, "y": 100 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "risk-1b",
-      "data": { "label": "Risk: Compliance (R11) - Auth" },
-      "position": { "x": 700, "y": 150 },
+      "data": { "label": "R11: Compliance - Auth" },
+      "position": { "x": COL_RISK, "y": 200 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -105,24 +111,16 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Controls
     {
       "id": "ctrl-1a",
-      "data": { "label": "Control: Existing FAB customer/WIP check (A)" },
-      "position": { "x": 1050, "y": 0 },
+      "data": { "label": "Existing FAB customer/WIP check (A)" },
+      "position": { "x": COL_CTRL, "y": 100 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "ctrl-1b",
-      "data": { "label": "Control: Restricted IP check (A)" },
-      "position": { "x": 1050, "y": 100 },
-      "className": "control-node",
-      "sourcePosition": "right",
-      "targetPosition": "left"
-    },
-    {
-      "id": "ctrl-1c",
-      "data": { "label": "Control: EID/UAEPASS + OTP (A)" },
-      "position": { "x": 1050, "y": 200 },
+      "data": { "label": "Restricted IP check (A)\nEID/UAEPASS + OTP (A)" },
+      "position": { "x": COL_CTRL, "y": 200 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -130,20 +128,20 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
 
     /* ------------------------------------------------------------------
        ROW 2: Pre-eligibility + customer ID&V
+       Base Y: 500
        ------------------------------------------------------------------ */
     {
       "id": "l2-2",
       "data": { "label": "2. Pre-eligibility + customer ID&V" },
-      "position": { "x": 0, "y": 450 },
+      "position": { "x": COL_L2, "y": 550 },
       "className": "l2-process-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
-    // Data
     {
       "id": "data-2",
-      "data": { "label": "Data: EID copy (digital)" },
-      "position": { "x": 350, "y": 450 },
+      "data": { "label": "EID copy (digital)" },
+      "position": { "x": COL_DATA, "y": 550 },
       "className": "data-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -151,16 +149,16 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Risks
     {
       "id": "risk-2a",
-      "data": { "label": "Risk: Fraud (R4) - Identity" },
-      "position": { "x": 700, "y": 350 },
+      "data": { "label": "R4: Fraud - Identity" },
+      "position": { "x": COL_RISK, "y": 500 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "risk-2b",
-      "data": { "label": "Risk: Reputation (R8) - Eligibility" },
-      "position": { "x": 700, "y": 550 },
+      "data": { "label": "R8: Reputation - Eligibility" },
+      "position": { "x": COL_RISK, "y": 600 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -168,32 +166,16 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Controls
     {
       "id": "ctrl-2a",
-      "data": { "label": "Control: OCR EID scan (EFR) (A)" },
-      "position": { "x": 1050, "y": 350 },
+      "data": { "label": "OCR EID scan (EFR) (A)" },
+      "position": { "x": COL_CTRL, "y": 500 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "ctrl-2b",
-      "data": { "label": "Control: Income (+7K), Age, AECB (711+) (A)" },
-      "position": { "x": 1050, "y": 450 },
-      "className": "control-node",
-      "sourcePosition": "right",
-      "targetPosition": "left"
-    },
-    {
-      "id": "ctrl-2c",
-      "data": { "label": "Control: Negative Checklist (Mubadara) (A)" },
-      "position": { "x": 1050, "y": 550 },
-      "className": "control-node",
-      "sourcePosition": "right",
-      "targetPosition": "left"
-    },
-    {
-      "id": "ctrl-2d",
-      "data": { "label": "Control: Fraud Watchlist check (OFS) (A)" },
-      "position": { "x": 1050, "y": 650 },
+      "data": { "label": "Income (+7K), Age, AECB (711+) (A)\nNegative Checklist (Mubadara) (A)\nFraud Watchlist check (OFS) (A)" },
+      "position": { "x": COL_CTRL, "y": 600 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -201,20 +183,20 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
 
     /* ------------------------------------------------------------------
        ROW 3: Employer and salary validation
+       Base Y: 900
        ------------------------------------------------------------------ */
     {
       "id": "l2-3",
       "data": { "label": "3. Employer and salary validation" },
-      "position": { "x": 0, "y": 1000 },
+      "position": { "x": COL_L2, "y": 950 },
       "className": "l2-process-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
-    // Data
     {
       "id": "data-3",
-      "data": { "label": "Data: Employer details, Salary, UID/TL, EFR/AECB Reports" },
-      "position": { "x": 350, "y": 1000 },
+      "data": { "label": "Employer details\nSalary amount\nUID/TL\nEFR/AECB/UAEFTS Reports" },
+      "position": { "x": COL_DATA, "y": 950 },
       "className": "data-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -222,24 +204,24 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Risks
     {
       "id": "risk-3a",
-      "data": { "label": "Risk: Fraud (R4) - Employer" },
-      "position": { "x": 700, "y": 850 },
+      "data": { "label": "R4: Fraud - Employer" },
+      "position": { "x": COL_RISK, "y": 900 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "risk-3b",
-      "data": { "label": "Risk: Fraud (R5) - Banking/Salary" },
-      "position": { "x": 700, "y": 1000 },
+      "data": { "label": "R5: Fraud - Banking" },
+      "position": { "x": COL_RISK, "y": 1050 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "risk-3c",
-      "data": { "label": "Risk: Compliance (R11) - Salary Rule" },
-      "position": { "x": 700, "y": 1200 },
+      "data": { "label": "R11: Compliance - Rules" },
+      "position": { "x": COL_RISK, "y": 1200 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -247,40 +229,24 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Controls
     {
       "id": "ctrl-3a",
-      "data": { "label": "Control: Employer category, Name, UID/TL check (A)" },
-      "position": { "x": 1050, "y": 800 },
+      "data": { "label": "Employer category check (A)\nEmployer Name/UID validation (A)\nTML Validation (A)" },
+      "position": { "x": COL_CTRL, "y": 900 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "ctrl-3b",
-      "data": { "label": "Control: TML Validation (UID/TL) (A)" },
-      "position": { "x": 1050, "y": 900 },
+      "data": { "label": "IBAN validation (A)\nAffordability (CPR) (A)\nSalary source verification (A)" },
+      "position": { "x": COL_CTRL, "y": 1050 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "ctrl-3c",
-      "data": { "label": "Control: IBAN val, Affordability (CPR) (A)" },
-      "position": { "x": 1050, "y": 1000 },
-      "className": "control-node",
-      "sourcePosition": "right",
-      "targetPosition": "left"
-    },
-    {
-      "id": "ctrl-3d",
-      "data": { "label": "Control: Salary Variance threshold (A)" },
-      "position": { "x": 1050, "y": 1100 },
-      "className": "control-node",
-      "sourcePosition": "right",
-      "targetPosition": "left"
-    },
-    {
-      "id": "ctrl-3e",
-      "data": { "label": "Control: Calculated salary rule & comms (A)" },
-      "position": { "x": 1050, "y": 1200 },
+      "data": { "label": "Calculated salary rule (A)\nCustomer communication (A)" },
+      "position": { "x": COL_CTRL, "y": 1200 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -288,20 +254,20 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
 
     /* ------------------------------------------------------------------
        ROW 4: Credit underwriting
+       Base Y: 1400
        ------------------------------------------------------------------ */
     {
       "id": "l2-4",
       "data": { "label": "4. Credit underwriting" },
-      "position": { "x": 0, "y": 1400 },
+      "position": { "x": COL_L2, "y": 1450 },
       "className": "l2-process-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
-    // Data (Generic)
     {
       "id": "data-4",
-      "data": { "label": "Data: Credit Profile" },
-      "position": { "x": 350, "y": 1400 },
+      "data": { "label": "System Data / No Data Collected" },
+      "position": { "x": COL_DATA, "y": 1450 },
       "className": "data-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -309,16 +275,16 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Risks
     {
       "id": "risk-4a",
-      "data": { "label": "Risk: Credit (R7)" },
-      "position": { "x": 700, "y": 1350 },
+      "data": { "label": "R7: Credit Risk" },
+      "position": { "x": COL_RISK, "y": 1400 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "risk-4b",
-      "data": { "label": "Risk: Operational (R12)" },
-      "position": { "x": 700, "y": 1450 },
+      "data": { "label": "R12: Operational Risk" },
+      "position": { "x": COL_RISK, "y": 1500 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -326,16 +292,16 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Controls
     {
       "id": "ctrl-4a",
-      "data": { "label": "Control: Credit decision engine (A)" },
-      "position": { "x": 1050, "y": 1350 },
+      "data": { "label": "Credit decision engine (A)" },
+      "position": { "x": COL_CTRL, "y": 1400 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "ctrl-4b",
-      "data": { "label": "Control: Life insurance mandatory & Linking (A)" },
-      "position": { "x": 1050, "y": 1450 },
+      "data": { "label": "Life insurance mandatory (A)\nInsurance onboarding (M)\nLink insurance product (A)" },
+      "position": { "x": COL_CTRL, "y": 1500 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -343,20 +309,20 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
 
     /* ------------------------------------------------------------------
        ROW 5: CASA account opening & insurance selection
+       Base Y: 1700
        ------------------------------------------------------------------ */
     {
       "id": "l2-5",
       "data": { "label": "5. CASA account opening & insurance selection" },
-      "position": { "x": 0, "y": 1750 },
+      "position": { "x": COL_L2, "y": 2100 },
       "className": "l2-process-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
-    // Data
     {
       "id": "data-5",
-      "data": { "label": "Data: Account Details, Insurance Choice" },
-      "position": { "x": 350, "y": 1750 },
+      "data": { "label": "Account Details" },
+      "position": { "x": COL_DATA, "y": 2100 },
       "className": "data-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -364,24 +330,72 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Risks
     {
       "id": "risk-5a",
-      "data": { "label": "Risk: Reputation (R8) / Compliance (R11)" },
-      "position": { "x": 700, "y": 1600 },
+      "data": { "label": "R9: Fin Crime - CASA" },
+      "position": { "x": COL_RISK, "y": 1700 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "risk-5b",
-      "data": { "label": "Risk: Fin Crime (R2, R3)" },
-      "position": { "x": 700, "y": 1750 },
+      "data": { "label": "R8: Reputation" },
+      "position": { "x": COL_RISK, "y": 1800 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "risk-5c",
-      "data": { "label": "Risk: Financial (R10) / Fraud (R4)" },
-      "position": { "x": 700, "y": 1900 },
+      "data": { "label": "R11: Compliance" },
+      "position": { "x": COL_RISK, "y": 1900 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-5d",
+      "data": { "label": "R10: Financial" },
+      "position": { "x": COL_RISK, "y": 2000 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-5e",
+      "data": { "label": "R12: Operational - FATCA" },
+      "position": { "x": COL_RISK, "y": 2100 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-5f",
+      "data": { "label": "R1: Operational - Creation" },
+      "position": { "x": COL_RISK, "y": 2200 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-5g",
+      "data": { "label": "R2: Fin Crime - Screening" },
+      "position": { "x": COL_RISK, "y": 2300 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-5h",
+      "data": { "label": "R3: Fin Crime - BBL" },
+      "position": { "x": COL_RISK, "y": 2400 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-5i",
+      "data": { "label": "R4: Fraud - CRAM" },
+      "position": { "x": COL_RISK, "y": 2500 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -389,24 +403,64 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Controls
     {
       "id": "ctrl-5a",
-      "data": { "label": "Control: Signed Ts & Cs, Digital Form (A)" },
-      "position": { "x": 1050, "y": 1600 },
+      "data": { "label": "CASA Onboarding journey (A)" },
+      "position": { "x": COL_CTRL, "y": 1700 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "ctrl-5b",
-      "data": { "label": "Control: FSK + Silent8 + BBL Screening (A)" },
-      "position": { "x": 1050, "y": 1750 },
+      "data": { "label": "Signed Ts & Cs (A)\nDigital Form (A)\nCooling off waiver (M)" },
+      "position": { "x": COL_CTRL, "y": 1850 }, // Shared
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "ctrl-5c",
-      "data": { "label": "Control: New To Bank CASA capture, CRAM (A)" },
-      "position": { "x": 1050, "y": 1900 },
+      "data": { "label": "New To Bank CASA capture (A)" },
+      "position": { "x": COL_CTRL, "y": 2000 },
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "ctrl-5d",
+      "data": { "label": "FATCA CRS declaration (A)" },
+      "position": { "x": COL_CTRL, "y": 2100 },
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "ctrl-5e",
+      "data": { "label": "CASA Creation journey (A)" },
+      "position": { "x": COL_CTRL, "y": 2200 },
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "ctrl-5f",
+      "data": { "label": "FSK + Silent8 screening (A)" },
+      "position": { "x": COL_CTRL, "y": 2300 },
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "ctrl-5g",
+      "data": { "label": "BBL verification (A)" },
+      "position": { "x": COL_CTRL, "y": 2400 },
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "ctrl-5h",
+      "data": { "label": "CRAM risk rating verification (A)" },
+      "position": { "x": COL_CTRL, "y": 2500 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -414,20 +468,20 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
 
     /* ------------------------------------------------------------------
        ROW 6: Loan conditions validation
+       Base Y: 2700
        ------------------------------------------------------------------ */
     {
       "id": "l2-6",
       "data": { "label": "6. Loan conditions validation" },
-      "position": { "x": 0, "y": 2200 },
+      "position": { "x": COL_L2, "y": 3300 },
       "className": "l2-process-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
-    // Data
     {
       "id": "data-6",
-      "data": { "label": "Data: STL, Salary Date, Sec Cheque" },
-      "position": { "x": 350, "y": 2200 },
+      "data": { "label": "STL\nSalary Date\nSec Cheque" },
+      "position": { "x": COL_DATA, "y": 3300 },
       "className": "data-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -435,24 +489,104 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Risks
     {
       "id": "risk-6a",
-      "data": { "label": "Risk: Financial (R10)" },
-      "position": { "x": 700, "y": 2100 },
+      "data": { "label": "R10: Financial - IBAN" },
+      "position": { "x": COL_RISK, "y": 2700 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "risk-6b",
-      "data": { "label": "Risk: Fin Crime (R9) / Fraud (R5)" },
-      "position": { "x": 700, "y": 2250 },
+      "data": { "label": "R12: Operational - IBAN" },
+      "position": { "x": COL_RISK, "y": 2800 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "risk-6c",
-      "data": { "label": "Risk: Operational (R12)" },
-      "position": { "x": 700, "y": 2400 },
+      "data": { "label": "R9: Fin Crime - Block" },
+      "position": { "x": COL_RISK, "y": 2900 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-6d",
+      "data": { "label": "R12: Operational - Docs" },
+      "position": { "x": COL_RISK, "y": 3000 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-6e",
+      "data": { "label": "R5: Fraud - STL" },
+      "position": { "x": COL_RISK, "y": 3100 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-6f",
+      "data": { "label": "R9: Fin Crime - QR" },
+      "position": { "x": COL_RISK, "y": 3200 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-6g",
+      "data": { "label": "R10: Financial - Sig" },
+      "position": { "x": COL_RISK, "y": 3300 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-6h",
+      "data": { "label": "R11: Compliance - Cheque" },
+      "position": { "x": COL_RISK, "y": 3400 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-6i",
+      "data": { "label": "R10: Financial - Cheque Acct" },
+      "position": { "x": COL_RISK, "y": 3500 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-6j",
+      "data": { "label": "R11: Compliance - Cheque Acct" },
+      "position": { "x": COL_RISK, "y": 3600 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-6k",
+      "data": { "label": "R12: Operational - Cheque Acct" },
+      "position": { "x": COL_RISK, "y": 3700 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-6l",
+      "data": { "label": "R5: Fraud - Variance" },
+      "position": { "x": COL_RISK, "y": 3800 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-6m",
+      "data": { "label": "R12: Operational - Variance" },
+      "position": { "x": COL_RISK, "y": 3900 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -460,45 +594,93 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Controls
     {
       "id": "ctrl-6a",
-      "data": { "label": "Control: IBAN match (A), Sig val (M)" },
-      "position": { "x": 1050, "y": 2100 },
+      "data": { "label": "IBAN validation (CASA Vs PIL) (A)" },
+      "position": { "x": COL_CTRL, "y": 2750 }, // Shared R10, R12
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "ctrl-6b",
-      "data": { "label": "Control: Block loan (A), QR code (M), Non eSTL filing (M)" },
-      "position": { "x": 1050, "y": 2250 },
+      "data": { "label": "Block placed on disbursed loan (A)" },
+      "position": { "x": COL_CTRL, "y": 2900 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "ctrl-6c",
-      "data": { "label": "Control: DMS Document Storage (M)" },
-      "position": { "x": 1050, "y": 2400 },
+      "data": { "label": "DMS Document Storage (M)" },
+      "position": { "x": COL_CTRL, "y": 3000 },
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "ctrl-6d",
+      "data": { "label": "Non eSTLs filing (M)" },
+      "position": { "x": COL_CTRL, "y": 3100 },
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "ctrl-6e",
+      "data": { "label": "QR code validation (M)" },
+      "position": { "x": COL_CTRL, "y": 3200 },
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "ctrl-6f",
+      "data": { "label": "Signature validation (M)" },
+      "position": { "x": COL_CTRL, "y": 3300 },
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "ctrl-6g",
+      "data": { "label": "Cheques filed on customer file (M)" },
+      "position": { "x": COL_CTRL, "y": 3400 },
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "ctrl-6h",
+      "data": { "label": "Cheque account # = Salary account # (M)" },
+      "position": { "x": COL_CTRL, "y": 3600 }, // Shared R10, R11, R12
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "ctrl-6i",
+      "data": { "label": "Salary amount/source validation\nVariance check (M)" },
+      "position": { "x": COL_CTRL, "y": 3850 }, // Shared R5, R12
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
 
     /* ------------------------------------------------------------------
-       ROW 7: Loan disbursal / funds release
+       ROW 7: Loan disbursal
+       Base Y: 4100
        ------------------------------------------------------------------ */
     {
       "id": "l2-7",
       "data": { "label": "7. Loan disbursal / funds release" },
-      "position": { "x": 0, "y": 2600 },
+      "position": { "x": COL_L2, "y": 4300 },
       "className": "l2-process-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
-    // Data
     {
       "id": "data-7",
-      "data": { "label": "Data: Disbursal Confirmation" },
-      "position": { "x": 350, "y": 2600 },
+      "data": { "label": "Disbursal Confirmation" },
+      "position": { "x": COL_DATA, "y": 4300 },
       "className": "data-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -506,16 +688,40 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Risks
     {
       "id": "risk-7a",
-      "data": { "label": "Risk: Operational (R12)" },
-      "position": { "x": 700, "y": 2550 },
+      "data": { "label": "R12: Operational - Maker" },
+      "position": { "x": COL_RISK, "y": 4100 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "risk-7b",
-      "data": { "label": "Risk: Fin Crime (R9)" },
-      "position": { "x": 700, "y": 2650 },
+      "data": { "label": "R12: Operational - Variance" },
+      "position": { "x": COL_RISK, "y": 4200 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-7c",
+      "data": { "label": "R12: Operational - Manual" },
+      "position": { "x": COL_RISK, "y": 4300 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-7d",
+      "data": { "label": "R9: Fin Crime - Summary" },
+      "position": { "x": COL_RISK, "y": 4400 },
+      "className": "risk-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "risk-7e",
+      "data": { "label": "R12: Operational - Summary" },
+      "position": { "x": COL_RISK, "y": 4500 },
       "className": "risk-node",
       "sourcePosition": "right",
       "targetPosition": "left"
@@ -523,80 +729,135 @@ export const DUMMY_PROCESS_ANALYSIS_DATA = {
     // Controls
     {
       "id": "ctrl-7a",
-      "data": { "label": "Control: Maker checker (M), Salary Variance (M)" },
-      "position": { "x": 1050, "y": 2550 },
+      "data": { "label": "Maker checker process (T24) (M)" },
+      "position": { "x": COL_CTRL, "y": 4100 },
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     },
     {
       "id": "ctrl-7b",
-      "data": { "label": "Control: Customer summary attached (M)" },
-      "position": { "x": 1050, "y": 2650 },
+      "data": { "label": "Validate salary variance (M)" },
+      "position": { "x": COL_CTRL, "y": 4200 },
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "ctrl-7c",
+      "data": { "label": "Manual unblock via email (M)" },
+      "position": { "x": COL_CTRL, "y": 4300 },
+      "className": "control-node",
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "ctrl-7d",
+      "data": { "label": "Customer summary attached\nSent to File Mgmt (M)" },
+      "position": { "x": COL_CTRL, "y": 4450 }, // Shared R9, R12
       "className": "control-node",
       "sourcePosition": "right",
       "targetPosition": "left"
     }
   ],
   "edges": [
-    // Row 1
-    { "id": "e1-d", "source": "l2-1", "target": "data-1", "type": "smoothstep", "style": { "stroke": "#cbd5e1" } },
-    { "id": "e1-r1", "source": "data-1", "target": "risk-1a", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e1-r2", "source": "data-1", "target": "risk-1b", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e1-c1", "source": "risk-1a", "target": "ctrl-1a", "type": "smoothstep", "style": { "stroke": "#10b981" } },
-    { "id": "e1-c2", "source": "risk-1b", "target": "ctrl-1b", "type": "smoothstep", "style": { "stroke": "#10b981" } },
-    { "id": "e1-c3", "source": "risk-1b", "target": "ctrl-1c", "type": "smoothstep", "style": { "stroke": "#10b981" } },
+    // Row 1 Connections
+    { "id": "e1-d", "source": "l2-1", "target": "data-1", "type": "step", "style": { "stroke": "#cbd5e1", "strokeWidth": 2 } },
+    { "id": "e1-r1", "source": "data-1", "target": "risk-1a", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e1-r2", "source": "data-1", "target": "risk-1b", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e1-c1", "source": "risk-1a", "target": "ctrl-1a", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e1-c2", "source": "risk-1b", "target": "ctrl-1b", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
 
-    // Row 2
-    { "id": "e2-d", "source": "l2-2", "target": "data-2", "type": "smoothstep", "style": { "stroke": "#cbd5e1" } },
-    { "id": "e2-r1", "source": "data-2", "target": "risk-2a", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e2-r2", "source": "data-2", "target": "risk-2b", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e2-c1", "source": "risk-2a", "target": "ctrl-2a", "type": "smoothstep", "style": { "stroke": "#10b981" } },
-    { "id": "e2-c2", "source": "risk-2b", "target": "ctrl-2b", "type": "smoothstep", "style": { "stroke": "#10b981" } },
-    { "id": "e2-c3", "source": "risk-2b", "target": "ctrl-2c", "type": "smoothstep", "style": { "stroke": "#10b981" } },
-    { "id": "e2-c4", "source": "risk-2b", "target": "ctrl-2d", "type": "smoothstep", "style": { "stroke": "#10b981" } },
+    // Row 2 Connections
+    { "id": "e2-d", "source": "l2-2", "target": "data-2", "type": "step", "style": { "stroke": "#cbd5e1", "strokeWidth": 2 } },
+    { "id": "e2-r1", "source": "data-2", "target": "risk-2a", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e2-r2", "source": "data-2", "target": "risk-2b", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e2-c1", "source": "risk-2a", "target": "ctrl-2a", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e2-c2", "source": "risk-2b", "target": "ctrl-2b", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
 
-    // Row 3
-    { "id": "e3-d", "source": "l2-3", "target": "data-3", "type": "smoothstep", "style": { "stroke": "#cbd5e1" } },
-    { "id": "e3-r1", "source": "data-3", "target": "risk-3a", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e3-r2", "source": "data-3", "target": "risk-3b", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e3-r3", "source": "data-3", "target": "risk-3c", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e3-c1", "source": "risk-3a", "target": "ctrl-3a", "type": "smoothstep", "style": { "stroke": "#10b981" } },
-    { "id": "e3-c2", "source": "risk-3a", "target": "ctrl-3b", "type": "smoothstep", "style": { "stroke": "#10b981" } },
-    { "id": "e3-c3", "source": "risk-3b", "target": "ctrl-3c", "type": "smoothstep", "style": { "stroke": "#10b981" } },
-    { "id": "e3-c4", "source": "risk-3b", "target": "ctrl-3d", "type": "smoothstep", "style": { "stroke": "#10b981" } },
-    { "id": "e3-c5", "source": "risk-3c", "target": "ctrl-3e", "type": "smoothstep", "style": { "stroke": "#10b981" } },
+    // Row 3 Connections
+    { "id": "e3-d", "source": "l2-3", "target": "data-3", "type": "step", "style": { "stroke": "#cbd5e1", "strokeWidth": 2 } },
+    { "id": "e3-r1", "source": "data-3", "target": "risk-3a", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e3-r2", "source": "data-3", "target": "risk-3b", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e3-r3", "source": "data-3", "target": "risk-3c", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e3-c1", "source": "risk-3a", "target": "ctrl-3a", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e3-c2", "source": "risk-3b", "target": "ctrl-3b", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e3-c3", "source": "risk-3c", "target": "ctrl-3c", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
 
-    // Row 4
-    { "id": "e4-d", "source": "l2-4", "target": "data-4", "type": "smoothstep", "style": { "stroke": "#cbd5e1" } },
-    { "id": "e4-r1", "source": "data-4", "target": "risk-4a", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e4-r2", "source": "data-4", "target": "risk-4b", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e4-c1", "source": "risk-4a", "target": "ctrl-4a", "type": "smoothstep", "style": { "stroke": "#10b981" } },
-    { "id": "e4-c2", "source": "risk-4b", "target": "ctrl-4b", "type": "smoothstep", "style": { "stroke": "#10b981" } },
+    // Row 4 Connections
+    { "id": "e4-d", "source": "l2-4", "target": "data-4", "type": "step", "style": { "stroke": "#cbd5e1", "strokeWidth": 2 } },
+    { "id": "e4-r1", "source": "data-4", "target": "risk-4a", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e4-r2", "source": "data-4", "target": "risk-4b", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e4-c1", "source": "risk-4a", "target": "ctrl-4a", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e4-c2", "source": "risk-4b", "target": "ctrl-4b", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
 
-    // Row 5
-    { "id": "e5-d", "source": "l2-5", "target": "data-5", "type": "smoothstep", "style": { "stroke": "#cbd5e1" } },
-    { "id": "e5-r1", "source": "data-5", "target": "risk-5a", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e5-r2", "source": "data-5", "target": "risk-5b", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e5-r3", "source": "data-5", "target": "risk-5c", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e5-c1", "source": "risk-5a", "target": "ctrl-5a", "type": "smoothstep", "style": { "stroke": "#10b981" } },
-    { "id": "e5-c2", "source": "risk-5b", "target": "ctrl-5b", "type": "smoothstep", "style": { "stroke": "#10b981" } },
-    { "id": "e5-c3", "source": "risk-5c", "target": "ctrl-5c", "type": "smoothstep", "style": { "stroke": "#10b981" } },
+    // Row 5 Connections
+    { "id": "e5-d", "source": "l2-5", "target": "data-5", "type": "step", "style": { "stroke": "#cbd5e1", "strokeWidth": 2 } },
+    // Data -> Risks
+    { "id": "e5-r1", "source": "data-5", "target": "risk-5a", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e5-r2", "source": "data-5", "target": "risk-5b", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e5-r3", "source": "data-5", "target": "risk-5c", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e5-r4", "source": "data-5", "target": "risk-5d", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e5-r5", "source": "data-5", "target": "risk-5e", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e5-r6", "source": "data-5", "target": "risk-5f", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e5-r7", "source": "data-5", "target": "risk-5g", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e5-r8", "source": "data-5", "target": "risk-5h", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e5-r9", "source": "data-5", "target": "risk-5i", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    // Risks -> Controls
+    { "id": "e5-c1", "source": "risk-5a", "target": "ctrl-5a", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e5-c2-a", "source": "risk-5b", "target": "ctrl-5b", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e5-c2-b", "source": "risk-5c", "target": "ctrl-5b", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } }, // Multi-Link
+    { "id": "e5-c3", "source": "risk-5d", "target": "ctrl-5c", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e5-c4", "source": "risk-5e", "target": "ctrl-5d", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e5-c5", "source": "risk-5f", "target": "ctrl-5e", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e5-c6", "source": "risk-5g", "target": "ctrl-5f", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e5-c7", "source": "risk-5h", "target": "ctrl-5g", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e5-c8", "source": "risk-5i", "target": "ctrl-5h", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
 
-    // Row 6
-    { "id": "e6-d", "source": "l2-6", "target": "data-6", "type": "smoothstep", "style": { "stroke": "#cbd5e1" } },
-    { "id": "e6-r1", "source": "data-6", "target": "risk-6a", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e6-r2", "source": "data-6", "target": "risk-6b", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e6-r3", "source": "data-6", "target": "risk-6c", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e6-c1", "source": "risk-6a", "target": "ctrl-6a", "type": "smoothstep", "style": { "stroke": "#10b981" } },
-    { "id": "e6-c2", "source": "risk-6b", "target": "ctrl-6b", "type": "smoothstep", "style": { "stroke": "#10b981" } },
-    { "id": "e6-c3", "source": "risk-6c", "target": "ctrl-6c", "type": "smoothstep", "style": { "stroke": "#10b981" } },
+    // Row 6 Connections
+    { "id": "e6-d", "source": "l2-6", "target": "data-6", "type": "step", "style": { "stroke": "#cbd5e1", "strokeWidth": 2 } },
+    // Data -> Risks
+    { "id": "e6-r1", "source": "data-6", "target": "risk-6a", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e6-r2", "source": "data-6", "target": "risk-6b", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e6-r3", "source": "data-6", "target": "risk-6c", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e6-r4", "source": "data-6", "target": "risk-6d", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e6-r5", "source": "data-6", "target": "risk-6e", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e6-r6", "source": "data-6", "target": "risk-6f", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e6-r7", "source": "data-6", "target": "risk-6g", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e6-r8", "source": "data-6", "target": "risk-6h", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e6-r9", "source": "data-6", "target": "risk-6i", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e6-r10", "source": "data-6", "target": "risk-6j", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e6-r11", "source": "data-6", "target": "risk-6k", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e6-r12", "source": "data-6", "target": "risk-6l", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e6-r13", "source": "data-6", "target": "risk-6m", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    // Risks -> Controls
+    { "id": "e6-c1-a", "source": "risk-6a", "target": "ctrl-6a", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e6-c1-b", "source": "risk-6b", "target": "ctrl-6a", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } }, // Multi-Link
+    { "id": "e6-c2", "source": "risk-6c", "target": "ctrl-6b", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e6-c3", "source": "risk-6d", "target": "ctrl-6c", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e6-c4", "source": "risk-6e", "target": "ctrl-6d", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e6-c5", "source": "risk-6f", "target": "ctrl-6e", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e6-c6", "source": "risk-6g", "target": "ctrl-6f", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e6-c7", "source": "risk-6h", "target": "ctrl-6g", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e6-c8-a", "source": "risk-6i", "target": "ctrl-6h", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e6-c8-b", "source": "risk-6j", "target": "ctrl-6h", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } }, // Multi-Link
+    { "id": "e6-c8-c", "source": "risk-6k", "target": "ctrl-6h", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } }, // Multi-Link
+    { "id": "e6-c9-a", "source": "risk-6l", "target": "ctrl-6i", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e6-c9-b", "source": "risk-6m", "target": "ctrl-6i", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } }, // Multi-Link
 
-    // Row 7
-    { "id": "e7-d", "source": "l2-7", "target": "data-7", "type": "smoothstep", "style": { "stroke": "#cbd5e1" } },
-    { "id": "e7-r1", "source": "data-7", "target": "risk-7a", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e7-r2", "source": "data-7", "target": "risk-7b", "type": "smoothstep", "style": { "stroke": "#f43f5e" } },
-    { "id": "e7-c1", "source": "risk-7a", "target": "ctrl-7a", "type": "smoothstep", "style": { "stroke": "#10b981" } },
-    { "id": "e7-c2", "source": "risk-7b", "target": "ctrl-7b", "type": "smoothstep", "style": { "stroke": "#10b981" } }
+    // Row 7 Connections
+    { "id": "e7-d", "source": "l2-7", "target": "data-7", "type": "step", "style": { "stroke": "#cbd5e1", "strokeWidth": 2 } },
+    // Data -> Risks
+    { "id": "e7-r1", "source": "data-7", "target": "risk-7a", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e7-r2", "source": "data-7", "target": "risk-7b", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e7-r3", "source": "data-7", "target": "risk-7c", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e7-r4", "source": "data-7", "target": "risk-7d", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    { "id": "e7-r5", "source": "data-7", "target": "risk-7e", "type": "step", "style": { "stroke": "#f43f5e", "strokeWidth": 2 } },
+    // Risks -> Controls
+    { "id": "e7-c1", "source": "risk-7a", "target": "ctrl-7a", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e7-c2", "source": "risk-7b", "target": "ctrl-7b", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e7-c3", "source": "risk-7c", "target": "ctrl-7c", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e7-c4-a", "source": "risk-7d", "target": "ctrl-7d", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } },
+    { "id": "e7-c4-b", "source": "risk-7e", "target": "ctrl-7d", "type": "step", "style": { "stroke": "#10b981", "strokeWidth": 2 } } // Multi-Link
   ]
 };
