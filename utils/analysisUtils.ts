@@ -99,9 +99,9 @@ export const convertSopToAnalysisData = (data: SopResponse) => {
  */
 export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
     // LAYOUT CONSTANTS
-    const COL_WIDTH = 400; // Increased spacing between columns
-    const NODE_H = 120;    // Standard node height assumption for layout slots
-    const ROW_PADDING = 60; 
+    const COL_WIDTH = 350; 
+    const SLOT_HEIGHT = 200; // Fixed height per "slot" (e.g. Risk A, Risk B)
+    const GROUP_PADDING = 80; // Padding between Process Rows
 
     const CLASS_MAP: Record<FlowNodeType, string> = {
         'process': 'l2-process-node',
@@ -114,7 +114,7 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
     const originalNodes = DUMMY_PROCESS_ANALYSIS_DATA.nodes;
     const selectedClasses = selectedTypes.map(t => CLASS_MAP[t]);
 
-    // 1. Group Nodes by Row ID
+    // 1. Group Nodes by Row ID (e.g. "1" from "risk-1a")
     const rowGroups: Record<string, Record<FlowNodeType, Node[]>> = {};
     const rowIndices: number[] = [];
 
@@ -155,62 +155,61 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
     rowIndices.forEach(rowIndex => {
         const row = rowGroups[rowIndex];
         
-        // Sort nodes within each type group alphabetically by ID to ensure A comes before B
-        // This is crucial for parallel edge alignment (Risk A -> Control A)
-        selectedTypes.forEach(type => {
-            row[type].sort((a, b) => a.id.localeCompare(b.id));
-        });
-
-        // Find maximum items in any visible column for this row to determine Row Height
-        let maxItemsInRow = 0;
+        // Determine the "Max Depth" of this row (e.g. if Risks=2, Controls=2 -> depth 2)
+        let maxSlots = 1;
         selectedTypes.forEach(type => {
             const count = row[type].length;
-            if (count > maxItemsInRow) maxItemsInRow = count;
+            if (count > maxSlots) maxSlots = count;
         });
 
-        if (maxItemsInRow === 0) maxItemsInRow = 1;
-
-        const rowBlockHeight = maxItemsInRow * NODE_H;
-        
-        // The Y center of this entire row block
-        const rowCenterY = currentY + (rowBlockHeight / 2);
+        // The total height of this row group
+        const rowTotalHeight = maxSlots * SLOT_HEIGHT;
+        // The vertical center line of this row
+        const rowCenterY = currentY + (rowTotalHeight / 2);
 
         // Position nodes for this row
         selectedTypes.forEach((type, colIndex) => {
             const nodesInCell = row[type];
-            const count = nodesInCell.length;
-            
-            if (count === 0) return;
+            if (nodesInCell.length === 0) return;
 
-            // Calculate height occupied by these nodes
-            const totalCellHeight = count * NODE_H;
-            
-            // Start Y to center this group within the row block
-            // offset so the middle of totalCellHeight aligns with rowCenterY
-            let startNodeY = rowCenterY - (totalCellHeight / 2);
+            // Sort nodes alphabetically by ID to ensure A matches A, B matches B
+            nodesInCell.sort((a, b) => a.id.localeCompare(b.id));
+
+            // Are we filling all slots or centering few items?
+            const isFullColumn = nodesInCell.length === maxSlots;
 
             nodesInCell.forEach((node, nodeIdx) => {
-                // We want the node's vertical center to be at startNodeY + half_node_height
-                // Position in ReactFlow is top-left.
-                // Assuming visual center logic:
-                const nodeTopY = startNodeY + (nodeIdx * NODE_H) + ((NODE_H - 80) / 2); // 80 is roughly card min-height
+                let nodeY;
+                
+                if (isFullColumn) {
+                    // Place exactly in the slot. 
+                    // Slot 0 starts at currentY.
+                    // Center the node within the slot height.
+                    const slotTop = currentY + (nodeIdx * SLOT_HEIGHT);
+                    nodeY = slotTop + (SLOT_HEIGHT / 2) - 40; // -40 approx half node height
+                } else {
+                    // Center the group of nodes relative to the entire Row Block
+                    const blockHeight = nodesInCell.length * SLOT_HEIGHT;
+                    const blockTop = rowCenterY - (blockHeight / 2);
+                    const slotTop = blockTop + (nodeIdx * SLOT_HEIGHT);
+                    nodeY = slotTop + (SLOT_HEIGHT / 2) - 40;
+                }
 
                 layoutNodes.push({
                     ...node,
                     position: {
                         x: colIndex * COL_WIDTH,
-                        y: nodeTopY
+                        y: nodeY
                     },
                     sourcePosition: Position.Right,
                     targetPosition: Position.Left,
-                    // Force refresh
                     data: { ...node.data }
                 } as Node);
             });
         });
 
         // Increment Y for next row
-        currentY += rowBlockHeight + ROW_PADDING;
+        currentY += rowTotalHeight + GROUP_PADDING;
     });
 
     // 3. Generate Smart Edges
@@ -239,38 +238,31 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
 
                     let shouldConnect = false;
 
-                    // Matching Logic
+                    // --- Connection Logic ---
                     
-                    // Case 1: N to N (Equal count) -> Parallel 1-to-1 lines
-                    // Since both arrays are sorted by ID, index matching works perfectly for visual parallelism
-                    if (sourceNodes.length === targetNodes.length) {
-                        if (srcIdx === tgtIdx) shouldConnect = true;
-                    } 
-                    // Case 2: 1 to N -> Fan Out
-                    else if (sourceNodes.length === 1) {
-                        shouldConnect = true;
-                    }
-                    // Case 3: N to 1 -> Fan In
-                    else if (targetNodes.length === 1) {
-                        shouldConnect = true;
-                    }
-                    // Case 4: M to N (Uneven) -> Heuristic matching
-                    else {
-                        // Match suffixes if available (e.g. risk-1a -> ctrl-1a)
-                        const srcSuffix = srcNode.id.match(/[a-z]$/i)?.[0];
-                        const tgtSuffix = tgtNode.id.match(/[a-z]$/i)?.[0];
+                    // 1. Explicit Suffix Matching (e.g. Risk-1a -> Control-1a)
+                    const srcSuffix = srcNode.id.match(/[a-z]$/i)?.[0];
+                    const tgtSuffix = tgtNode.id.match(/[a-z]$/i)?.[0];
+
+                    if (srcSuffix && tgtSuffix) {
+                        // Strict horizontal connection for same suffix
+                        if (srcSuffix === tgtSuffix) shouldConnect = true;
                         
-                        if (srcSuffix && tgtSuffix && srcSuffix === tgtSuffix) {
-                            shouldConnect = true;
-                        } 
-                        // Demo-specific override for explicit multi-link scenario in dummy data
-                        else if (srcNode.id === 'risk-2a' && tgtNode.id === 'ctrl-2b') {
-                            // Example: Risk 2a connects to Ctrl 2b (Cross-link)
-                            shouldConnect = true;
-                        }
-                        else if (srcNode.id === 'risk-7b' && tgtNode.id === 'ctrl-7a') {
-                            shouldConnect = true;
-                        }
+                        // Special overrides for demo data cross-links
+                        if (srcNode.id === 'risk-2a' && tgtNode.id === 'ctrl-2b') shouldConnect = true;
+                        if (srcNode.id === 'risk-7b' && tgtNode.id === 'ctrl-7a') shouldConnect = true;
+                    } 
+                    // 2. Fan Out: Source has NO suffix (Process/Data), Target HAS suffix
+                    else if (!srcSuffix && tgtSuffix) {
+                        shouldConnect = true; // Connect Process to All Risks
+                    }
+                    // 3. Fan In: Source HAS suffix, Target has NO suffix (Output)
+                    else if (srcSuffix && !tgtSuffix) {
+                        shouldConnect = true; // Connect All Controls to Output
+                    }
+                    // 4. One-to-One: Neither has suffix (Process -> Data)
+                    else if (!srcSuffix && !tgtSuffix) {
+                        shouldConnect = true;
                     }
 
                     if (shouldConnect) {
@@ -280,7 +272,11 @@ export const filterDummyData = (selectedTypes: FlowNodeType[]) => {
                             target: tgtNode.id,
                             type: 'smoothstep',
                             pathOptions: { borderRadius: 20 },
-                            style: { stroke: '#94a3b8', strokeWidth: 2 },
+                            style: { 
+                                stroke: '#94a3b8', 
+                                strokeWidth: 2,
+                                strokeDasharray: (srcNode.id === 'risk-2a' && tgtNode.id === 'ctrl-2b') ? '5,5' : undefined // Dashed for cross-link
+                            },
                             animated: false,
                             markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' }
                         });
