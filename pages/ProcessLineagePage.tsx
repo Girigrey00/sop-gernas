@@ -4,7 +4,8 @@ import {
     ArrowLeft, Send, Sparkles, User, Bot, 
     MoreVertical, ThumbsUp, ThumbsDown, Copy, 
     RotateCcw, Paperclip, Mic, Image as ImageIcon,
-    ShieldCheck, Lock, FileText, AlertTriangle, Plus
+    ShieldCheck, Lock, FileText, AlertTriangle, Plus,
+    CreditCard, Banknote, Landmark
 } from 'lucide-react';
 import { Product } from '../types';
 
@@ -13,35 +14,70 @@ interface ProcessLineagePageProps {
     onBack: () => void;
 }
 
-// --- DUMMY DATA CONTEXT ---
-const DUMMY_POLICY_SOP = {
-    title: "Group Information Security Policy",
-    version: "3.0",
-    lastUpdated: "Oct 2025",
-    owner: "CISO Office",
-    content: {
-        overview: "This policy mandates the protection of information assets against unauthorized access, modification, or destruction.",
-        scope: "Applies to all employees, contractors, and third-party vendors accessing bank systems.",
-        password_policy: "Passwords must be 12+ characters, change every 90 days, and enforce MFA for external access.",
-        incident_reporting: "All security incidents must be reported to the SOC within 15 minutes of detection.",
-        data_classification: {
-            public: "Freely disclosures.",
-            internal: "Bank staff only.",
-            confidential: "Specific authorized personnel.",
-            restricted: "Board level / Legal hold."
+// --- DUMMY DATA CONTEXT (Derived from PDF) ---
+const DUMMY_PIL_SOP = {
+    title: "Personal Installment Loan (PIL) Process",
+    version: "1.0",
+    lastUpdated: "Nov 2025",
+    owner: "Retail Banking Operations",
+    steps: [
+        {
+            id: "1",
+            name: "Customer details & product selection",
+            inputs: ["Customer name", "EID", "Email", "Phone"],
+            risks: "Fraud (Existing Customer/WIP), Compliance Risk (Restricted Countries)",
+            controls: "Automated: Restricted countries check (IP blocking), EID or UAEPASS + OTP authentication."
+        },
+        {
+            id: "2",
+            name: "Pre-eligibility + customer ID&V",
+            inputs: ["EID copy (digital)"],
+            risks: "Fraud (Identity), Reputation Risk (Eligibility)",
+            controls: "Automated: OCR EID scan (EFR), Income threshold check (+7K), Minimum age, AECB Risk Score (711+), Negative Checklist (Mubadara)."
+        },
+        {
+            id: "3",
+            name: "Employer and salary validation",
+            inputs: ["Employer details", "Salary amount", "UID/TL", "EFR/AECB Reports"],
+            risks: "Fraud (Fake Employer), Compliance Risk (Salary Variance)",
+            controls: "Automated: Employer category check, TML validation, IBAN validation, Salary variance threshold check."
+        },
+        {
+            id: "4",
+            name: "Credit underwriting",
+            inputs: ["Internal Credit Score", "DBR", "Offer Letter"],
+            risks: "Credit Risk, Operational Risk",
+            controls: "Automated: Credit decision engine. Automated: Mandatory Life insurance selection."
+        },
+        {
+            id: "5",
+            name: "CASA account opening & insurance",
+            inputs: ["Account Details", "Insurance Form"],
+            risks: "Financial Crime (Screening), Reputation (Cooling off), Operational (FATCA)",
+            controls: "Automated: CASA Onboarding journey, FSK + Silent8 screening, BBL verification, CRAM risk rating."
+        },
+        {
+            id: "6",
+            name: "Loan conditions validation",
+            inputs: ["STL record", "Salary credit date", "Security cheque"],
+            risks: "Financial Risk (IBAN mismatch), Operational (Docs), Fin Crime (Block)",
+            controls: "Automated: IBAN validation (CASA Vs PIL). Manual: Signature validation, QR code validation for eSTLs."
+        },
+        {
+            id: "7",
+            name: "Loan disbursal / funds release",
+            inputs: ["Disbursal Confirmation", "T24 Record"],
+            risks: "Operational Risk (Maker Checker), Financial Crime",
+            controls: "Manual: Maker checker process (T24), Validate salary variance (10%), Document File Management."
         }
-    },
-    risks: [
-        { id: "R-SEC-01", name: "Data Leakage", mitigation: "DLP solution installation on all endpoints." },
-        { id: "R-SEC-02", name: "Unauthorized Access", mitigation: "RBAC and PAM implementation." }
     ]
 };
 
 const SUGGESTIONS = [
-    { text: "What is the password policy?", icon: Lock },
-    { text: "How to report an incident?", icon: AlertTriangle },
-    { text: "List the inherent risks", icon: ShieldCheck },
-    { text: "Summarize the scope", icon: FileText },
+    { text: "What are the risks in Step 3?", icon: AlertTriangle },
+    { text: "List controls for Credit Underwriting", icon: ShieldCheck },
+    { text: "How is EID validated?", icon: FileText },
+    { text: "Summarize Loan Disbursal process", icon: Banknote },
 ];
 
 interface ChatMessage {
@@ -73,7 +109,7 @@ const ProcessLineagePage: React.FC<ProcessLineagePageProps> = ({ product, onBack
 
     const simulateTyping = (text: string, msgId: string) => {
         let currentText = '';
-        const speed = 15; // ms per char
+        const speed = 10; // ms per char
         let i = 0;
         
         const interval = setInterval(() => {
@@ -90,13 +126,55 @@ const ProcessLineagePage: React.FC<ProcessLineagePageProps> = ({ product, onBack
 
     const getMockResponse = (query: string): string => {
         const q = query.toLowerCase();
-        if (q.includes('password') || q.includes('pwd')) return `**Password Policy Requirements:**\n\n• Length: Minimum 12 characters.\n• Complexity: Alphanumeric + Special chars.\n• Rotation: Every 90 days.\n• **MFA**: Mandatory for all external access.`;
-        if (q.includes('incident') || q.includes('breach')) return `**Incident Reporting Protocol:**\n\nSecurity incidents must be reported to the Security Operations Center (SOC) immediately.\n\n**SLA:** Within 15 minutes of detection.\n**Contact:** soc@bankfab.com or Ext 9999.`;
-        if (q.includes('risk') || q.includes('threat')) return `**Identified Inherent Risks:**\n\n1. **${DUMMY_POLICY_SOP.risks[0].id}**: ${DUMMY_POLICY_SOP.risks[0].name}\n   *Mitigation*: ${DUMMY_POLICY_SOP.risks[0].mitigation}\n\n2. **${DUMMY_POLICY_SOP.risks[1].id}**: ${DUMMY_POLICY_SOP.risks[1].name}\n   *Mitigation*: ${DUMMY_POLICY_SOP.risks[1].mitigation}`;
-        if (q.includes('scope') || q.includes('apply')) return `**Policy Scope:**\n${DUMMY_POLICY_SOP.content.scope}`;
-        if (q.includes('class') || q.includes('data')) return `**Data Classification Levels:**\n\n• **Public**: Freely disposable.\n• **Internal**: Bank staff only.\n• **Confidential**: Specific personnel.\n• **Restricted**: Highly sensitive (Board/Legal).`;
         
-        return `I can help you with the **${DUMMY_POLICY_SOP.title}**. \n\nTry asking about:\n- Password rules\n- Reporting incidents\n- Data classification\n- Risk controls`;
+        // Step 1: Customer Details
+        if (q.includes('customer detail') || q.includes('step 1') || q.includes('product selection')) {
+            const s = DUMMY_PIL_SOP.steps[0];
+            return `**Step 1: ${s.name}**\n\n**Inputs:** ${s.inputs.join(', ')}\n\n**Risks:**\n${s.risks}\n\n**Controls:**\n${s.controls}`;
+        }
+
+        // Step 2: ID&V
+        if (q.includes('id&v') || q.includes('eligibility') || q.includes('step 2') || q.includes('eid')) {
+            const s = DUMMY_PIL_SOP.steps[1];
+            return `**Step 2: ${s.name}**\n\n**Risks Identified:**\n${s.risks}\n\n**Key Controls:**\n${s.controls}\n\n*Note: Income threshold is +7K AED.*`;
+        }
+
+        // Step 3: Employer/Salary
+        if (q.includes('employer') || q.includes('salary') || q.includes('step 3')) {
+            const s = DUMMY_PIL_SOP.steps[2];
+            return `**Step 3: ${s.name}**\n\n**Risks:** ${s.risks}\n\n**Controls:**\n${s.controls}`;
+        }
+
+        // Step 4: Credit
+        if (q.includes('credit') || q.includes('underwriting') || q.includes('step 4')) {
+            const s = DUMMY_PIL_SOP.steps[3];
+            return `**Step 4: ${s.name}**\n\n**Risks:** ${s.risks}\n\n**Controls:**\n${s.controls}\n*Life insurance selection is mandatory.*`;
+        }
+
+        // Step 5: CASA
+        if (q.includes('casa') || q.includes('account opening') || q.includes('step 5')) {
+            const s = DUMMY_PIL_SOP.steps[4];
+            return `**Step 5: ${s.name}**\n\n**Risks:** ${s.risks}\n\n**Controls:**\n${s.controls}\n*Includes FATCA CRS declaration.*`;
+        }
+
+        // Step 6: Loan Conditions
+        if (q.includes('condition') || q.includes('stl') || q.includes('cheque') || q.includes('step 6')) {
+            const s = DUMMY_PIL_SOP.steps[5];
+            return `**Step 6: ${s.name}**\n\n**Risks:** ${s.risks}\n\n**Controls:**\n${s.controls}\n*Includes manual QR code validation for eSTLs.*`;
+        }
+
+        // Step 7: Disbursal
+        if (q.includes('disburs') || q.includes('fund') || q.includes('step 7')) {
+            const s = DUMMY_PIL_SOP.steps[6];
+            return `**Step 7: ${s.name}**\n\n**Risks:** ${s.risks}\n\n**Controls:**\n${s.controls}\n*Maker checker process via T24.*`;
+        }
+
+        // General
+        if (q.includes('risk')) {
+            return `**Major Risks in PIL Process:**\n\n1. **Fraud**: Identity theft, fake employers, salary manipulation.\n2. **Compliance**: Restricted countries, regulatory breaches.\n3. **Financial**: IBAN mismatches, credit default.\n4. **Operational**: Manual errors in maker-checker, document handling.`;
+        }
+
+        return `I can help you with the **${DUMMY_PIL_SOP.title}**. \n\nTry asking about:\n- Specific steps (e.g., "Step 3 details")\n- "Risks" involved\n- "Controls" for specific stages\n- "Salary validation" rules`;
     };
 
     const handleSend = async (textOverride?: string) => {
@@ -121,7 +199,7 @@ const ProcessLineagePage: React.FC<ProcessLineagePageProps> = ({ product, onBack
                 { id: aiMsgId, role: 'model', text: '', isTyping: true }
             ]);
             simulateTyping(responseText, aiMsgId);
-        }, 1000);
+        }, 800);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {

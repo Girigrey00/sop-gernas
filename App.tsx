@@ -683,7 +683,7 @@ const App: React.FC = () => {
                 product={{
                     _id: 'policy-standards-dummy',
                     id: 'policy-standards-dummy',
-                    product_name: 'Group Info Sec Policy',
+                    product_name: 'Personal Installment Loan (PIL)',
                     index_name: 'policy-index',
                     has_index: 'Yes',
                     has_flow: 'No',
