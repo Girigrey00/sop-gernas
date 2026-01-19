@@ -1,5 +1,5 @@
 {
-  "name": "GERNAS SOP Flow",
-  "description": "Standard Operating Procedure (SOP) generator and visualization tool powered by AI.",
+  "name": "GERNAS ISOP",
+  "description": "Interactive Standard Operating Procedure (ISOP) generator and visualization tool powered by AI.",
   "requestFramePermissions": []
 }

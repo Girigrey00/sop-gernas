@@ -75,7 +75,7 @@ const Sidebar = ({
         {!isCollapsed && (
             <div className="animate-in fade-in duration-300 text-center">
               <h1 className="text-white font-bold text-sm tracking-wide leading-none">GERNAS</h1>
-              <p className="text-[10px] text-fab-sky/60 font-medium tracking-wide mt-1">SOP Flow</p>
+              <p className="text-[10px] text-fab-sky/60 font-medium tracking-wide mt-1">ISOP</p>
             </div>
         )}
       </div>
