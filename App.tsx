@@ -596,12 +596,15 @@ const App: React.FC = () => {
       }
   };
 
-  // Handler for Lineage Mode (Now Policy Standard Chat)
-  const handleProcessLineageSelect = (product: Product, redirect: boolean) => {
-      setSelectedContextProduct(product);
-      if(!redirect) {
-          setCurrentView('LINEAGE_CHAT');
-      }
+  // Default Context for Policy Chat
+  const GENERIC_POLICY_PRODUCT: Product = {
+      _id: 'policy-std',
+      id: 'policy-std',
+      product_name: 'Policy Standards',
+      index_name: 'policy-index', // Using dummy or general index
+      has_index: 'Yes',
+      has_flow: 'No',
+      document_count: 0
   };
 
   const handleOpenSession = async (session: ChatSession) => {
@@ -676,29 +679,13 @@ const App: React.FC = () => {
         }
         return <HomePage onStart={() => {}} onSelectProduct={handleProcessAnalysisSelect} onNotification={showNotification} isAnalysisMode={true} pageTitle="Process Lineage" pageSubtitle="Visual Analysis of Process Flows" />;
       
-      case 'PROCESS_LINEAGE': // Now Policy Standards (Chat)
+      case 'PROCESS_LINEAGE': // Policy Standards (Chat) - Directly Render Chat Interface
         return (
-            <HomePage
-                onStart={() => {}}
-                onSelectProduct={handleProcessLineageSelect}
-                onNotification={showNotification}
-                pageTitle="Policy Standards"
-                pageSubtitle="Interactive Policy Knowledge Base"
+            <ProcessLineagePage 
+                product={GENERIC_POLICY_PRODUCT}
+                onBack={() => setCurrentView('HOME')}
             />
         );
-      case 'LINEAGE_CHAT':
-        if (selectedContextProduct) {
-            return (
-                <ProcessLineagePage 
-                    product={selectedContextProduct}
-                    onBack={() => {
-                        setCurrentView('PROCESS_LINEAGE');
-                        setSelectedContextProduct(null);
-                    }}
-                />
-            );
-        }
-        return <HomePage onStart={() => {}} onSelectProduct={handleProcessLineageSelect} onNotification={showNotification} pageTitle="Policy Standards" pageSubtitle="Interactive Policy Knowledge Base" />;
 
       case 'IMPACT_ASSESSMENT':
         // Placeholder or future implementation
