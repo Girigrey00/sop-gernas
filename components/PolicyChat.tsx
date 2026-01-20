@@ -130,6 +130,14 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext, onBack
         }
     };
 
+    const handleOpenCitation = (docName: string, page?: string) => {
+        const pageNum = page ? page.replace(/\D/g, '') : '';
+      //   const fakeUrl = `/documents/${docName}${pageNum ? `#page=${pageNum}` : ''}`;
+        // Placeholder for actual document viewer logic
+        alert(`Opening document: ${docName}\nNavigating to page: ${pageNum || '1'}\n(Link simulated)`);
+        // window.open(fakeUrl, '_blank'); 
+    };
+
     // --- Header Component (Shared) ---
     const Header = () => (
         <div className="bg-white px-6 py-4 flex items-center gap-4 z-10 shrink-0">
@@ -282,7 +290,7 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext, onBack
                                 
                                 {msg.citations && Object.keys(msg.citations).length > 0 && (
                                     <div className="mt-2 w-full max-w-lg">
-                                        <CitationBlock citations={msg.citations} onCitationClick={(doc, page, url) => window.open(url, '_blank')} />
+                                        <CitationBlock citations={msg.citations} onCitationClick={handleOpenCitation} />
                                     </div>
                                 )}
 

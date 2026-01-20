@@ -708,7 +708,12 @@ export const apiService: ApiServiceInterface = {
                     risksMitigated: st.risksMitigated || st.risks_mitigated || [],
                     controls: st.controls || [],
                     policies: st.policies || [],
-                    automationLevel: st.automationLevel || st.automation_level
+                    standards: st.standards || [], // Map new standards field
+                    automationLevel: st.automationLevel || st.automation_level,
+                    raciTeams: st.raciTeams || st.raci_teams || st.raciTeams,
+                    processingTime: st.processingTime || st.processing_time || st.processingTime,
+                    sla: st.sla,
+                    kpi: st.kpi
                 }))
             }));
 
@@ -756,7 +761,7 @@ export const apiService: ApiServiceInterface = {
                     stepType: step.stepType,
                     system: 'System', // Default fallback as JSON might not have it explicitly in this simplified type
                     actor: step.actor,
-                    processingTime: '10', // Mock
+                    processingTime: step.processingTime || '10', 
                     risks: step.risksMitigated ? step.risksMitigated.join(', ') : ''
                 });
             });
@@ -782,6 +787,7 @@ export const apiService: ApiServiceInterface = {
                         step.description = row.stepDescription;
                         step.actor = row.actor;
                         step.stepType = row.stepType;
+                        step.processingTime = row.processingTime;
                         // We could update more fields here
                     }
                 });

@@ -375,6 +375,12 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
         });
     }, [sopData]);
 
+    // Derived active stage object for passing to sidebar
+    const currentActiveStageObject = useMemo(() => {
+        if (!sopData || !sopData.processFlow || !sopData.processFlow.stages) return null;
+        return sopData.processFlow.stages.find(s => s.stageId === activeStage) || null;
+    }, [activeStage, sopData]);
+
 
     return (
         <div className="flex h-full w-full bg-slate-50 relative overflow-hidden">
@@ -449,7 +455,13 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                 {sopData && sopData.processFlow && sopData.processFlow.stages && (
                     <div className="bg-white/90 backdrop-blur shadow-md border border-slate-200 rounded-xl p-1 flex items-center gap-1 overflow-x-auto max-w-full pointer-events-auto no-scrollbar w-auto">
                          <button 
-                            onClick={() => setActiveStage('ALL')}
+                            onClick={() => {
+                                setActiveStage('ALL');
+                                // 'ALL' generally closes the sidebar or reverts to process overview
+                                setSelectedStep(null);
+                                setIsSidebarOpen(true);
+                                setActivePanel('GUIDE');
+                            }}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
                                 activeStage === 'ALL'
                                 ? 'bg-blue-600 text-white shadow-sm'
@@ -463,7 +475,13 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                         {sopData.processFlow.stages.map((stage) => (
                             <button
                                 key={stage.stageId}
-                                onClick={() => setActiveStage(stage.stageId)}
+                                onClick={() => {
+                                    setActiveStage(stage.stageId);
+                                    // Open Sidebar to show Stage Summary when a stage is specifically selected
+                                    setSelectedStep(null); // Clear specific step to show Stage View
+                                    setIsSidebarOpen(true);
+                                    setActivePanel('GUIDE');
+                                }}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
                                     activeStage === stage.stageId
                                     ? 'bg-blue-100 text-blue-700 border border-blue-200'
@@ -597,7 +615,8 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                     <>
                         {activePanel === 'GUIDE' ? (
                             <FlowDetails 
-                                step={selectedStep} 
+                                step={selectedStep}
+                                stage={currentActiveStageObject}
                                 processData={sopData}
                                 onClose={() => setIsSidebarOpen(false)}
                                 onNextStep={handleStepNavigation}

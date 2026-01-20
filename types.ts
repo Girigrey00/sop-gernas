@@ -40,15 +40,27 @@ export interface ProcessStep {
   decisionBranches?: DecisionBranch[];
   risksMitigated?: string[]; // IDs
   controls?: Control[];
-  policies?: string[]; // Added support for policies list
+  policies?: string[]; 
+  standards?: string[];    // New field
   automationLevel?: string;
   manualEffort?: number;
+  raciTeams?: string;
+  processingTime?: string;
+  sla?: string;            // New field
+  kpi?: string;            // New field
 }
 
 export interface ProcessStage {
   stageId: string;
   stageName: string;
   description: string;
+  // Enhanced Metadata
+  summary?: string;
+  keyActivities?: string[];
+  keyControls?: string[];
+  keyRisks?: string[];
+  inputs?: string[];
+  outputs?: string[];
   steps: ProcessStep[];
 }
 
