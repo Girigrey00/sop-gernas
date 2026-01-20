@@ -76,6 +76,17 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, stage, processData, onC
       ...(step?.standards || [])
   ];
 
+  // Aggregate RACI for Stage
+  const getStageRaci = () => {
+      if (!stage || !stage.steps) return [];
+      const teams = new Set<string>();
+      stage.steps.forEach(s => {
+          if (s.raciTeams) teams.add(s.raciTeams);
+      });
+      return Array.from(teams);
+  };
+  const stageRaci = getStageRaci();
+
   return (
     <div className="flex flex-col h-full bg-white relative">
         
@@ -118,7 +129,14 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, stage, processData, onC
                     
                     <h3 className="font-bold text-slate-900 text-xl leading-tight mb-3">{step.stepName}</h3>
                     
-                    {/* Metadata Tags Row (New) */}
+                    {/* Step Description (Added as requested) */}
+                    {step.description && (
+                        <p className="text-xs text-slate-600 leading-relaxed bg-white p-3 rounded-lg border border-slate-200 shadow-sm mb-4 italic">
+                            "{step.description}"
+                        </p>
+                    )}
+
+                    {/* Metadata Tags Row */}
                     <div className="flex flex-wrap gap-2">
                         {/* Responsible Actor Badge */}
                         {actorTheme && (
@@ -143,15 +161,7 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, stage, processData, onC
                             </div>
                         )}
 
-                        {/* RACI Teams Badge */}
-                        {step.raciTeams && (
-                            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full shadow-sm" title="RACI / Teams">
-                                <Users size={13} className="text-slate-400" />
-                                <span className="text-xs font-medium text-slate-600 truncate max-w-[180px]">
-                                    {step.raciTeams}
-                                </span>
-                            </div>
-                        )}
+                        {/* RACI Teams Badge REMOVED from Step view and moved to Stage view */}
 
                         {/* SLA Badge */}
                         {step.sla && (
@@ -257,16 +267,30 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, stage, processData, onC
                             "{stage.summary}"
                         </p>
                     )}
+                    
+                    {/* RACI Teams (Moved here from Step view) */}
+                    {stageRaci.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-200/50">
+                            {stageRaci.map((team, idx) => (
+                                <div key={idx} className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full shadow-sm" title="RACI / Teams">
+                                    <Users size={13} className="text-slate-400" />
+                                    <span className="text-xs font-medium text-slate-600 truncate max-w-[180px]">
+                                        {team}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <div className="p-6 space-y-8">
                     
-                    {/* Data Flow (Inputs -> Outputs) */}
+                    {/* Data Flow (Renamed Inputs/Outputs) */}
                     {(stage.inputs?.length || stage.outputs?.length) && (
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                                    <FileInput size={12} /> Data Inputs
+                                    <FileInput size={12} /> Data Consumed
                                 </h4>
                                 {stage.inputs && stage.inputs.length > 0 ? (
                                     stage.inputs.map((inp, i) => (
@@ -277,7 +301,7 @@ const FlowDetails: React.FC<FlowDetailsProps> = ({ step, stage, processData, onC
                             
                             <div className="space-y-2">
                                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                                    <FileOutput size={12} /> Data Outputs
+                                    <FileOutput size={12} /> Data Produced
                                 </h4>
                                 {stage.outputs && stage.outputs.length > 0 ? (
                                     stage.outputs.map((out, i) => (
