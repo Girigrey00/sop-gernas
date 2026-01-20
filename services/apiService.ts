@@ -694,6 +694,14 @@ export const apiService: ApiServiceInterface = {
                 stageId: s.stageId || s.stage_id,
                 stageName: s.stageName || s.stage_name,
                 description: s.description,
+                // NEW: Map Stage-Level Metadata for Sidebar Display
+                summary: s.summary,
+                keyActivities: s.keyActivities || s.key_activities,
+                keyControls: s.keyControls || s.key_controls,
+                keyRisks: s.keyRisks || s.key_risks,
+                inputs: s.inputs,
+                outputs: s.outputs,
+                // END NEW MAPPINGS
                 steps: (s.steps || []).map((st: any) => ({
                     stepId: st.stepId || st.step_id,
                     stepName: st.stepName || st.step_name,
