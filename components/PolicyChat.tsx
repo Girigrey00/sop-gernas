@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { 
     Send, Loader2, Sparkles, ShieldCheck, 
@@ -8,6 +7,7 @@ import {
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
 import { MessageRenderer, CitationBlock, GIcon, cleanQuestions } from './ChatAssistant';
+import { PlaceholdersAndVanishInput } from '@/components/ui/placeholders-and-vanish-input';
 
 interface PolicyChatProps {
     sopData: SopResponse;
@@ -132,10 +132,7 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext, onBack
 
     const handleOpenCitation = (docName: string, page?: string) => {
         const pageNum = page ? page.replace(/\D/g, '') : '';
-      //   const fakeUrl = `/documents/${docName}${pageNum ? `#page=${pageNum}` : ''}`;
-        // Placeholder for actual document viewer logic
         alert(`Opening document: ${docName}\nNavigating to page: ${pageNum || '1'}\n(Link simulated)`);
-        // window.open(fakeUrl, '_blank'); 
     };
 
     // --- Header Component (Shared) ---
@@ -157,44 +154,12 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext, onBack
         </div>
     );
 
-    // --- Input Component (Shared) ---
-    const InputBar = ({ centered = false }) => (
-        <div className={`w-full ${centered ? 'max-w-3xl mx-auto' : 'bg-white border-t border-slate-100 p-4'}`}>
-            <div className={`relative flex items-center bg-slate-100 rounded-full transition-all focus-within:bg-white focus-within:ring-2 focus-within:ring-slate-200 focus-within:shadow-md ${centered ? 'h-14' : 'h-12'}`}>
-                <div className="flex items-center gap-2 pl-4 text-slate-400">
-                    <button className="p-2 hover:bg-slate-200 rounded-full transition-colors"><ImageIcon size={20} /></button>
-                    <button className="p-2 hover:bg-slate-200 rounded-full transition-colors"><Mic size={20} /></button>
-                </div>
-                <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    disabled={isLoading}
-                    placeholder="Enter a prompt here"
-                    className="flex-1 bg-transparent border-none focus:ring-0 text-slate-700 placeholder:text-slate-400 px-4 h-full outline-none"
-                />
-                <div className="pr-2">
-                    <button 
-                        onClick={() => handleSend()}
-                        disabled={!input.trim() || isLoading}
-                        className={`p-2 rounded-full transition-all ${
-                            input.trim() 
-                            ? 'text-fab-royal hover:bg-blue-50' 
-                            : 'text-slate-300 cursor-not-allowed'
-                        }`}
-                    >
-                        {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
-                    </button>
-                </div>
-            </div>
-            {centered && (
-                <p className="text-[10px] text-center text-slate-400 mt-4">
-                    Policy Standards AI may display inaccurate info, including about people, so double-check its responses.
-                </p>
-            )}
-        </div>
-    );
+    const inputPlaceholders = [
+        "Ask about policy guidelines...",
+        "What are the compliance requirements?",
+        "Search for security standards",
+        "Who is the policy owner?"
+    ];
 
     // --- LANDING VIEW ---
     if (messages.length === 0) {
@@ -250,8 +215,18 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext, onBack
                 </div>
 
                 {/* Footer Input */}
-                <div className="shrink-0 pb-8 px-4">
-                    <InputBar centered />
+                <div className="shrink-0 pb-8 px-4 w-full max-w-3xl mx-auto">
+                    <PlaceholdersAndVanishInput
+                        placeholders={inputPlaceholders}
+                        onChange={(e) => setInput(e.target.value)}
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            if (!isLoading) handleSend(input);
+                        }}
+                    />
+                    <p className="text-[10px] text-center text-slate-400 mt-4">
+                        Policy Standards AI may display inaccurate info, including about people, so double-check its responses.
+                    </p>
                 </div>
             </div>
         );
@@ -335,7 +310,18 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext, onBack
             </div>
 
             {/* Input Area */}
-            <InputBar />
+            <div className="w-full bg-white border-t border-slate-100 p-4 pb-6">
+                <div className="max-w-3xl mx-auto">
+                    <PlaceholdersAndVanishInput
+                        placeholders={inputPlaceholders}
+                        onChange={(e) => setInput(e.target.value)}
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            if (!isLoading) handleSend(input);
+                        }}
+                    />
+                </div>
+            </div>
         </div>
     );
 };

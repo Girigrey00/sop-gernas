@@ -1,6 +1,7 @@
 
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -9,6 +10,11 @@ export default defineConfig(({ mode }) => {
   return {
     base: './', // Ensures assets are loaded correctly on static hosts
     plugins: [react()],
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./"),
+      },
+    },
     server: {
       port: 3000, // Keep port 3000 to avoid EACCES permission issues
       proxy: {

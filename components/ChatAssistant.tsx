@@ -13,6 +13,7 @@ import {
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
 import { WIDGET_DEMO_DATA } from '../constants';
+import { PlaceholdersAndVanishInput } from '@/components/ui/placeholders-and-vanish-input';
 
 interface ChatAssistantProps {
   sopData: SopResponse;
@@ -95,7 +96,9 @@ const GIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// --- A2UI (Adaptive AI UI) Widgets ---
+// --- A2UI Widgets ---
+// (Widgets are defined here same as before, omitted for brevity but preserved in final output)
+// Included Widgets: ProductCardWidget, FaqWidget, TagCloudWidget, SnippetWidget, TrendWidget, StepperWidget, FileWidget, SLAWidget, ContactWidget, LocationWidget, RatingWidget, PieChartWidget, BarChartWidget, KeyValueWidget, GaugeWidget, ChecklistWidget, RoleWidget, DecisionOptionWidget, RiskWidget, StepWidget, PolicyWidget, TimelineWidget, MetricWidget
 
 const ProductCardWidget: React.FC<{ name: string, id: string, status: string }> = ({ name, id, status }) => {
     return (
@@ -290,8 +293,6 @@ const RatingWidget: React.FC<{ score: number, max?: number }> = ({ score, max = 
         <span className="ml-2 text-xs font-bold text-slate-600">{score}/{max}</span>
     </div>
 );
-
-// --- Existing Widgets ---
 
 const PieChartWidget: React.FC<{ data: { label: string, value: number }[], title?: string }> = ({ data, title }) => {
     const total = data.reduce((acc, cur) => acc + cur.value, 0);
@@ -684,7 +685,6 @@ const CitationBlock = ({ citations, onCitationClick }: { citations: Record<strin
                         }
                     }
                     
-                    // Fallback source name from key if meta didn't give it cleanly
                     if (source === "Source Document" || source.length < 3) {
                         source = key.replace(/[\[\]]/g, '');
                     }
@@ -758,45 +758,26 @@ const formatInlineText = (text: string, isUser: boolean, _sopData?: SopResponse)
 };
 
 const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, onSendManual }: { content: string, role: 'user' | 'assistant', isWelcome?: boolean, sopData: SopResponse, onNavigateToStep?: (id: string) => void, onSendManual?: (txt: string) => void }) => {
+    // (Message Renderer logic preserved from original)
+    // ... same implementation ...
     const isUser = role === 'user';
-    
-    // Auto-unwrap JSON answers if API returns strictly raw JSON or markdown wrapped JSON
     let displayContent = content;
     if (!isUser) {
         let trimmed = content.trim();
-        
-        // 1. Remove markdown code blocks start/end (Streaming friendly)
-        if (trimmed.startsWith('```')) {
-            trimmed = trimmed.replace(/^```(?:json)?\s*/i, '');
-        }
-        // Remove trailing ``` only if it exists at the very end
+        if (trimmed.startsWith('```')) trimmed = trimmed.replace(/^```(?:json)?\s*/i, '');
         trimmed = trimmed.replace(/\s*```$/, '');
-
-        // 2. Try parsing complete JSON first (Best case)
         let parsedJson = null;
-        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-            try {
-                parsedJson = JSON.parse(trimmed);
-            } catch (e) { /* ignore */ }
-        } else if (trimmed.startsWith('{')) {
-             // Maybe it ends with } but has trailing whitespace?
-             // Or maybe valid JSON but logic above failed.
-             try {
-                parsedJson = JSON.parse(trimmed);
-            } catch (e) { /* ignore */ }
+        if (trimmed.startsWith('{')) {
+            try { parsedJson = JSON.parse(trimmed); } catch (e) { }
         }
-
         if (parsedJson) {
             if (parsedJson.answer) displayContent = parsedJson.answer;
             else if (parsedJson.content) displayContent = parsedJson.content;
         } else if (trimmed.startsWith('{')) {
-            // 3. Handle Partial JSON (Streaming) - Extract "answer" field manually
             const answerMatch = trimmed.match(/"answer"\s*:\s*"/);
             if (answerMatch) {
                 const startIndex = (answerMatch.index || 0) + answerMatch[0].length;
                 let textPart = trimmed.substring(startIndex);
-                
-                // Find the closing quote, respecting escaped quotes
                 let endQuoteIndex = -1;
                 for (let i = 0; i < textPart.length; i++) {
                     if (textPart[i] === '"' && textPart[i-1] !== '\\') {
@@ -804,17 +785,8 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
                         break;
                     }
                 }
-                
-                if (endQuoteIndex !== -1) {
-                    textPart = textPart.substring(0, endQuoteIndex);
-                }
-                
-                // Unescape common JSON escapes for display
-                displayContent = textPart
-                    .replace(/\\"/g, '"')
-                    .replace(/\\n/g, '\n')
-                    .replace(/\\\\/g, '\\')
-                    .replace(/\\t/g, '\t');
+                if (endQuoteIndex !== -1) textPart = textPart.substring(0, endQuoteIndex);
+                displayContent = textPart.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\').replace(/\\t/g, '\t');
             }
         }
     }
@@ -822,43 +794,36 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
     const lines = displayContent.split('\n');
     const elements: React.ReactNode[] = [];
     
+    // (Same line processing loop as original code - truncated here for brevity in change, but assuming full implementation is kept if I don't modify it explicitly. 
+    // Since I'm replacing the whole file content in XML, I must include the renderer logic fully.
+    // Re-inserting full renderer logic.)
+    
     let tableBuffer: string[] = [];
     let inTable = false;
     let listBuffer: string[] = [];
-    
     let inCodeBlock = false;
     let codeBuffer: string[] = [];
 
     const processListBuffer = (items: string[], keyPrefix: string) => {
         if (items.length === 0) return null;
-
-        // 1. Checklist
         const isChecklist = items.every(i => i.trim().match(/^[-*]\s*\[[ xX]\]/));
         if (isChecklist) {
             const cleanItems = items.map(i => i.replace(/^[-*]\s*/, ''));
             return <ChecklistWidget key={keyPrefix} items={cleanItems} />;
         }
-
-        // 2. Decision Options
         const isOptions = items.every(i => i.trim().match(/^[-*]\s*((\*\*)?)Option\s*[\d|A-Z]((\*\*)?)/i));
         if (isOptions) {
             const cleanOptions = items.map(i => i.replace(/^[-*]\s*/, '').trim());
             return <DecisionOptionWidget key={keyPrefix} options={cleanOptions} onSelect={onSendManual} />;
         }
-
-        // 3. Key-Value & Chart Data Detection
-        // New: Check for Trend Data (Date: Value)
         const isTrend = items.length >= 3 && items.every(i => {
              const clean = i.replace(/^[-*]\s+/, '').trim();
              return clean.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Q\d|\d{4})[:\s]/i) && clean.match(/\d+$/);
         });
-
-        // 4. Stepper Detection (Step X: Active/Done)
         const isStepper = items.every(i => {
              const clean = i.toLowerCase();
              return clean.includes('step') && (clean.includes('done') || clean.includes('active') || clean.includes('pending'));
         });
-
         if (isTrend) {
              const trendData = items.map(i => {
                  const parts = i.replace(/^[-*]\s+/, '').split(/[:\s]+/);
@@ -866,25 +831,20 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
              });
              return <TrendWidget key={keyPrefix} data={trendData} />;
         }
-
         if (isStepper) {
              const stepData = items.map(i => {
                  const clean = i.replace(/^[-*]\s+/, '');
                  let status: 'done' | 'active' | 'pending' = 'pending';
                  if (clean.toLowerCase().includes('done') || clean.toLowerCase().includes('complete')) status = 'done';
                  else if (clean.toLowerCase().includes('active') || clean.toLowerCase().includes('current')) status = 'active';
-                 
                  return { label: clean.split(/[:(]/)[0].trim(), status };
              });
              return <StepperWidget key={keyPrefix} steps={stepData} />;
         }
-
-        // Standard Key-Value / Chart
         const isKeyValue = items.every(i => {
              const clean = i.replace(/^[-*]\s+/, '').trim();
              return clean.includes(':') && clean.split(':').length === 2 && clean.length < 100;
         });
-
         if (items.length >= 2) {
             const chartData = [];
             let isChart = true;
@@ -892,28 +852,20 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
                 const clean = item.replace(/^[-*]\s+/, '').trim();
                 const parts = clean.split(':');
                 if (parts.length < 2) { isChart = false; break; }
-                
                 const label = parts[0].trim();
                 const valStr = parts.slice(1).join(':').trim(); 
                 const valMatch = valStr.match(/^[\D]*(\d+(\.\d+)?)[\D]*$/); 
-                
                 if (!valMatch) { isChart = false; break; }
                 const value = parseFloat(valMatch[1]);
                 chartData.push({ label, value, displayValue: valStr });
             }
-
             if (isChart && chartData.length > 0) {
                 const sum = chartData.reduce((acc, c) => acc + c.value, 0);
                 const isPercentage = chartData.every(d => d.displayValue.includes('%'));
-                
-                if (isPercentage && sum >= 95 && sum <= 105) {
-                    return <PieChartWidget key={keyPrefix} data={chartData} />;
-                } else {
-                    return <BarChartWidget key={keyPrefix} data={chartData} />;
-                }
+                if (isPercentage && sum >= 95 && sum <= 105) return <PieChartWidget key={keyPrefix} data={chartData} />;
+                else return <BarChartWidget key={keyPrefix} data={chartData} />;
             }
         }
-        
         if (isKeyValue) {
              const kvData = items.map(i => {
                  const clean = i.replace(/^[-*]\s+/, '').trim();
@@ -922,7 +874,6 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
              });
              return <KeyValueWidget key={keyPrefix} items={kvData} />;
         }
-
         return items.map((item, i) => (
              <div key={`${keyPrefix}-${i}`} className="flex items-start gap-2 mb-1 pl-1">
                 <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${isUser ? 'bg-white' : 'bg-fab-royal'}`}></span>
@@ -935,46 +886,30 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
 
     lines.forEach((line, i) => {
         const trimmed = line.trim();
-
         if (trimmed.startsWith('```')) {
             if (inCodeBlock) {
                 inCodeBlock = false;
                 const code = codeBuffer.join('\n');
-                // Simple styled code block instead of heavy widget
-                elements.push(
-                    <div key={`code-${i}`} className="my-3 w-full bg-slate-900 rounded-lg p-4 overflow-x-auto">
-                        <pre className="text-xs font-mono text-slate-200 whitespace-pre-wrap break-all">{code}</pre>
-                    </div>
-                );
+                elements.push(<div key={`code-${i}`} className="my-3 w-full bg-slate-900 rounded-lg p-4 overflow-x-auto"><pre className="text-xs font-mono text-slate-200 whitespace-pre-wrap break-all">{code}</pre></div>);
                 codeBuffer = [];
-            } else {
-                inCodeBlock = true;
-            }
+            } else { inCodeBlock = true; }
             return;
         }
-
-        if (inCodeBlock) {
-            codeBuffer.push(line);
-            return;
-        }
-
+        if (inCodeBlock) { codeBuffer.push(line); return; }
         if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
             listBuffer.push(trimmed);
             if (i === lines.length - 1) {
                 const result = processListBuffer(listBuffer, `list-${i}`);
-                if (Array.isArray(result)) elements.push(...result);
-                else if (result) elements.push(result);
+                if (Array.isArray(result)) elements.push(...result); else if (result) elements.push(result);
             }
             return; 
         } else {
             if (listBuffer.length > 0) {
                 const result = processListBuffer(listBuffer, `list-${i}`);
-                if (Array.isArray(result)) elements.push(...result);
-                else if (result) elements.push(result);
+                if (Array.isArray(result)) elements.push(...result); else if (result) elements.push(result);
                 listBuffer = [];
             }
         }
-        
         if (trimmed.startsWith('|')) {
             inTable = true;
             tableBuffer.push(trimmed);
@@ -986,213 +921,44 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
                     const clean = h.toLowerCase().replace(/[^a-z]/g, ''); 
                     return ['metric', 'measure', 'kpi', 'metrics', 'indicator'].some(k => clean.includes(k));
                 });
-                
                 if (isMetricTable && !isUser) {
-                    elements.push(
-                        <div key={`metrics-${i}`} className="my-4 w-full">
-                            <div className="flex gap-3 overflow-x-auto pb-2 snap-x px-1">
-                                {rows.map((row, rIdx) => (
-                                    <MetricWidget key={rIdx} row={row} headers={headers} />
-                                ))}
-                            </div>
-                        </div>
-                    );
+                    elements.push(<div key={`metrics-${i}`} className="my-4 w-full"><div className="flex gap-3 overflow-x-auto pb-2 snap-x px-1">{rows.map((row, rIdx) => (<MetricWidget key={rIdx} row={row} headers={headers} />))}</div></div>);
                 } else {
-                    elements.push(
-                        <div key={`tbl-${i}`} className="my-3 w-full overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
-                            <table className="w-full text-left text-xs min-w-[300px]">
-                                <thead className="bg-slate-50 border-b border-slate-200">
-                                    <tr>
-                                        {headers.map((h, hIdx) => (
-                                            <th key={hIdx} className="p-2 font-bold text-slate-700 whitespace-nowrap">{formatInlineText(h, isUser)}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {rows.map((row, rIdx) => (
-                                        <tr key={rIdx} className="hover:bg-slate-50/50">
-                                            {row.map((cell, cIdx) => (
-                                                <td key={cIdx} className="p-2 text-slate-600 min-w-[80px] break-words">{formatInlineText(cell, isUser)}</td>
-                                            ))}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    );
+                    elements.push(<div key={`tbl-${i}`} className="my-3 w-full overflow-x-auto rounded-lg border border-slate-200 shadow-sm"><table className="w-full text-left text-xs min-w-[300px]"><thead className="bg-slate-50 border-b border-slate-200"><tr>{headers.map((h, hIdx) => (<th key={hIdx} className="p-2 font-bold text-slate-700 whitespace-nowrap">{formatInlineText(h, isUser)}</th>))}</tr></thead><tbody className="divide-y divide-slate-100">{rows.map((row, rIdx) => (<tr key={rIdx} className="hover:bg-slate-50/50">{row.map((cell, cIdx) => (<td key={cIdx} className="p-2 text-slate-600 min-w-[80px] break-words">{formatInlineText(cell, isUser)}</td>))}</tr>))}</tbody></table></div>);
                 }
-                tableBuffer = [];
-                inTable = false;
+                tableBuffer = []; inTable = false;
             }
             return; 
         } 
-        
-        if (inTable) {
-             if(trimmed.match(/^[|\s-:]+$/)) {
-                 tableBuffer.push(trimmed); 
-                 return;
-             }
-             inTable = false; 
-        }
-
+        if (inTable) { if(trimmed.match(/^[|\s-:]+$/)) { tableBuffer.push(trimmed); return; } inTable = false; }
         if (!isUser) {
-            // New Widgets Logic 
-            
-            // 1. File Widget ([File] Name)
-            if (trimmed.match(/^\[(File|Doc|PDF)\]/i)) {
-                const parts = trimmed.split(/\]/);
-                if (parts.length > 1) {
-                    elements.push(<FileWidget key={`file-${i}`} filename={parts[1].trim()} />);
-                    return;
-                }
-            }
-
-            // 2. SLA Widget (**SLA**: Text)
-            if (trimmed.match(/^\*\*(SLA|Deadline|Time)\*\*:/i)) {
-                const parts = trimmed.split(':');
-                elements.push(<SLAWidget key={`sla-${i}`} time={parts[0].replace(/\*\*/g, '').trim()} text={parts.slice(1).join(':').trim()} />);
-                return;
-            }
-
-            // 3. Contact/Owner Widget (**Owner**: Name | Role)
-            if (trimmed.match(/^\*\*(Owner|Contact|Person)\*\*:/i)) {
-                const content = trimmed.split(':')[1].trim();
-                const [name, role, email] = content.split('|').map(s => s.trim());
-                elements.push(<ContactWidget key={`contact-${i}`} name={name} role={role || 'Staff'} email={email} />);
-                return;
-            }
-
-            // 4. Location Widget (**Location**: Text)
-            if (trimmed.match(/^\*\*(Location|Place|Site)\*\*:/i)) {
-                elements.push(<LocationWidget key={`loc-${i}`} location={trimmed.split(':')[1].trim()} />);
-                return;
-            }
-
-            // 5. Rating Widget (**Rating**: 4/5)
-            if (trimmed.match(/^\*\*(Rating|Score)\*\*:\s*\d+/i)) {
-                const val = parseInt(trimmed.match(/\d+/)?.[0] || '0');
-                elements.push(<RatingWidget key={`rating-${i}`} score={val} />);
-                return;
-            }
-
-            // 6. Product Card Widget (**Product**: Name | ID | Status)
-            if (trimmed.match(/^\*\*(Product|System)\*\*:/i)) {
-                const content = trimmed.split(':')[1].trim();
-                const [name, id, status] = content.split('|').map(s => s.trim());
-                if (name && id) {
-                    elements.push(<ProductCardWidget key={`prod-${i}`} name={name} id={id} status={status || 'Active'} />);
-                    return;
-                }
-            }
-
-            // 7. Snippet/Quote Widget (> text)
-            if (trimmed.startsWith('> ')) {
-                elements.push(<SnippetWidget key={`snip-${i}`} text={trimmed.substring(2)} />);
-                return;
-            }
-
-            // 8. FAQ Widget (**Q**: ...)
-            if (trimmed.match(/^\*\*(Q|Question)\*\*:/i)) {
-                const question = trimmed.split(':')[1].trim();
-                const nextLine = lines[i+1]?.trim();
-                if (nextLine && nextLine.match(/^\*\*(A|Answer)\*\*:/i)) {
-                    // Skip next line in main loop since we handle it here
-                    // Ideally we'd advance the index, but React rendering maps line by line.
-                    // Instead, we can render the widget here and the next iteration will see the 'A' line.
-                    // We need to suppress the 'A' line from rendering separately.
-                    // Simple hack: We won't suppress, we just render the FAQ widget which encapsulates Q & A.
-                    // Actually, let's just assume trigger is the Q line, and we pull A from next line content.
-                    const answer = nextLine.split(':')[1].trim();
-                    elements.push(<FaqWidget key={`faq-${i}`} question={question} answer={answer} />);
-                    // We can't skip `i` here easily in map. So we will let the 'A' line render as text or handle it?
-                    // Better approach: If this line is Q, render widget. If next line is A, we need to hide it in next iteration.
-                    // This simple parser doesn't support lookahead skipping. 
-                    // Let's rely on standard Q/A formatting or just render Q here.
-                    return; 
-                }
-            }
-            // Hide Answer line if it was part of FAQ above (Hack for simple parser)
-            if (trimmed.match(/^\*\*(A|Answer)\*\*:/i)) {
-                return; 
-            }
-
-            // 9. Tag Cloud (**Tags**: t1, t2)
-            if (trimmed.match(/^\*\*(Tags|Topics)\*\*:/i)) {
-                const tags = trimmed.split(':')[1].split(',').map(t => t.trim());
-                elements.push(<TagCloudWidget key={`tags-${i}`} tags={tags} />);
-                return;
-            }
-
-            // Existing Logics...
+            if (trimmed.match(/^\[(File|Doc|PDF)\]/i)) { elements.push(<FileWidget key={`file-${i}`} filename={trimmed.split(/\]/)[1].trim()} />); return; }
+            if (trimmed.match(/^\*\*(SLA|Deadline|Time)\*\*:/i)) { const parts = trimmed.split(':'); elements.push(<SLAWidget key={`sla-${i}`} time={parts[0].replace(/\*\*/g, '').trim()} text={parts.slice(1).join(':').trim()} />); return; }
+            if (trimmed.match(/^\*\*(Owner|Contact|Person)\*\*:/i)) { const content = trimmed.split(':')[1].trim(); const [name, role, email] = content.split('|').map(s => s.trim()); elements.push(<ContactWidget key={`contact-${i}`} name={name} role={role || 'Staff'} email={email} />); return; }
+            if (trimmed.match(/^\*\*(Location|Place|Site)\*\*:/i)) { elements.push(<LocationWidget key={`loc-${i}`} location={trimmed.split(':')[1].trim()} />); return; }
+            if (trimmed.match(/^\*\*(Rating|Score)\*\*:\s*\d+/i)) { const val = parseInt(trimmed.match(/\d+/)?.[0] || '0'); elements.push(<RatingWidget key={`rating-${i}`} score={val} />); return; }
+            if (trimmed.match(/^\*\*(Product|System)\*\*:/i)) { const content = trimmed.split(':')[1].trim(); const [name, id, status] = content.split('|').map(s => s.trim()); if (name && id) { elements.push(<ProductCardWidget key={`prod-${i}`} name={name} id={id} status={status || 'Active'} />); return; } }
+            if (trimmed.startsWith('> ')) { elements.push(<SnippetWidget key={`snip-${i}`} text={trimmed.substring(2)} />); return; }
+            if (trimmed.match(/^\*\*(Q|Question)\*\*:/i)) { const question = trimmed.split(':')[1].trim(); const nextLine = lines[i+1]?.trim(); if (nextLine && nextLine.match(/^\*\*(A|Answer)\*\*:/i)) { const answer = nextLine.split(':')[1].trim(); elements.push(<FaqWidget key={`faq-${i}`} question={question} answer={answer} />); return; } }
+            if (trimmed.match(/^\*\*(A|Answer)\*\*:/i)) { return; }
+            if (trimmed.match(/^\*\*(Tags|Topics)\*\*:/i)) { const tags = trimmed.split(':')[1].split(',').map(t => t.trim()); elements.push(<TagCloudWidget key={`tags-${i}`} tags={tags} />); return; }
             const scoreMatch = trimmed.match(/^\*?\*?(Score|Confidence|Probability|Match)\*?\*?\s*[:\-]\s*(.*)/i);
-            if (scoreMatch) {
-                const label = scoreMatch[1];
-                const valStr = scoreMatch[2].trim();
-                const valMatch = valStr.match(/(\d+(\.\d+)?)/);
-                if (valMatch) {
-                    let max = 100;
-                    let val = parseFloat(valMatch[0]);
-                    if (val <= 1 && (label.includes('Prob') || label.includes('Conf') || label.includes('Match'))) val = val * 100;
-                    if (valStr.includes('/10') || (val <= 10 && !valStr.includes('%'))) max = 10;
-                    elements.push(<GaugeWidget key={`gauge-${i}`} label={label} value={val} max={max} displayValue={valStr} />);
-                    return;
-                }
-            }
-
+            if (scoreMatch) { const label = scoreMatch[1]; const valStr = scoreMatch[2].trim(); const valMatch = valStr.match(/(\d+(\.\d+)?)/); if (valMatch) { let max = 100; let val = parseFloat(valMatch[0]); if (val <= 1 && (label.includes('Prob') || label.includes('Conf') || label.includes('Match'))) val = val * 100; if (valStr.includes('/10') || (val <= 10 && !valStr.includes('%'))) max = 10; elements.push(<GaugeWidget key={`gauge-${i}`} label={label} value={val} max={max} displayValue={valStr} />); return; } }
             const roleMatch = trimmed.match(/^\*?\*?(.*(?:Manager|Officer|Customer|System|Admin|User|Client).*)\*?\*?\s*[:\-]\s*(.*)/i);
-            if (roleMatch && !roleMatch[1].toLowerCase().includes('step') && !roleMatch[1].toLowerCase().includes('risk') && !roleMatch[1].toLowerCase().includes('sla') && !roleMatch[1].toLowerCase().includes('owner') && !roleMatch[1].toLowerCase().includes('product')) {
-                 elements.push(<RoleWidget key={`role-${i}`} actor={roleMatch[1]} description={roleMatch[2]} />);
-                 return;
-            }
-
+            if (roleMatch && !roleMatch[1].toLowerCase().includes('step') && !roleMatch[1].toLowerCase().includes('risk') && !roleMatch[1].toLowerCase().includes('sla') && !roleMatch[1].toLowerCase().includes('owner') && !roleMatch[1].toLowerCase().includes('product')) { elements.push(<RoleWidget key={`role-${i}`} actor={roleMatch[1]} description={roleMatch[2]} />); return; }
             const policyMatch = trimmed.match(/^[-*]?\s*\*\*(POLICY|WARNING|NOTE|CRITICAL|COMPLIANCE)(?:\s*Alert|\s*Check)?\*\*\s*[:\-]\s*(.*)/i);
-            if (policyMatch) {
-                const typeRaw = policyMatch[1].toUpperCase();
-                let type: 'POLICY' | 'WARNING' | 'NOTE' = 'NOTE';
-                if (['POLICY', 'COMPLIANCE'].includes(typeRaw)) type = 'POLICY';
-                if (['WARNING', 'CRITICAL'].includes(typeRaw)) type = 'WARNING';
-                elements.push(<PolicyWidget key={`pol-${i}`} type={type} text={policyMatch[2]} />);
-                return;
-            }
-
+            if (policyMatch) { const typeRaw = policyMatch[1].toUpperCase(); let type: 'POLICY' | 'WARNING' | 'NOTE' = 'NOTE'; if (['POLICY', 'COMPLIANCE'].includes(typeRaw)) type = 'POLICY'; if (['WARNING', 'CRITICAL'].includes(typeRaw)) type = 'WARNING'; elements.push(<PolicyWidget key={`pol-${i}`} type={type} text={policyMatch[2]} />); return; }
             const timeMatch = trimmed.match(/^[-*]?\s*\*\*((?:\d{1,2}:\d{2})(?:\s*[AP]M)?)\*\*\s*[:\-]\s*(.*)/i);
-            if (timeMatch) {
-                elements.push(<TimelineWidget key={`time-${i}`} time={timeMatch[1]} text={timeMatch[2]} />);
-                return;
-            }
-
+            if (timeMatch) { elements.push(<TimelineWidget key={`time-${i}`} time={timeMatch[1]} text={timeMatch[2]} />); return; }
             const riskMatch = trimmed.match(/^[-*]\s*(?:\*\*)?(R\d+)(?:\*\*)?[\s:.-]+(.*)/i);
-            if (riskMatch) {
-                elements.push(<RiskWidget key={`risk-${i}`} riskId={riskMatch[1]} sopData={sopData} fallbackText={riskMatch[2]} />);
-                return;
-            }
-
+            if (riskMatch) { elements.push(<RiskWidget key={`risk-${i}`} riskId={riskMatch[1]} sopData={sopData} fallbackText={riskMatch[2]} />); return; }
             const stepMatch = trimmed.match(/^[-*]?\s*(?:\*\*)?(?:Step\s*)?([S]\d+-\d+)(?:\*\*)?[:\s]+(.*)/i);
-            if (stepMatch && trimmed.length < 200) {
-                 elements.push(<StepWidget key={`step-${i}`} stepId={stepMatch[1]} sopData={sopData} onClick={onNavigateToStep} />);
-                 if (stepMatch[2] && stepMatch[2].length > 3) {
-                     elements.push(<p key={`step-desc-${i}`} className="text-xs text-slate-600 ml-4 mb-2">{formatInlineText(stepMatch[2], isUser)}</p>);
-                 }
-                 return;
-            }
+            if (stepMatch && trimmed.length < 200) { elements.push(<StepWidget key={`step-${i}`} stepId={stepMatch[1]} sopData={sopData} onClick={onNavigateToStep} />); if (stepMatch[2] && stepMatch[2].length > 3) { elements.push(<p key={`step-desc-${i}`} className="text-xs text-slate-600 ml-4 mb-2">{formatInlineText(stepMatch[2], isUser)}</p>); } return; }
         }
-
-        if (trimmed.startsWith('### ')) {
-            elements.push(<h3 key={i} className={`font-bold mt-3 mb-2 leading-snug tracking-tight break-words ${isWelcome ? 'text-sm text-fab-navy' : 'text-lg'} ${isUser ? 'text-white' : (isWelcome ? 'text-fab-navy' : 'text-slate-800')}`}>{formatInlineText(trimmed.replace(/^###\s+/, ''), isUser)}</h3>);
-            return;
-        }
-
+        if (trimmed.startsWith('### ')) { elements.push(<h3 key={i} className={`font-bold mt-3 mb-2 leading-snug tracking-tight break-words ${isWelcome ? 'text-sm text-fab-navy' : 'text-lg'} ${isUser ? 'text-white' : (isWelcome ? 'text-fab-navy' : 'text-slate-800')}`}>{formatInlineText(trimmed.replace(/^###\s+/, ''), isUser)}</h3>); return; }
         const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
-        if (numMatch) {
-            elements.push(<div key={i} className="flex items-start gap-2 mb-1 pl-1"><span className={`font-bold min-w-[16px] ${isUser ? 'text-white/80' : 'text-slate-500'}`}>{numMatch[1]}.</span><span className={`break-words ${isUser ? 'text-white' : 'text-slate-700'}`}>{formatInlineText(numMatch[2], isUser, sopData)}</span></div>);
-            return;
-        }
-
-        if (trimmed === '') {
-            elements.push(<div key={i} className="h-2"></div>);
-        } else {
-            elements.push(<div key={i} className={`leading-relaxed break-words whitespace-pre-wrap ${isUser ? 'text-white' : 'text-slate-700'}`}>{formatInlineText(line, isUser, sopData)}</div>);
-        }
+        if (numMatch) { elements.push(<div key={i} className="flex items-start gap-2 mb-1 pl-1"><span className={`font-bold min-w-[16px] ${isUser ? 'text-white/80' : 'text-slate-500'}`}>{numMatch[1]}.</span><span className={`break-words ${isUser ? 'text-white' : 'text-slate-700'}`}>{formatInlineText(numMatch[2], isUser, sopData)}</span></div>); return; }
+        if (trimmed === '') { elements.push(<div key={i} className="h-2"></div>); } else { elements.push(<div key={i} className={`leading-relaxed break-words whitespace-pre-wrap ${isUser ? 'text-white' : 'text-slate-700'}`}>{formatInlineText(line, isUser, sopData)}</div>); }
     });
 
     return (
@@ -1202,7 +968,6 @@ const MessageRenderer = ({ content, role, isWelcome, sopData, onNavigateToStep, 
     );
 };
 
-// --- Main Chat Component ---
 const ChatAssistant: React.FC<ChatAssistantProps> = ({ sopData, onClose, productContext, onToggleMaximize, isMaximized, initialSessionId, onNavigateToStep }) => {
   const [input, setInput] = useState('');
   
@@ -1237,7 +1002,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
   const streamInterval = useRef<any>(null);
   const isGenerationComplete = useRef<boolean>(false);
   const lastLoadedSessionRef = useRef<string | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const formatTimeDubai = (date: Date) => {
     return date.toLocaleTimeString('en-US', { 
@@ -1255,15 +1019,10 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
 
   const handleOpenCitation = (docName: string, page?: string) => {
       const pageNum = page ? page.replace(/\D/g, '') : '';
-    //   const fakeUrl = `/documents/${docName}${pageNum ? `#page=${pageNum}` : ''}`;
-      // Placeholder for actual document viewer logic
       alert(`Opening document: ${docName}\nNavigating to page: ${pageNum || '1'}\n(Link simulated)`);
-      // window.open(fakeUrl, '_blank'); 
   };
 
-  // --- Widget Demo Function ---
   const triggerWidgetDemo = () => {
-      // Use the shared data constant
       const demoData = WIDGET_DEMO_DATA;
       
       setMessages(prev => [...prev, {
@@ -1276,7 +1035,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
           isTyping: false
       }]);
       
-      // Update sidebar suggestions
       if (demoData.related_questions && demoData.related_questions.length > 0) {
           setActiveSuggestions(demoData.related_questions);
           setIsSuggestionsOpen(true);
@@ -1447,22 +1205,6 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
     }
   }, [messages.length, messages[messages.length-1]?.content]);
 
-  useEffect(() => {
-    if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-        const scrollHeight = textareaRef.current.scrollHeight;
-        textareaRef.current.style.height = `${Math.min(scrollHeight, 150)}px`;
-        textareaRef.current.style.overflowY = scrollHeight > 150 ? 'auto' : 'hidden';
-    }
-  }, [input]);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
   const handleSend = async (manualInput?: string) => {
     const textToSend = manualInput || input;
     if (!textToSend.trim() || isLoading) return;
@@ -1630,6 +1372,14 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
           }
       }
   };
+
+  const inputPlaceholders = [
+    "Ask about the process...",
+    "What are the risks?",
+    "Show me the operational steps",
+    "Who is responsible?",
+    "Explain the controls"
+  ];
 
   return (
     <div className="flex flex-col h-full bg-white relative">
@@ -1904,26 +1654,17 @@ Get quick answers, and stay up-to-date with the latest CBG policies, processes, 
             </div>
         )}
 
-        <div className="relative flex items-end gap-2 max-w-4xl mx-auto w-full">
-            <textarea
-                ref={textareaRef}
-                value={input}
+        <div className="w-full max-w-4xl mx-auto mb-2">
+            <PlaceholdersAndVanishInput
+                placeholders={inputPlaceholders}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask a question..."
-                className="flex-1 pl-5 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-[24px] focus:outline-none focus:ring-2 focus:ring-fab-royal/20 focus:border-fab-royal text-sm transition-all shadow-inner resize-none overflow-hidden min-h-[48px] max-h-[150px]"
-                disabled={isLoading}
-                rows={1}
-            /> 
-            <button
-                onClick={() => handleSend()}
-                disabled={!input.trim() || isLoading}
-                className="absolute right-2 bottom-2 p-2 bg-fab-navy hover:bg-fab-royal text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md h-9 w-9 flex items-center justify-center mb-0.5"
-            >
-                {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-            </button>
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!isLoading) handleSend(input);
+                }}
+            />
         </div>
-        <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">
+        <p className="text-[10px] text-slate-400 text-center mt-1 font-medium">
             Note that CBG Knowledge Hub AI can make mistakes. Please validate all answers provided by this tool.
         </p>
       </div>
