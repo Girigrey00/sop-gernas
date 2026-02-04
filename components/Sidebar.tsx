@@ -1,13 +1,8 @@
 
 import React, { useEffect, useState } from 'react';
-import { 
-  FileText, ShieldCheck, GitMerge, AlertOctagon, BookOpen, Clock, 
-  User, LogOut, MessageSquare 
-} from 'lucide-react';
+import { Compass, LogOut, ChevronRight, BookOpen, ChevronLeft, User, Clock, MessageSquare, LayoutDashboard, Activity, FileText, ShieldCheck, GitMerge, AlertOctagon } from 'lucide-react';
 import { View, ChatSession, Product } from '../types';
 import { apiService } from '../services/apiService';
-import { Sidebar as AcetSidebar, SidebarBody, SidebarLink } from '@/components/ui/sidebar';
-import { motion } from 'motion/react';
 
 export interface SidebarProps {
   currentView: View;
@@ -19,27 +14,6 @@ export interface SidebarProps {
   onLoadSession: (session: ChatSession) => void;
 }
 
-export const Logo = ({ open }: { open: boolean }) => {
-  return (
-    <div className="flex items-center gap-3 py-1">
-      <div className="w-9 h-9 bg-gradient-to-br from-fab-navy via-fab-royal to-fab-blue rounded-xl flex items-center justify-center text-white shadow-lg shadow-black/20 relative group shrink-0 overflow-hidden ring-1 ring-white/10">
-           <div className="absolute top-0 right-0 w-6 h-6 bg-white/10 blur-md rounded-full transform translate-x-2 -translate-y-2"></div>
-           <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 relative z-10">
-               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10H12v3h7.6C18.9 17.5 15.8 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8c2.04 0 3.89.78 5.31 2.05l2.25-2.25C17.2 1.9 14.76 0 12 0z" />
-           </svg>
-      </div>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: open ? 1 : 0 }}
-        className="flex flex-col overflow-hidden whitespace-nowrap"
-      >
-        <span className="font-bold text-white text-sm tracking-wide leading-none">GERNAS</span>
-        <span className="text-[10px] text-fab-sky/60 font-medium tracking-wide mt-0.5">ISOP</span>
-      </motion.div>
-    </div>
-  );
-};
-
 const Sidebar = ({ 
   currentView, 
   onNavigate, 
@@ -50,12 +24,6 @@ const Sidebar = ({
   onLoadSession 
 }: SidebarProps) => {
   const [historySessions, setHistorySessions] = useState<ChatSession[]>([]);
-  // Map props to internal open state (inverted logic: collapsed=true means open=false)
-  const open = !isCollapsed;
-  const setOpen = (value: boolean | ((prevState: boolean) => boolean)) => {
-      const newState = typeof value === 'function' ? value(open) : value;
-      if (newState !== open) onToggle();
-  };
 
   // Fetch full history for the sidebar
   useEffect(() => {
@@ -64,10 +32,12 @@ const Sidebar = ({
             const sessions = await apiService.getChatSessions();
             let filtered = sessions;
             
+            // Filter by product context if active
             if (productContext) {
                 filtered = sessions.filter(s => s.product === productContext.product_name);
             }
 
+            // Sort by last activity - SHOW ALL (no slice)
             const sorted = filtered.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
             setHistorySessions(sorted);
         } catch (e) {
@@ -75,105 +45,150 @@ const Sidebar = ({
         }
     };
     fetchHistory();
-  }, [currentView, productContext]);
+  }, [currentView, productContext]); // Refresh when view changes or product context changes
 
   const navItems = [
-    { id: 'HOME', label: 'Procedure', icon: <FileText className="h-5 w-5 flex-shrink-0" /> },
-    { id: 'PROCESS_LINEAGE', label: 'Policy Standards', icon: <ShieldCheck className="h-5 w-5 flex-shrink-0" /> },
-    { id: 'PROCESS_ANALYSIS', label: 'Process Lineage', icon: <GitMerge className="h-5 w-5 flex-shrink-0" /> },
-    { id: 'IMPACT_ASSESSMENT', label: 'Impact Assessment', icon: <AlertOctagon className="h-5 w-5 flex-shrink-0" /> },
+    { id: 'HOME', label: 'Procedure', icon: FileText },
+    { id: 'PROCESS_LINEAGE', label: 'Policy Standards', icon: ShieldCheck },
+    { id: 'PROCESS_ANALYSIS', label: 'Process Lineage', icon: GitMerge },
+    { id: 'IMPACT_ASSESSMENT', label: 'Impact Assessment', icon: AlertOctagon, badge: 'Coming Soon' },
+    // Only show Library/History if a product context is selected
+    ...(productContext ? [
+        { id: 'LIBRARY', label: 'Library', icon: BookOpen },
+        { id: 'HISTORY', label: 'History', icon: Clock }
+    ] : []),
   ];
 
-  // Additional context items
-  if (productContext) {
-      navItems.push({ id: 'LIBRARY', label: 'Library', icon: <BookOpen className="h-5 w-5 flex-shrink-0" /> });
-      navItems.push({ id: 'HISTORY', label: 'History', icon: <Clock className="h-5 w-5 flex-shrink-0" /> });
-  }
-
-  const handleNavigate = (id: string) => {
-      onNavigate(id as View);
-  };
-
-  const isActive = (id: string) => {
-      if (id === currentView) return true;
-      if (id === 'HOME' && (currentView === 'CANVAS' || currentView === 'SOPS')) return true;
-      if (id === 'PROCESS_ANALYSIS' && currentView === 'ANALYSIS_CANVAS') return true;
-      if (id === 'PROCESS_LINEAGE' && currentView === 'LINEAGE_CHAT') return true;
-      return false;
-  };
-
   return (
-    <div className="h-full bg-fab-navy border-r border-fab-royal/50 flex flex-col md:flex-row w-full flex-1 overflow-hidden">
-        <AcetSidebar open={open} setOpen={setOpen}>
-            <SidebarBody className="justify-between gap-10 bg-fab-navy border-r border-fab-royal/30">
-                <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-                    <Logo open={open} />
-                    
-                    <div className="mt-8 flex flex-col gap-2">
-                        {open && <p className="px-2 mb-1 text-[10px] font-bold text-fab-sky/50 tracking-wider uppercase">Navigation</p>}
-                        {navItems.map((item, idx) => (
-                            <SidebarLink 
-                                key={idx} 
-                                link={{
-                                    label: item.label,
-                                    href: "#",
-                                    icon: item.icon,
-                                    onClick: () => handleNavigate(item.id)
-                                }}
-                                active={isActive(item.id)}
-                            />
-                        ))}
+    <div className="h-full w-full bg-fab-navy text-fab-sky/70 flex flex-col shadow-2xl border-r border-fab-royal/50 relative">
+      
+      {/* Branding - Vertical Stack */}
+      <div className={`p-6 flex flex-col items-center gap-3 border-b border-fab-royal/50 flex-shrink-0 transition-all duration-300`}>
+        <div className="w-10 h-10 bg-gradient-to-br from-fab-navy via-fab-royal to-fab-blue rounded-xl flex items-center justify-center text-white shadow-lg shadow-black/20 relative group shrink-0 overflow-hidden ring-1 ring-white/10">
+           {/* Inner Shine */}
+           <div className="absolute top-0 right-0 w-6 h-6 bg-white/10 blur-md rounded-full transform translate-x-2 -translate-y-2"></div>
+           {/* SVG Logo */}
+           <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 relative z-10">
+               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10H12v3h7.6C18.9 17.5 15.8 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8c2.04 0 3.89.78 5.31 2.05l2.25-2.25C17.2 1.9 14.76 0 12 0z" />
+           </svg>
+        </div>
+        {!isCollapsed && (
+            <div className="animate-in fade-in duration-300 text-center">
+              <h1 className="text-white font-bold text-sm tracking-wide leading-none">GERNAS</h1>
+              <p className="text-[10px] text-fab-sky/60 font-medium tracking-wide mt-1">ISOP</p>
+            </div>
+        )}
+      </div>
+
+       {/* Toggle Button (Desktop Only) */}
+       <button
+        onClick={onToggle}
+        className="absolute top-32 -right-3 bg-fab-royal text-white p-1 rounded-full shadow-lg border border-fab-navy hover:bg-fab-blue transition-colors z-50 hidden lg:flex items-center justify-center"
+        title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+      >
+        {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+      </button>
+
+      {/* Nav Items & History Container */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+          
+          {/* Main Navigation */}
+          <div className="px-3 py-6 space-y-2 shrink-0">
+            {!isCollapsed && (
+                <p className="px-3 mb-2 text-[10px] font-bold text-fab-sky/50 tracking-wider">Navigation</p>
+            )}
+            {navItems.map(item => {
+                const Icon = item.icon;
+                // Map CANVAS/SOPS view to HOME for highlighting if no specific match
+                let isActive = currentView === item.id;
+                if (item.id === 'HOME' && (currentView === 'CANVAS' || currentView === 'SOPS')) isActive = true;
+                if (item.id === 'PROCESS_ANALYSIS' && currentView === 'ANALYSIS_CANVAS') isActive = true;
+                if (item.id === 'PROCESS_LINEAGE' && currentView === 'LINEAGE_CHAT') isActive = true;
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onNavigate(item.id as View)}
+                    title={isCollapsed ? item.label : ''}
+                    className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-2.5 rounded-xl transition-all group relative ${
+                      isActive 
+                        ? 'bg-fab-royal text-white shadow-lg shadow-black/20' 
+                        : 'hover:bg-fab-royal/40 text-fab-sky/70 hover:text-white'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} relative`}>
+                      <Icon size={isCollapsed ? 22 : 18} className={`${isActive ? 'text-white' : 'text-fab-sky/50 group-hover:text-fab-sky'} transition-colors`} />
+                      {!isCollapsed && <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>}
                     </div>
-
-                    {/* Product History Section */}
-                    {open && productContext && historySessions.length > 0 && (
-                        <div className="mt-8 flex flex-col gap-2 animate-in fade-in duration-500">
-                            <p className="px-2 mb-1 text-[10px] font-bold text-fab-sky/50 tracking-wider flex items-center justify-between uppercase">
-                                Recent History
-                                <span className="bg-fab-royal/30 px-1.5 py-0.5 rounded text-white text-[9px]">{historySessions.length}</span>
-                            </p>
-                            <div className="flex flex-col gap-1 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">
-                                {historySessions.map(session => (
-                                    <SidebarLink
-                                        key={session._id}
-                                        link={{
-                                            label: session.session_title || session.last_message?.question || "Session",
-                                            href: "#",
-                                            icon: <MessageSquare className="h-4 w-4 flex-shrink-0 text-fab-sky/60" />,
-                                            onClick: () => onLoadSession(session)
-                                        }}
-                                        className="py-1.5 text-xs opacity-90"
-                                    />
-                                ))}
-                            </div>
-                        </div>
+                    {!isCollapsed && item.badge && (
+                       <span className="text-[9px] bg-fab-sky/20 text-fab-sky border border-fab-sky/20 px-1.5 py-0.5 rounded font-bold">{item.badge}</span>
                     )}
-                </div>
+                    {!isCollapsed && !item.badge && isActive && <ChevronRight size={14} className="text-fab-sky" />}
+                    
+                    {/* Active Bar Indicator for Collapsed Mode */}
+                    {isCollapsed && isActive && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-fab-sky rounded-r-full"></div>
+                    )}
+                  </button>
+                );
+            })}
+          </div>
 
-                <div className="border-t border-fab-royal/30 pt-4">
-                    <SidebarLink
-                        link={{
-                            label: "System Admin",
-                            href: "#",
-                            icon: (
-                                <div className="h-7 w-7 rounded-full bg-fab-royal flex items-center justify-center text-white ring-2 ring-fab-navy/50 shrink-0">
-                                    <User size={14} />
+          {/* Product History List (Scrollable Area) */}
+          {!isCollapsed && productContext && historySessions.length > 0 && (
+            <div className="flex-1 overflow-y-auto px-3 pb-4 border-t border-fab-royal/20 pt-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fab-royal/40 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-fab-royal/80">
+                <p className="px-3 mb-3 text-[10px] font-bold text-fab-sky/50 tracking-wider flex items-center justify-between">
+                    Product History
+                    <span className="bg-fab-royal/30 px-1.5 py-0.5 rounded text-white text-[9px]">{historySessions.length}</span>
+                </p>
+                <div className="space-y-1">
+                    {historySessions.map(session => {
+                        const title = session.session_title || session.last_message?.question || "New Session";
+                        return (
+                            <button
+                                key={session._id}
+                                onClick={() => onLoadSession(session)}
+                                className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-fab-royal/30 text-fab-sky/80 hover:text-white transition-colors group flex items-start gap-2.5 relative"
+                                title={title} // Tooltip for full title
+                            >
+                                <MessageSquare size={14} className="mt-0.5 opacity-60 group-hover:opacity-100 shrink-0 text-fab-sky" />
+                                <div className="overflow-hidden w-full">
+                                    <p className="text-[11px] font-medium truncate w-full leading-tight">{title}</p>
+                                    <p className="text-[9px] opacity-50 truncate mt-0.5">{new Date(session.last_activity).toLocaleDateString()}</p>
                                 </div>
-                            ),
-                        }}
-                    />
-                    <SidebarLink
-                        link={{
-                            label: "Sign Out",
-                            href: "#",
-                            icon: <LogOut className="h-5 w-5 text-rose-400 shrink-0" />,
-                            onClick: onLogout
-                        }}
-                        className="text-rose-300 hover:text-rose-100 hover:bg-rose-900/20 mt-1"
-                    />
+                            </button>
+                        );
+                    })}
                 </div>
-            </SidebarBody>
-        </AcetSidebar>
+            </div>
+          )}
+      </div>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-fab-royal/50 bg-black/10 flex-shrink-0 space-y-3">
+        
+        {/* User Profile */}
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-2`}>
+            <div className="w-8 h-8 rounded-full bg-fab-royal flex items-center justify-center text-white ring-2 ring-fab-navy">
+                <User size={16} />
+            </div>
+            {!isCollapsed && (
+                <div className="overflow-hidden">
+                    <p className="text-xs font-bold text-white truncate">Admin User</p>
+                    <p className="text-[10px] text-fab-sky/60 truncate">System Administrator</p>
+                </div>
+            )}
+        </div>
+
+        <button 
+            onClick={onLogout}
+            title={isCollapsed ? "Sign Out" : ""}
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} p-2.5 rounded-lg text-rose-300 hover:bg-rose-950/30 hover:text-rose-200 transition-all group border border-transparent hover:border-rose-900/30`}
+        >
+            <LogOut size={isCollapsed ? 18 : 16} className="group-hover:-translate-x-0.5 transition-transform" />
+            {!isCollapsed && <span className="text-xs font-medium whitespace-nowrap">Sign Out</span>}
+        </button>
+      </div>
     </div>
   );
 };
