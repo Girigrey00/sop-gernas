@@ -313,6 +313,7 @@ export interface ApiServiceInterface {
     getProcessFlow(productName: string): Promise<SopResponse>;
     getProcessTable(productName: string, sopData?: SopResponse): Promise<ProcessDefinitionRow[]>;
     updateProcessFlowFromTable(productName: string, tableData: ProcessDefinitionRow[], originalSop: SopResponse): Promise<SopResponse>;
+    generateTableFromBuilder(inputs: { productName: string, startTrigger: string, endTrigger: string, stages: { name: string }[] }): Promise<ProcessDefinitionRow[]>;
 }
 
 export const apiService: ApiServiceInterface = {
@@ -803,5 +804,59 @@ export const apiService: ApiServiceInterface = {
         }
 
         return newSop;
+    },
+
+    // New Helper: Generate initial table from wizard inputs
+    generateTableFromBuilder: async (inputs: { productName: string, startTrigger: string, endTrigger: string, stages: { name: string }[] }): Promise<ProcessDefinitionRow[]> => {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate generation
+
+        const rows: ProcessDefinitionRow[] = [];
+        let stepCounter = 1;
+
+        // Start Row
+        rows.push({
+            id: 'START',
+            l2Process: 'Initiation',
+            stepName: 'Start Process',
+            stepDescription: `Trigger: ${inputs.startTrigger}`,
+            stepType: 'Start',
+            system: 'N/A',
+            actor: 'System',
+            processingTime: '0',
+            risks: ''
+        });
+
+        // Stage Rows (Generate placeholders)
+        inputs.stages.forEach((stage, idx) => {
+            // Generate 2 dummy steps per stage to allow editing
+            for(let i = 1; i <= 2; i++) {
+                rows.push({
+                    id: `S${idx + 1}-${i}`,
+                    l2Process: stage.name,
+                    stepName: `${stage.name} - Step ${i}`,
+                    stepDescription: `Description for step ${i} of ${stage.name}`,
+                    stepType: i === 1 ? 'Manual' : 'System',
+                    system: 'Core Banking',
+                    actor: i === 1 ? 'Officer' : 'System',
+                    processingTime: '300',
+                    risks: ''
+                });
+            }
+        });
+
+        // End Row
+        rows.push({
+            id: 'END',
+            l2Process: 'Completion',
+            stepName: 'End Process',
+            stepDescription: `Outcome: ${inputs.endTrigger}`,
+            stepType: 'End',
+            system: 'N/A',
+            actor: 'System',
+            processingTime: '0',
+            risks: ''
+        });
+
+        return rows;
     }
 };

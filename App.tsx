@@ -5,6 +5,7 @@ import CanvasPage from './pages/CanvasPage';
 import LibraryPage from './pages/LibraryPage';
 import ProcessAnalysisPage from './pages/ProcessAnalysisPage';
 import ProcessLineagePage from './pages/ProcessLineagePage';
+import ProcessBuilderPage from './pages/ProcessBuilderPage';
 import { View, SopResponse, Product, ChatSession } from './types';
 import { apiService } from './services/apiService';
 import { 
@@ -687,6 +688,14 @@ const App: React.FC = () => {
             <ProcessLineagePage 
                 product={GENERIC_POLICY_PRODUCT}
                 onBack={() => setCurrentView('HOME')}
+            />
+        );
+
+      case 'PROCESS_BUILDER':
+        return (
+            <ProcessBuilderPage 
+                onBack={() => setCurrentView('HOME')}
+                onFlowGenerated={handleStartWithData}
             />
         );
 
