@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
     ChevronLeft, Paperclip, Plus, X, 
     FileText, PlayCircle, Loader2, CheckCircle2,
-    Sparkles, ArrowUp, TableProperties
+    Sparkles, ArrowUp, TableProperties, Hammer, Briefcase
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { ProcessDefinitionRow, SopResponse } from '../types';
@@ -54,7 +54,7 @@ const StageCard = ({ stage, index }: { stage: StageData, index: number }) => (
     </div>
 );
 
-// Input Form Component (Active Input Area in Chat)
+// Input Form Component (A2UI Style Widget)
 const StageInputForm = ({ onAdd }: { onAdd: (name: string, file: File | null) => void }) => {
     const [name, setName] = useState('');
     const [file, setFile] = useState<File | null>(null);
@@ -69,56 +69,69 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, file: File | null) =>
     };
 
     return (
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-lg shadow-slate-200/50 animate-in fade-in slide-in-from-bottom-4 w-full max-w-md relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2 pl-2">
-                <Plus size={14} className="text-blue-500" /> Add New Stage
-            </h4>
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-300 group ring-1 ring-slate-100">
+            {/* Header / Stripe */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 via-blue-400 to-blue-300"></div>
             
-            <div className="space-y-4 pl-2">
-                <div className="relative">
-                    <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                        placeholder="Enter stage name (e.g. Document Verification)"
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-slate-400"
-                        autoFocus
-                    />
-                </div>
-                
-                <div className="flex items-center justify-between gap-3">
+            <div className="p-5">
+                <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                        <button 
-                            onClick={() => fileRef.current?.click()}
-                            className={`px-3 py-2 rounded-lg border transition-all text-xs font-bold flex items-center gap-2 ${
-                                file 
-                                ? 'bg-blue-50 border-blue-200 text-blue-600' 
-                                : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-                            }`}
-                        >
-                            <Paperclip size={14} />
-                            {file ? <span className="max-w-[120px] truncate">{file.name}</span> : "Attach Doc"}
-                        </button>
-                        {file && (
-                            <button 
-                                onClick={() => { setFile(null); if(fileRef.current) fileRef.current.value=''; }} 
-                                className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
-                            >
-                                <X size={14} />
-                            </button>
-                        )}
-                        <input type="file" ref={fileRef} onChange={(e) => e.target.files && setFile(e.target.files[0])} className="hidden" accept=".pdf,.docx,.txt" />
+                        <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg shadow-sm">
+                            <Plus size={14} strokeWidth={3} />
+                        </div>
+                        <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Define New Stage</span>
                     </div>
+                </div>
 
-                    <button 
-                        onClick={handleSubmit}
-                        disabled={!name.trim() && !file}
-                        className="bg-slate-900 text-white pl-4 pr-5 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-800 disabled:opacity-50 disabled:scale-95 disabled:cursor-not-allowed transition-all shadow-md shadow-slate-900/20 flex items-center gap-2"
-                    >
-                        Add Stage <ArrowUp size={14} strokeWidth={3} />
-                    </button>
+                <div className="space-y-4">
+                    {/* Minimalist Input */}
+                    <div className="relative group/input">
+                        <input
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                            placeholder="Type stage name..."
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all font-medium placeholder:text-slate-400 text-slate-800"
+                            autoFocus
+                        />
+                    </div>
+                    
+                    <div className="flex items-center justify-between gap-3 pt-1">
+                        <div className="flex items-center gap-2">
+                            {/* File Button */}
+                            <button 
+                                onClick={() => fileRef.current?.click()}
+                                className={`px-3 py-2 rounded-xl border transition-all text-xs font-bold flex items-center gap-2 ${
+                                    file 
+                                    ? 'bg-blue-50 border-blue-200 text-blue-600 shadow-inner' 
+                                    : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                                }`}
+                            >
+                                <Paperclip size={14} />
+                                {file ? <span className="max-w-[100px] truncate">{file.name}</span> : "Reference Doc"}
+                            </button>
+                            
+                            {file && (
+                                <button 
+                                    onClick={() => { setFile(null); if(fileRef.current) fileRef.current.value=''; }} 
+                                    className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
+                            <input type="file" ref={fileRef} onChange={(e) => e.target.files && setFile(e.target.files[0])} className="hidden" accept=".pdf,.docx,.txt" />
+                        </div>
+
+                        {/* Add Button */}
+                        <button 
+                            onClick={handleSubmit}
+                            disabled={!name.trim() && !file}
+                            className="bg-slate-900 text-white pl-4 pr-5 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-800 disabled:opacity-50 disabled:scale-95 disabled:cursor-not-allowed transition-all shadow-lg shadow-slate-900/20 flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0"
+                        >
+                            Add <ArrowUp size={14} strokeWidth={3} />
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -406,9 +419,14 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                     <button onClick={onBack} className="text-slate-400 hover:text-slate-800 hover:bg-slate-50 p-2 rounded-full transition-all">
                         <ChevronLeft size={24} />
                     </button>
-                    <div>
-                        <h1 className="text-lg font-bold text-slate-800 tracking-tight">Process Architect</h1>
-                        <p className="text-xs text-slate-500 font-medium">AI-Guided Builder</p>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg">
+                            <Briefcase size={20} className="text-blue-400" />
+                        </div>
+                        <div>
+                            <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">Process Architect</h1>
+                            <p className="text-xs text-slate-500 font-medium">Interactive Flow Builder</p>
+                        </div>
                     </div>
                 </div>
                 {/* Progress Steps */}
@@ -424,15 +442,19 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 bg-slate-50/30">
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 bg-slate-50/50">
                 <div className="max-w-3xl mx-auto flex flex-col gap-6">
                     {messages.map((msg) => (
                         <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
                             {/* Avatar */}
-                            <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 shadow-sm border ${
-                                msg.role === 'user' ? 'bg-slate-900 text-white border-slate-800' : 'bg-white text-blue-600 border-slate-200'
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 shadow-sm border transition-all ${
+                                msg.role === 'user' ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-fab-royal border-slate-200'
                             }`}>
-                                {msg.role === 'user' ? <span className="text-[10px] font-bold">YOU</span> : <GIcon className="w-5 h-5" />}
+                                {msg.role === 'user' ? (
+                                    <span className="text-[10px] font-bold">YOU</span>
+                                ) : (
+                                    <Hammer size={18} className="text-orange-500 fill-orange-500/20" />
+                                )}
                             </div>
                             
                             {/* Bubble */}
@@ -453,7 +475,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                     {isTyping && (
                         <div className="flex gap-4 animate-in fade-in">
                             <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-blue-600 shrink-0 shadow-sm">
-                                <GIcon className="w-5 h-5" />
+                                <Hammer size={18} className="text-orange-500 fill-orange-500/20" />
                             </div>
                             <div className="bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1.5 w-fit">
                                 <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
@@ -527,11 +549,6 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                             </button>
                         </div>
                     )}
-                    
-                    {/* Render recent stages pills only if NOT in STAGES mode (since card handles input there) - wait, user might want to see what they added */}
-                    {/* Actually, they appear as cards in chat history, so pills might be redundant or nice to have. Let's keep them hidden in STAGES step to focus on the card interaction, or show them? 
-                        The prompt implies the card does the adding. The cards in history show the state. 
-                    */}
                 </div>
             </div>
         </div>
