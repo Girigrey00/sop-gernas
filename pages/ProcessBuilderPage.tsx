@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
     ChevronLeft, Send, Paperclip, Plus, X, 
     FileText, PlayCircle, Loader2, CheckCircle2, RotateCcw,
-    Sparkles, ArrowUp, Bot
+    Sparkles, ArrowUp, Bot, Layers
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { ProcessDefinitionRow, SopResponse } from '../types';
@@ -27,6 +27,32 @@ interface StageData {
     name: string;
     file: File | null;
 }
+
+// Interactive Stage Card Component
+const StageCard = ({ stage, index }: { stage: StageData, index: number }) => (
+    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm min-w-[240px] max-w-sm relative group hover:border-blue-300 hover:shadow-md transition-all animate-in zoom-in-95 duration-300">
+        <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold shadow-sm">
+                    {index + 1}
+                </div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">L2 Stage</span>
+            </div>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <CheckCircle2 size={16} className="text-emerald-500" />
+            </div>
+        </div>
+        <h4 className="font-bold text-slate-800 text-sm leading-tight ml-8">{stage.name}</h4>
+        {stage.file && (
+            <div className="flex items-center gap-2 mt-3 ml-8 bg-slate-50 p-2 rounded-lg border border-slate-100 w-fit group-hover:bg-blue-50/50 transition-colors">
+                <div className="bg-white p-1 rounded border border-slate-200 shadow-sm">
+                    <FileText size={12} className="text-blue-500" />
+                </div>
+                <span className="text-[10px] text-slate-600 font-medium truncate max-w-[140px]">{stage.file.name}</span>
+            </div>
+        )}
+    </div>
+);
 
 const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowGenerated }) => {
     // State
@@ -81,11 +107,11 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         }, delay);
     };
 
-    const addUserMessage = (text: string | React.ReactNode) => {
+    const addUserMessage = (content: React.ReactNode) => {
         setMessages(prev => [...prev, {
             id: Date.now().toString(),
             role: 'user',
-            content: text
+            content: content
         }]);
     };
 
@@ -106,9 +132,6 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     // Handlers
     const handleSendMessage = async () => {
         if (!inputValue.trim() && currentStep !== 'STAGES') return;
-        
-        // STAGES step logic is handled differently (can submit with just file or special button)
-        // But assuming standard text entry first:
         
         const text = inputValue.trim();
         setInputValue('');
@@ -141,19 +164,11 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 file: currentStageFile
             };
 
+            const newIndex = stages.length; // Capture index before update
             setStages(prev => [...prev, newStage]);
             
-            // User Message Display
-            addUserMessage(
-                <div className="flex flex-col gap-1">
-                    <span className="font-medium">{newStage.name}</span>
-                    {newStage.file && (
-                        <div className="flex items-center gap-2 text-xs bg-white/20 p-2 rounded-lg border border-white/30 w-fit mt-1 backdrop-blur-sm">
-                            <Paperclip size={12} /> {newStage.file.name}
-                        </div>
-                    )}
-                </div>
-            );
+            // Render Stage Card instead of text
+            addUserMessage(<StageCard stage={newStage} index={newIndex} />);
 
             setCurrentStageFile(null); // Reset file
             if(fileInputRef.current) fileInputRef.current.value = '';
@@ -166,9 +181,9 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
             return;
         }
 
-        addUserMessage("Generate Process Table");
+        addUserMessage(<span className="flex items-center gap-2"><Sparkles size={14} /> Generate Process Table</span>);
         setIsLoading(true);
-        setCurrentStep('REVIEW'); // Switch to Review Mode immediately or after loading
+        setCurrentStep('REVIEW'); 
 
         try {
             // Mock API call
@@ -182,7 +197,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         } catch (e) {
             console.error("Failed", e);
             addSystemMessage("Sorry, I encountered an issue generating the table. Please try again.");
-            setCurrentStep('STAGES'); // Go back
+            setCurrentStep('STAGES'); 
         } finally {
             setIsLoading(false);
         }
@@ -353,10 +368,17 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                             </div>
                             
                             {/* Bubble */}
-                            <div className={`max-w-[85%] md:max-w-[80%] px-6 py-4 rounded-2xl shadow-sm text-sm leading-relaxed ${
-                                msg.role === 'user' 
-                                ? 'bg-blue-600 text-white rounded-tr-none shadow-md' 
-                                : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05)]'
+                            <div className={`max-w-[85%] md:max-w-[80%] ${
+                                // Only apply bubble styling if content is a string/text. 
+                                // If it's a React element (StageCard), we render it directly without the bubble wrapper styling, 
+                                // but we still need the positioning container.
+                                typeof msg.content === 'string' || (React.isValidElement(msg.content) && msg.content.type === 'span') 
+                                ? `px-6 py-4 rounded-2xl shadow-sm text-sm leading-relaxed ${
+                                    msg.role === 'user' 
+                                    ? 'bg-blue-600 text-white rounded-tr-none shadow-md' 
+                                    : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05)]'
+                                  }` 
+                                : '' // No wrapper class for Cards
                             }`}>
                                 {msg.content}
                             </div>
@@ -459,6 +481,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                         )}
                     </div>
                     
+                    {/* Render recent stages as small pills below input for quick context */}
                     {currentStep === 'STAGES' && stages.length > 0 && (
                         <div className="mt-4 flex gap-2 overflow-x-auto pb-2 px-1 no-scrollbar justify-center">
                             {stages.map((s, i) => (
