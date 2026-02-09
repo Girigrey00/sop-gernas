@@ -4,7 +4,7 @@ import {
     ChevronLeft, Paperclip, Plus, X, 
     FileText, PlayCircle, Loader2, CheckCircle2,
     Sparkles, ArrowUp, TableProperties, Hammer, Zap,
-    GitCommit
+    GitCommit, Workflow, Layers
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { ProcessDefinitionRow, SopResponse } from '../types';
@@ -31,30 +31,32 @@ interface StageData {
 
 // Interactive Stage Card Component (Display in History)
 const StageCard = ({ stage, index }: { stage: StageData, index: number }) => (
-    <div className="relative">
-        {/* Visual Connector Line for Flow Effect */}
-        <div className="absolute -left-8 top-[-40px] bottom-0 w-px border-l-2 border-dashed border-slate-200 hidden md:block"></div>
-        <div className="absolute -left-[35px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-slate-100 border-2 border-slate-300 hidden md:flex items-center justify-center z-10">
-            <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
+    <div className="relative pl-6 py-2 group">
+        {/* Visual Connector Line for Flow Effect - Constrained to prevent overlap */}
+        <div className="absolute left-0 top-0 bottom-0 w-px border-l-2 border-dashed border-indigo-200 group-first:top-1/2 group-last:bottom-1/2"></div>
+        
+        {/* Node Dot / Number */}
+        <div className="absolute left-[-9px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-indigo-600 text-white border-4 border-white shadow-md flex items-center justify-center z-10 text-[10px] font-bold">
+            {index + 1}
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm min-w-[240px] max-w-sm relative group hover:border-blue-300 hover:shadow-md transition-all animate-in zoom-in-95 duration-300">
-            <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold shadow-sm ring-2 ring-white">
-                        {index + 1}
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">L2 Stage</span>
-                </div>
+        {/* Card Body */}
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm min-w-[260px] max-w-sm relative group-hover:border-indigo-300 group-hover:shadow-md transition-all animate-in slide-in-from-left-2 duration-300 ml-4">
+            <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-1">
+                    <Layers size={10} /> L2 Stage
+                </span>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <CheckCircle2 size={16} className="text-emerald-500" />
+                    <CheckCircle2 size={14} className="text-emerald-500" />
                 </div>
             </div>
-            <h4 className="font-bold text-slate-800 text-sm leading-tight ml-8">{stage.name}</h4>
+            
+            <h4 className="font-bold text-slate-800 text-sm leading-tight">{stage.name}</h4>
+            
             {stage.file && (
-                <div className="flex items-center gap-2 mt-3 ml-8 bg-slate-50 p-2 rounded-lg border border-slate-100 w-fit group-hover:bg-blue-50/50 transition-colors">
+                <div className="flex items-center gap-2 mt-3 bg-slate-50 p-2 rounded-lg border border-slate-100 w-fit group-hover:bg-indigo-50/30 transition-colors">
                     <div className="bg-white p-1 rounded border border-slate-200 shadow-sm">
-                        <FileText size={12} className="text-blue-500" />
+                        <FileText size={12} className="text-indigo-500" />
                     </div>
                     <span className="text-[10px] text-slate-600 font-medium truncate max-w-[140px]">{stage.file.name}</span>
                 </div>
@@ -78,21 +80,19 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, file: File | null) =>
     };
 
     return (
-        <div className="w-full max-w-md bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl shadow-slate-200/50 border border-white/50 overflow-hidden animate-in zoom-in-95 duration-300 group ring-1 ring-slate-100 relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-transparent to-indigo-50/30 pointer-events-none" />
+        <div className="w-full max-w-md bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl shadow-indigo-100/50 border border-indigo-50 overflow-hidden animate-in zoom-in-95 duration-300 group ring-1 ring-indigo-50 relative ml-2">
             
             {/* Header */}
-            <div className="px-5 py-3 border-b border-slate-100/50 flex justify-between items-center bg-white/40">
+            <div className="px-5 py-3 border-b border-indigo-50/50 flex justify-between items-center bg-gradient-to-r from-white to-indigo-50/30">
                 <div className="flex items-center gap-2">
-                    <div className="p-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded text-white shadow-sm shadow-blue-200">
-                        <Zap size={12} fill="currentColor" />
+                    <div className="p-1.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg text-white shadow-md shadow-indigo-200">
+                        <Workflow size={14} strokeWidth={2.5} />
                     </div>
-                    <span className="text-xs font-bold text-slate-700 tracking-wide">Define Logic Node</span>
+                    <span className="text-xs font-bold text-slate-700 tracking-wide uppercase">Define Process Step</span>
                 </div>
-                <div className="flex gap-1.5 opacity-50">
-                    <div className="w-1 h-1 rounded-full bg-slate-400"></div>
-                    <div className="w-1 h-1 rounded-full bg-slate-400"></div>
-                    <div className="w-1 h-1 rounded-full bg-slate-400"></div>
+                <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-200 animate-pulse"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-200 animate-pulse delay-100"></div>
                 </div>
             </div>
             
@@ -101,15 +101,15 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, file: File | null) =>
                     {/* Modern Input */}
                     <div className="relative group/input">
                         <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                            <GitCommit size={16} className="text-slate-300 group-focus-within/input:text-blue-500 transition-colors" />
+                            <Zap size={16} className="text-slate-300 group-focus-within/input:text-indigo-500 transition-colors fill-slate-100" />
                         </div>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                            placeholder="Type stage name (e.g. Verification)..."
-                            className="w-full bg-white/60 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all font-medium placeholder:text-slate-400 text-slate-800 shadow-inner"
+                            placeholder="Name of this stage (e.g. Verification)"
+                            className="w-full bg-slate-50/50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition-all font-semibold placeholder:font-normal placeholder:text-slate-400 text-slate-800 shadow-inner"
                             autoFocus
                         />
                     </div>
@@ -122,11 +122,11 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, file: File | null) =>
                                 className={`px-3 py-2 rounded-xl border transition-all text-xs font-bold flex items-center gap-2 ${
                                     file 
                                     ? 'bg-indigo-50 border-indigo-200 text-indigo-600 shadow-sm' 
-                                    : 'bg-white/50 border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                                    : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 hover:border-slate-300 hover:shadow-sm'
                                 }`}
                             >
                                 <Paperclip size={14} />
-                                {file ? <span className="max-w-[100px] truncate">{file.name}</span> : "Attach Context"}
+                                {file ? <span className="max-w-[80px] truncate">{file.name}</span> : "Ref Doc"}
                             </button>
                             
                             {file && (
@@ -144,9 +144,9 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, file: File | null) =>
                         <button 
                             onClick={handleSubmit}
                             disabled={!name.trim() && !file}
-                            className="bg-slate-900 text-white pl-4 pr-5 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-800 disabled:opacity-50 disabled:scale-95 disabled:cursor-not-allowed transition-all shadow-lg shadow-slate-900/20 flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0"
+                            className="bg-indigo-600 text-white pl-4 pr-5 py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:scale-95 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-200 flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0"
                         >
-                            Add Node <ArrowUp size={14} strokeWidth={3} />
+                            Add Step <ArrowUp size={14} strokeWidth={3} />
                         </button>
                     </div>
                 </div>
@@ -437,8 +437,8 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                         <ChevronLeft size={24} />
                     </button>
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg">
-                            <Hammer size={20} className="text-orange-500" />
+                        <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg ring-2 ring-orange-50">
+                            <Hammer size={20} className="text-white fill-white/10" />
                         </div>
                         <div>
                             <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">Process Architect</h1>
