@@ -4,7 +4,7 @@ import {
     ChevronLeft, Paperclip, Plus, X, 
     FileText, PlayCircle, Loader2, CheckCircle2,
     Sparkles, ArrowUp, TableProperties, Hammer, Zap,
-    GitCommit, Workflow, Layers
+    GitCommit, Workflow, Layers, HardHat
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { ProcessDefinitionRow, SopResponse } from '../types';
@@ -191,7 +191,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     useEffect(() => {
         if (!hasInitialized.current) {
             hasInitialized.current = true;
-            addSystemMessage("Hello! I'm your Process Architect. Let's build a new Standard Operating Procedure (SOP) together.\n\nFirst, please enter the **Product or Policy Name** you are working on.");
+            addSystemMessage("Hello! I'm your Process Builder. Let's build a new Standard Operating Procedure (SOP) together.\n\nFirst, please enter the **Product or Policy Name** you are working on.");
         }
     }, []);
 
@@ -441,7 +441,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                             <Hammer size={20} className="text-white fill-white/10" />
                         </div>
                         <div>
-                            <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">Process Architect</h1>
+                            <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">Process Builder</h1>
                             <p className="text-xs text-slate-500 font-medium">Interactive Flow Builder</p>
                         </div>
                     </div>
@@ -506,10 +506,18 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                     Process<br/>Builder
                                 </span>
                             </div>
-                            <div className="bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1.5 w-fit h-fit">
-                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
-                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-100"></span>
-                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-200"></span>
+                            
+                            {/* Construction Loader */}
+                            <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-3 w-fit h-fit">
+                                {/* Hammer Animation */}
+                                <Hammer size={16} className="text-orange-500 animate-bounce" />
+                                
+                                {/* Bricks Animation */}
+                                <div className="flex gap-1">
+                                    <div className="w-2 h-2 bg-orange-300 rounded-sm animate-pulse"></div>
+                                    <div className="w-2 h-2 bg-orange-400 rounded-sm animate-pulse delay-100"></div>
+                                    <div className="w-2 h-2 bg-orange-500 rounded-sm animate-pulse delay-200"></div>
+                                </div>
                             </div>
                         </div>
                     )}
