@@ -1,9 +1,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-    ChevronLeft, Send, Paperclip, Plus, X, 
-    FileText, PlayCircle, Loader2, CheckCircle2, RotateCcw,
-    Sparkles, ArrowUp, Bot, Layers
+    ChevronLeft, Paperclip, Plus, X, 
+    FileText, PlayCircle, Loader2, CheckCircle2,
+    Sparkles, ArrowUp, TableProperties
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { ProcessDefinitionRow, SopResponse } from '../types';
@@ -28,7 +28,7 @@ interface StageData {
     file: File | null;
 }
 
-// Interactive Stage Card Component
+// Interactive Stage Card Component (Display in History)
 const StageCard = ({ stage, index }: { stage: StageData, index: number }) => (
     <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm min-w-[240px] max-w-sm relative group hover:border-blue-300 hover:shadow-md transition-all animate-in zoom-in-95 duration-300">
         <div className="flex items-center justify-between mb-2">
@@ -53,6 +53,77 @@ const StageCard = ({ stage, index }: { stage: StageData, index: number }) => (
         )}
     </div>
 );
+
+// Input Form Component (Active Input Area in Chat)
+const StageInputForm = ({ onAdd }: { onAdd: (name: string, file: File | null) => void }) => {
+    const [name, setName] = useState('');
+    const [file, setFile] = useState<File | null>(null);
+    const fileRef = useRef<HTMLInputElement>(null);
+
+    const handleSubmit = () => {
+        if (!name.trim() && !file) return;
+        onAdd(name, file);
+        setName('');
+        setFile(null);
+        if (fileRef.current) fileRef.current.value = '';
+    };
+
+    return (
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-lg shadow-slate-200/50 animate-in fade-in slide-in-from-bottom-4 w-full max-w-md relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2 pl-2">
+                <Plus size={14} className="text-blue-500" /> Add New Stage
+            </h4>
+            
+            <div className="space-y-4 pl-2">
+                <div className="relative">
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                        placeholder="Enter stage name (e.g. Document Verification)"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-slate-400"
+                        autoFocus
+                    />
+                </div>
+                
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => fileRef.current?.click()}
+                            className={`px-3 py-2 rounded-lg border transition-all text-xs font-bold flex items-center gap-2 ${
+                                file 
+                                ? 'bg-blue-50 border-blue-200 text-blue-600' 
+                                : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                            }`}
+                        >
+                            <Paperclip size={14} />
+                            {file ? <span className="max-w-[120px] truncate">{file.name}</span> : "Attach Doc"}
+                        </button>
+                        {file && (
+                            <button 
+                                onClick={() => { setFile(null); if(fileRef.current) fileRef.current.value=''; }} 
+                                className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
+                        <input type="file" ref={fileRef} onChange={(e) => e.target.files && setFile(e.target.files[0])} className="hidden" accept=".pdf,.docx,.txt" />
+                    </div>
+
+                    <button 
+                        onClick={handleSubmit}
+                        disabled={!name.trim() && !file}
+                        className="bg-slate-900 text-white pl-4 pr-5 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-800 disabled:opacity-50 disabled:scale-95 disabled:cursor-not-allowed transition-all shadow-md shadow-slate-900/20 flex items-center gap-2"
+                    >
+                        Add Stage <ArrowUp size={14} strokeWidth={3} />
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowGenerated }) => {
     // State
@@ -84,7 +155,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages, isTyping]);
+    }, [messages, isTyping, stages.length, currentStep]);
 
     // Initial Welcome - Fixed double render with ref
     useEffect(() => {
@@ -152,27 +223,24 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
             addUserMessage(text);
             setEndTrigger(text);
             setCurrentStep('STAGES');
-            addSystemMessage("Understood. Now, let's define the **L2 Process Stages**.\n\nEnter a stage name and click send (or press Enter). You can also attach a reference document for each stage using the clip icon.");
+            addSystemMessage("Understood. Now, let's define the **L2 Process Stages**.\n\nUse the card below to add each stage with any reference documents.");
         } 
-        else if (currentStep === 'STAGES') {
-            if (!text && !currentStageFile) return;
-            
-            // Add Stage Logic
-            const newStage: StageData = {
-                id: Date.now(),
-                name: text || (currentStageFile ? `Stage from ${currentStageFile.name}` : 'Untitled Stage'),
-                file: currentStageFile
-            };
+        // STAGES step now handled by StageInputForm or Footer Button
+    };
 
-            const newIndex = stages.length; // Capture index before update
-            setStages(prev => [...prev, newStage]);
-            
-            // Render Stage Card instead of text
-            addUserMessage(<StageCard stage={newStage} index={newIndex} />);
+    // New Handler for Stage Card Input
+    const handleAddStage = (name: string, file: File | null) => {
+        const newStage: StageData = {
+            id: Date.now(),
+            name: name,
+            file: file
+        };
 
-            setCurrentStageFile(null); // Reset file
-            if(fileInputRef.current) fileInputRef.current.value = '';
-        }
+        const newIndex = stages.length;
+        setStages(prev => [...prev, newStage]);
+        
+        // Render Stage Card in chat history as user action
+        addUserMessage(<StageCard stage={newStage} index={newIndex} />);
     };
 
     const handleFinishStages = async () => {
@@ -245,10 +313,10 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 <div className="px-8 py-6 bg-white border-b border-slate-200 flex justify-between items-center shadow-sm z-10">
                     <div>
                         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                            <FileText size={20} className="text-blue-600" />
-                            Review & Refine
+                            <TableProperties size={20} className="text-blue-600" />
+                            Review Process Table
                         </h2>
-                        <p className="text-sm text-slate-500 mt-1">Review the drafted steps before generating the visualization.</p>
+                        <p className="text-sm text-slate-500 mt-1">Refine step details before generating the final visualization.</p>
                     </div>
                     <div className="flex gap-3">
                         <button 
@@ -344,7 +412,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                     </div>
                 </div>
                 {/* Progress Steps */}
-                <div className="flex items-center gap-1 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
+                <div className="flex items-center gap-1 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 hidden md:flex">
                     <div className={`h-2 w-2 rounded-full transition-all duration-300 ${currentStep === 'NAME' ? 'bg-blue-600 scale-125' : 'bg-slate-300'}`}></div>
                     <div className="w-4 h-px bg-slate-200"></div>
                     <div className={`h-2 w-2 rounded-full transition-all duration-300 ${currentStep === 'START' ? 'bg-blue-600 scale-125' : 'bg-slate-300'}`}></div>
@@ -369,16 +437,13 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                             
                             {/* Bubble */}
                             <div className={`max-w-[85%] md:max-w-[80%] ${
-                                // Only apply bubble styling if content is a string/text. 
-                                // If it's a React element (StageCard), we render it directly without the bubble wrapper styling, 
-                                // but we still need the positioning container.
                                 typeof msg.content === 'string' || (React.isValidElement(msg.content) && msg.content.type === 'span') 
                                 ? `px-6 py-4 rounded-2xl shadow-sm text-sm leading-relaxed ${
                                     msg.role === 'user' 
                                     ? 'bg-blue-600 text-white rounded-tr-none shadow-md' 
                                     : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05)]'
                                   }` 
-                                : '' // No wrapper class for Cards
+                                : '' 
                             }`}>
                                 {msg.content}
                             </div>
@@ -397,80 +462,62 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                             </div>
                         </div>
                     )}
+
+                    {/* Inline Input Card for Stages */}
+                    {currentStep === 'STAGES' && (
+                        <div className="flex justify-start w-full">
+                            <div className="w-9 shrink-0 mr-4"></div> {/* Spacer for alignment with bot avatar */}
+                            <StageInputForm onAdd={handleAddStage} />
+                        </div>
+                    )}
+
                     <div ref={messagesEndRef} />
                 </div>
             </div>
 
-            {/* Input Area */}
+            {/* Input Area / Footer Actions */}
             <div className="p-4 md:p-6 shrink-0 relative z-20 bg-gradient-to-t from-white via-white to-transparent">
                 <div className="max-w-3xl mx-auto">
-                    {/* File Attachment Pill */}
-                    {currentStageFile && (
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 transform -translate-y-full mb-4 bg-white border border-slate-200 shadow-lg rounded-full py-1.5 px-3 flex items-center gap-3 animate-in slide-in-from-bottom-2">
-                            <div className="p-1 bg-blue-50 text-blue-600 rounded-full">
-                                <FileText size={14} />
-                            </div>
-                            <span className="text-xs font-bold text-slate-700 max-w-[200px] truncate">{currentStageFile.name}</span>
-                            <button onClick={() => setCurrentStageFile(null)} className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full p-0.5 transition-colors">
-                                <X size={14} />
-                            </button>
-                        </div>
-                    )}
+                    
+                    {currentStep === 'STAGES' ? (
+                        /* Generate Button for Stages Step */
+                        <button 
+                            onClick={handleFinishStages}
+                            disabled={stages.length === 0}
+                            className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-2xl font-bold shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:shadow-none hover:scale-[1.01] active:scale-[0.99] border-t border-white/20"
+                        >
+                            <Sparkles size={20} className={stages.length > 0 ? "animate-pulse" : ""} />
+                            Generate Process Flow Table
+                            <span className="bg-white/20 px-2 py-0.5 rounded text-xs ml-2">
+                                {stages.length} Stage{stages.length !== 1 ? 's' : ''} Added
+                            </span>
+                        </button>
+                    ) : (
+                        /* Standard Chat Input for other steps */
+                        <div className="bg-white border border-slate-200 shadow-xl rounded-full p-1.5 pl-5 flex items-center gap-2 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                onChange={handleFileUpload} 
+                                className="hidden" 
+                                accept=".pdf,.docx,.txt" 
+                            />
+                            
+                            <input
+                                type="text"
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                                placeholder={
+                                    currentStep === 'NAME' ? "Enter Product / Policy Name..." :
+                                    currentStep === 'START' ? "What starts the process?..." :
+                                    currentStep === 'END' ? "What ends the process?..." :
+                                    "Type message..."
+                                }
+                                className="flex-1 bg-transparent border-none outline-none text-sm text-slate-800 placeholder:text-slate-400 h-10"
+                                autoFocus
+                            />
 
-                    {/* Input Bar */}
-                    <div className="bg-white border border-slate-200 shadow-xl rounded-full p-1.5 pl-5 flex items-center gap-2 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
-                        {currentStep === 'STAGES' && (
-                            <button 
-                                onClick={() => fileInputRef.current?.click()}
-                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors shrink-0"
-                                title="Upload Reference Document"
-                            >
-                                <Paperclip size={20} />
-                            </button>
-                        )}
-                        <input 
-                            type="file" 
-                            ref={fileInputRef} 
-                            onChange={handleFileUpload} 
-                            className="hidden" 
-                            accept=".pdf,.docx,.txt" 
-                        />
-                        
-                        <input
-                            type="text"
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                            placeholder={
-                                currentStep === 'NAME' ? "Enter Product / Policy Name..." :
-                                currentStep === 'START' ? "What starts the process?..." :
-                                currentStep === 'END' ? "What ends the process?..." :
-                                "Type stage name..."
-                            }
-                            className="flex-1 bg-transparent border-none outline-none text-sm text-slate-800 placeholder:text-slate-400 h-10"
-                            autoFocus
-                        />
-
-                        {currentStep === 'STAGES' ? (
-                            <div className="flex gap-2">
-                                <button 
-                                    onClick={handleSendMessage}
-                                    className="p-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all shadow-md disabled:opacity-50 disabled:shadow-none hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
-                                    disabled={!inputValue.trim() && !currentStageFile}
-                                    title="Add Stage"
-                                >
-                                    <Plus size={20} />
-                                </button>
-                                <button 
-                                    onClick={handleFinishStages}
-                                    disabled={stages.length === 0}
-                                    className="px-4 py-2 bg-emerald-500 text-white rounded-full font-bold text-xs hover:bg-emerald-600 transition-all shadow-md flex items-center gap-2 disabled:opacity-50 disabled:shadow-none whitespace-nowrap mr-1"
-                                >
-                                    <Sparkles size={14} />
-                                    Done
-                                </button>
-                            </div>
-                        ) : (
                             <button 
                                 onClick={handleSendMessage}
                                 disabled={!inputValue.trim()}
@@ -478,20 +525,13 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                             >
                                 <ArrowUp size={20} strokeWidth={2.5} />
                             </button>
-                        )}
-                    </div>
-                    
-                    {/* Render recent stages as small pills below input for quick context */}
-                    {currentStep === 'STAGES' && stages.length > 0 && (
-                        <div className="mt-4 flex gap-2 overflow-x-auto pb-2 px-1 no-scrollbar justify-center">
-                            {stages.map((s, i) => (
-                                <div key={s.id} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 shadow-sm whitespace-nowrap animate-in fade-in slide-in-from-bottom-2">
-                                    <span className="w-4 h-4 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[9px]">{i+1}</span>
-                                    {s.name}
-                                </div>
-                            ))}
                         </div>
                     )}
+                    
+                    {/* Render recent stages pills only if NOT in STAGES mode (since card handles input there) - wait, user might want to see what they added */}
+                    {/* Actually, they appear as cards in chat history, so pills might be redundant or nice to have. Let's keep them hidden in STAGES step to focus on the card interaction, or show them? 
+                        The prompt implies the card does the adding. The cards in history show the state. 
+                    */}
                 </div>
             </div>
         </div>
