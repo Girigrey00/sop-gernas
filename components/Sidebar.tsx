@@ -1,13 +1,8 @@
 
-import React, { useEffect, useState } from 'react';
-import { 
-  FileText, ShieldCheck, GitMerge, AlertOctagon, BookOpen, Clock, 
-  User, LogOut, MessageSquare, FilePlus, ChevronLeft, ChevronRight,
-  Menu
-} from 'lucide-react';
+import  { useEffect, useState } from 'react';
+import {  LogOut, ChevronRight, BookOpen, ChevronLeft, User, Clock, MessageSquare, FileText, ShieldCheck, GitMerge, AlertOctagon } from 'lucide-react';
 import { View, ChatSession, Product } from '../types';
 import { apiService } from '../services/apiService';
-import { motion } from 'motion/react';
 
 export interface SidebarProps {
   currentView: View;
@@ -19,30 +14,6 @@ export interface SidebarProps {
   onLoadSession: (session: ChatSession) => void;
 }
 
-export const Logo = ({ open }: { open: boolean }) => {
-  return (
-    <div className="flex items-center gap-3 py-1 overflow-hidden">
-      <div className="w-10 h-10 bg-gradient-to-br from-fab-navy via-fab-royal to-fab-blue rounded-xl flex items-center justify-center text-white shadow-lg shadow-black/20 relative group shrink-0 overflow-hidden ring-1 ring-white/10">
-           <div className="absolute top-0 right-0 w-6 h-6 bg-white/10 blur-md rounded-full transform translate-x-2 -translate-y-2"></div>
-           <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 relative z-10">
-               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10H12v3h7.6C18.9 17.5 15.8 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8c2.04 0 3.89.78 5.31 2.05l2.25-2.25C17.2 1.9 14.76 0 12 0z" />
-           </svg>
-      </div>
-      {open && (
-        <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            className="flex flex-col whitespace-nowrap"
-        >
-            <span className="font-bold text-white text-lg tracking-wide leading-none">GERNAS</span>
-            <span className="text-[10px] text-fab-sky/80 font-medium tracking-widest mt-1 uppercase">SOP Flow</span>
-        </motion.div>
-      )}
-    </div>
-  );
-};
-
 const Sidebar = ({ 
   currentView, 
   onNavigate, 
@@ -53,7 +24,6 @@ const Sidebar = ({
   onLoadSession 
 }: SidebarProps) => {
   const [historySessions, setHistorySessions] = useState<ChatSession[]>([]);
-  const open = !isCollapsed;
 
   // Fetch full history for the sidebar
   useEffect(() => {
@@ -62,10 +32,12 @@ const Sidebar = ({
             const sessions = await apiService.getChatSessions();
             let filtered = sessions;
             
+            // Filter by product context if active
             if (productContext) {
                 filtered = sessions.filter(s => s.product === productContext.product_name);
             }
 
+            // Sort by last activity - SHOW ALL (no slice)
             const sorted = filtered.sort((a, b) => new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime());
             setHistorySessions(sorted);
         } catch (e) {
@@ -73,127 +45,150 @@ const Sidebar = ({
         }
     };
     fetchHistory();
-  }, [currentView, productContext]);
+  }, [currentView, productContext]); // Refresh when view changes or product context changes
 
   const navItems = [
-    { id: 'HOME', label: 'Procedure', icon: <FileText size={20} /> },
-    { id: 'PROCESS_LINEAGE', label: 'Policy Standards', icon: <ShieldCheck size={20} /> },
-    { id: 'PROCESS_BUILDER', label: 'Process Builder', icon: <FilePlus size={20} /> },
-    { id: 'PROCESS_ANALYSIS', label: 'Process Lineage', icon: <GitMerge size={20} /> },
-    { id: 'IMPACT_ASSESSMENT', label: 'Impact Assessment', icon: <AlertOctagon size={20} /> },
+    { id: 'HOME', label: 'Procedure', icon: FileText },
+    { id: 'PROCESS_LINEAGE', label: 'Policy Standards', icon: ShieldCheck },
+    { id: 'PROCESS_ANALYSIS', label: 'Process Lineage', icon: GitMerge },
+    { id: 'IMPACT_ASSESSMENT', label: 'Impact Assessment', icon: AlertOctagon, badge: 'Coming Soon' },
+    // Only show Library/History if a product context is selected
+    ...(productContext ? [
+        { id: 'LIBRARY', label: 'Library', icon: BookOpen },
+        { id: 'HISTORY', label: 'History', icon: Clock }
+    ] : []),
   ];
 
-  // Additional context items
-  if (productContext) {
-      navItems.push({ id: 'LIBRARY', label: 'Library', icon: <BookOpen size={20} /> });
-      navItems.push({ id: 'HISTORY', label: 'History', icon: <Clock size={20} /> });
-  }
-
-  const handleNavigate = (id: string) => {
-      onNavigate(id as View);
-  };
-
-  const isActive = (id: string) => {
-      if (id === currentView) return true;
-      if (id === 'HOME' && (currentView === 'CANVAS' || currentView === 'SOPS')) return true;
-      if (id === 'PROCESS_ANALYSIS' && currentView === 'ANALYSIS_CANVAS') return true;
-      if (id === 'PROCESS_LINEAGE' && currentView === 'LINEAGE_CHAT') return true;
-      return false;
-  };
-
   return (
-    <div 
-        className={`h-full bg-fab-navy border-r border-fab-royal/30 flex flex-col transition-all duration-300 ease-in-out relative ${
-            open ? 'w-72' : 'w-20'
-        }`}
-    >
-        {/* Toggle Button */}
-        <button 
-            onClick={onToggle}
-            className="absolute -right-3 top-9 bg-fab-royal text-white p-1 rounded-full border border-fab-navy shadow-md z-50 hover:bg-fab-blue transition-colors hidden md:block"
-        >
-            {open ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
-        </button>
-
-        {/* Header */}
-        <div className={`p-5 flex items-center ${open ? 'justify-start' : 'justify-center'}`}>
-            <Logo open={open} />
+    <div className="h-full w-full bg-fab-navy text-fab-sky/70 flex flex-col shadow-2xl border-r border-fab-royal/50 relative">
+      
+      {/* Branding - Vertical Stack */}
+      <div className={`p-6 flex flex-col items-center gap-3 border-b border-fab-royal/50 flex-shrink-0 transition-all duration-300`}>
+        <div className="w-10 h-10 bg-gradient-to-br from-fab-navy via-fab-royal to-fab-blue rounded-xl flex items-center justify-center text-white shadow-lg shadow-black/20 relative group shrink-0 overflow-hidden ring-1 ring-white/10">
+           {/* Inner Shine */}
+           <div className="absolute top-0 right-0 w-6 h-6 bg-white/10 blur-md rounded-full transform translate-x-2 -translate-y-2"></div>
+           {/* SVG Logo */}
+           <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 relative z-10">
+               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10H12v3h7.6C18.9 17.5 15.8 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8c2.04 0 3.89.78 5.31 2.05l2.25-2.25C17.2 1.9 14.76 0 12 0z" />
+           </svg>
         </div>
+        {!isCollapsed && (
+            <div className="animate-in fade-in duration-300 text-center">
+              <h1 className="text-white font-bold text-sm tracking-wide leading-none">GERNAS</h1>
+              <p className="text-[10px] text-fab-sky/60 font-medium tracking-wide mt-1">ISOP</p>
+            </div>
+        )}
+      </div>
 
-        {/* Divider */}
-        <div className="h-px bg-gradient-to-r from-transparent via-fab-royal/50 to-transparent mx-4 mb-4"></div>
+       {/* Toggle Button (Desktop Only) */}
+       <button
+        onClick={onToggle}
+        className="absolute top-32 -right-3 bg-fab-royal text-white p-1 rounded-full shadow-lg border border-fab-navy hover:bg-fab-blue transition-colors z-50 hidden lg:flex items-center justify-center"
+        title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+      >
+        {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+      </button>
 
-        {/* Nav Items */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 space-y-1 custom-scrollbar">
-            {navItems.map((item) => (
-                <button
+      {/* Nav Items & History Container */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+          
+          {/* Main Navigation */}
+          <div className="px-3 py-6 space-y-2 shrink-0">
+            {!isCollapsed && (
+                <p className="px-3 mb-2 text-[10px] font-bold text-fab-sky/50 tracking-wider">Navigation</p>
+            )}
+            {navItems.map(item => {
+                const Icon = item.icon;
+                // Map CANVAS/SOPS view to HOME for highlighting if no specific match
+                let isActive = currentView === item.id;
+                if (item.id === 'HOME' && (currentView === 'CANVAS' || currentView === 'SOPS')) isActive = true;
+                if (item.id === 'PROCESS_ANALYSIS' && currentView === 'ANALYSIS_CANVAS') isActive = true;
+                if (item.id === 'PROCESS_LINEAGE' && currentView === 'LINEAGE_CHAT') isActive = true;
+
+                return (
+                  <button
                     key={item.id}
-                    onClick={() => handleNavigate(item.id)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 group relative ${
-                        isActive(item.id) 
-                        ? 'bg-fab-royal text-white shadow-lg shadow-fab-royal/20' 
-                        : 'text-fab-sky/70 hover:bg-white/5 hover:text-white'
-                    } ${!open ? 'justify-center' : ''}`}
-                    title={!open ? item.label : ''}
-                >
-                    <div className={`${isActive(item.id) ? 'text-white' : 'text-fab-sky/80 group-hover:text-white'}`}>
-                        {item.icon}
+                    onClick={() => onNavigate(item.id as View)}
+                    title={isCollapsed ? item.label : ''}
+                    className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-2.5 rounded-xl transition-all group relative ${
+                      isActive 
+                        ? 'bg-fab-royal text-white shadow-lg shadow-black/20' 
+                        : 'hover:bg-fab-royal/40 text-fab-sky/70 hover:text-white'
+                    }`}
+                  >
+                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} relative`}>
+                      <Icon size={isCollapsed ? 22 : 18} className={`${isActive ? 'text-white' : 'text-fab-sky/50 group-hover:text-fab-sky'} transition-colors`} />
+                      {!isCollapsed && <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>}
                     </div>
-                    
-                    {open && (
-                        <span className="text-sm font-medium tracking-wide truncate">{item.label}</span>
+                    {!isCollapsed && item.badge && (
+                       <span className="text-[9px] bg-fab-sky/20 text-fab-sky border border-fab-sky/20 px-1.5 py-0.5 rounded font-bold">{item.badge}</span>
                     )}
+                    {!isCollapsed && !item.badge && isActive && <ChevronRight size={14} className="text-fab-sky" />}
                     
-                    {isActive(item.id) && !open && (
-                        <div className="absolute right-1 w-1.5 h-1.5 rounded-full bg-fab-sky"></div>
+                    {/* Active Bar Indicator for Collapsed Mode */}
+                    {isCollapsed && isActive && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-fab-sky rounded-r-full"></div>
                     )}
-                </button>
-            ))}
+                  </button>
+                );
+            })}
+          </div>
 
-            {/* History Section (Only when open) */}
-            {open && productContext && historySessions.length > 0 && (
-                <div className="mt-8 animate-in fade-in slide-in-from-left-4 duration-500">
-                    <p className="px-4 mb-2 text-[10px] font-bold text-fab-sky/40 uppercase tracking-widest flex items-center justify-between">
-                        Recent Sessions
-                        <span className="bg-fab-royal/30 text-white px-1.5 py-0.5 rounded text-[9px]">{historySessions.length}</span>
-                    </p>
-                    <div className="space-y-0.5 max-h-48 overflow-y-auto pr-1 custom-scrollbar-dark">
-                        {historySessions.map(session => (
+          {/* Product History List (Scrollable Area) */}
+          {!isCollapsed && productContext && historySessions.length > 0 && (
+            <div className="flex-1 overflow-y-auto px-3 pb-4 border-t border-fab-royal/20 pt-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fab-royal/40 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-fab-royal/80">
+                <p className="px-3 mb-3 text-[10px] font-bold text-fab-sky/50 tracking-wider flex items-center justify-between">
+                    Product History
+                    <span className="bg-fab-royal/30 px-1.5 py-0.5 rounded text-white text-[9px]">{historySessions.length}</span>
+                </p>
+                <div className="space-y-1">
+                    {historySessions.map(session => {
+                        const title = session.session_title || session.last_message?.question || "New Session";
+                        return (
                             <button
                                 key={session._id}
                                 onClick={() => onLoadSession(session)}
-                                className="w-full text-left px-4 py-2 text-xs text-fab-sky/60 hover:text-white hover:bg-white/5 rounded-lg truncate transition-colors flex items-center gap-2 group"
+                                className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-fab-royal/30 text-fab-sky/80 hover:text-white transition-colors group flex items-start gap-2.5 relative"
+                                title={title} // Tooltip for full title
                             >
-                                <MessageSquare size={12} className="opacity-50 group-hover:opacity-100" />
-                                <span className="truncate">{session.session_title || session.last_message?.question || "Untitled Session"}</span>
+                                <MessageSquare size={14} className="mt-0.5 opacity-60 group-hover:opacity-100 shrink-0 text-fab-sky" />
+                                <div className="overflow-hidden w-full">
+                                    <p className="text-[11px] font-medium truncate w-full leading-tight">{title}</p>
+                                    <p className="text-[9px] opacity-50 truncate mt-0.5">{new Date(session.last_activity).toLocaleDateString()}</p>
+                                </div>
                             </button>
-                        ))}
-                    </div>
+                        );
+                    })}
+                </div>
+            </div>
+          )}
+      </div>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-fab-royal/50 bg-black/10 flex-shrink-0 space-y-3">
+        
+        {/* User Profile */}
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-2`}>
+            <div className="w-8 h-8 rounded-full bg-fab-royal flex items-center justify-center text-white ring-2 ring-fab-navy">
+                <User size={16} />
+            </div>
+            {!isCollapsed && (
+                <div className="overflow-hidden">
+                    <p className="text-xs font-bold text-white truncate">Admin User</p>
+                    <p className="text-[10px] text-fab-sky/60 truncate">System Administrator</p>
                 </div>
             )}
         </div>
 
-        {/* Footer Actions */}
-        <div className="p-4 border-t border-fab-royal/30 bg-black/10">
-            <div className={`flex items-center gap-3 ${!open ? 'justify-center flex-col' : ''}`}>
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-fab-royal to-fab-blue flex items-center justify-center text-white ring-2 ring-white/10 shadow-sm shrink-0">
-                    <User size={16} />
-                </div>
-                {open && (
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-white truncate">System Admin</p>
-                        <p className="text-[10px] text-fab-sky/60 truncate">admin@gernas.ae</p>
-                    </div>
-                )}
-                <button 
-                    onClick={onLogout}
-                    className={`text-rose-400 hover:text-rose-200 hover:bg-rose-500/20 p-2 rounded-lg transition-colors ${!open ? 'mt-2' : ''}`}
-                    title="Sign Out"
-                >
-                    <LogOut size={18} />
-                </button>
-            </div>
-        </div>
+        <button 
+            onClick={onLogout}
+            title={isCollapsed ? "Sign Out" : ""}
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} p-2.5 rounded-lg text-rose-300 hover:bg-rose-950/30 hover:text-rose-200 transition-all group border border-transparent hover:border-rose-900/30`}
+        >
+            <LogOut size={isCollapsed ? 18 : 16} className="group-hover:-translate-x-0.5 transition-transform" />
+            {!isCollapsed && <span className="text-xs font-medium whitespace-nowrap">Sign Out</span>}
+        </button>
+      </div>
     </div>
   );
 };
