@@ -4,7 +4,8 @@ import {
     ChevronLeft, Paperclip, Plus, X, 
     FileText, PlayCircle, Loader2, CheckCircle2,
     Sparkles, ArrowUp, TableProperties, Hammer, Zap,
-    GitCommit, Workflow, Layers, HardHat
+    GitCommit, Workflow, Layers, HardHat, Network, 
+    GitBranch, Boxes, FileStack, ArrowRightCircle
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { ProcessDefinitionRow, SopResponse } from '../types';
@@ -31,32 +32,34 @@ interface StageData {
 
 // Interactive Stage Card Component (Display in History)
 const StageCard = ({ stage, index }: { stage: StageData, index: number }) => (
-    <div className="relative pl-6 py-2 group">
+    <div className="relative pl-8 py-2 group">
         {/* Visual Connector Line for Flow Effect - Constrained to prevent overlap */}
-        <div className="absolute left-0 top-0 bottom-0 w-px border-l-2 border-dashed border-indigo-200 group-first:top-1/2 group-last:bottom-1/2"></div>
+        <div className="absolute left-[9px] top-0 bottom-0 w-px border-l-2 border-dashed border-indigo-200 group-first:top-1/2 group-last:bottom-1/2"></div>
         
         {/* Node Dot / Number */}
-        <div className="absolute left-[-9px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-indigo-600 text-white border-4 border-white shadow-md flex items-center justify-center z-10 text-[10px] font-bold">
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-indigo-600 text-white border-2 border-white shadow-md flex items-center justify-center z-10 text-[10px] font-bold">
             {index + 1}
         </div>
 
         {/* Card Body */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm min-w-[260px] max-w-sm relative group-hover:border-indigo-300 group-hover:shadow-md transition-all animate-in slide-in-from-left-2 duration-300 ml-4">
-            <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-1">
-                    <Layers size={10} /> L2 Stage
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm min-w-[260px] max-w-sm relative group-hover:border-indigo-300 group-hover:shadow-md transition-all animate-in slide-in-from-left-2 duration-300 ml-2">
+            <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-1.5 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                    <Boxes size={10} /> L2 Stage
                 </span>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <CheckCircle2 size={14} className="text-emerald-500" />
                 </div>
             </div>
             
-            <h4 className="font-bold text-slate-800 text-sm leading-tight">{stage.name}</h4>
+            <h4 className="font-bold text-slate-800 text-sm leading-tight flex items-center gap-2">
+                {stage.name}
+            </h4>
             
             {stage.file && (
                 <div className="flex items-center gap-2 mt-3 bg-slate-50 p-2 rounded-lg border border-slate-100 w-fit group-hover:bg-indigo-50/30 transition-colors">
-                    <div className="bg-white p-1 rounded border border-slate-200 shadow-sm">
-                        <FileText size={12} className="text-indigo-500" />
+                    <div className="bg-white p-1.5 rounded border border-slate-200 shadow-sm text-indigo-500">
+                        <FileStack size={12} />
                     </div>
                     <span className="text-[10px] text-slate-600 font-medium truncate max-w-[140px]">{stage.file.name}</span>
                 </div>
@@ -437,8 +440,8 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                         <ChevronLeft size={24} />
                     </button>
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg ring-2 ring-orange-50">
-                            <Hammer size={20} className="text-white fill-white/10" />
+                        <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg ring-2 ring-cyan-50">
+                            <Network size={22} className="text-white drop-shadow-sm" />
                         </div>
                         <div>
                             <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">Process Builder</h1>
@@ -471,7 +474,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                     {msg.role === 'user' ? (
                                         <span className="text-[10px] font-bold">YOU</span>
                                     ) : (
-                                        <Hammer size={18} className="text-orange-500 fill-orange-500/20" />
+                                        <Network size={18} className="text-cyan-600 fill-cyan-100" />
                                     )}
                                 </div>
                                 {msg.role === 'system' && (
@@ -500,7 +503,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                         <div className="flex gap-4 animate-in fade-in">
                             <div className="flex flex-col items-center gap-1 shrink-0">
                                 <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-blue-600 shadow-sm">
-                                    <Hammer size={18} className="text-orange-500 fill-orange-500/20" />
+                                    <Network size={18} className="text-cyan-600 fill-cyan-100" />
                                 </div>
                                 <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider text-center w-16 leading-none mt-0.5">
                                     Process<br/>Builder
