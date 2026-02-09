@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
     ChevronLeft, Send, Paperclip, Plus, X, 
     FileText, PlayCircle, Loader2, CheckCircle2, RotateCcw,
-    Sparkles, ArrowUp
+    Sparkles, ArrowUp, Bot
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { ProcessDefinitionRow, SopResponse } from '../types';
@@ -45,6 +45,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     // Stage Input State
     const [currentStageFile, setCurrentStageFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const hasInitialized = useRef(false);
 
     // Table State
     const [tableData, setTableData] = useState<ProcessDefinitionRow[]>([]);
@@ -59,9 +60,12 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         scrollToBottom();
     }, [messages, isTyping]);
 
-    // Initial Welcome
+    // Initial Welcome - Fixed double render with ref
     useEffect(() => {
-        addSystemMessage("Hello! I'm your Process Architect. Let's build a new Standard Operating Procedure (SOP) together.\n\nFirst, please enter the **Product or Policy Name** you are working on.");
+        if (!hasInitialized.current) {
+            hasInitialized.current = true;
+            addSystemMessage("Hello! I'm your Process Architect. Let's build a new Standard Operating Procedure (SOP) together.\n\nFirst, please enter the **Product or Policy Name** you are working on.");
+        }
     }, []);
 
     // Helper to add messages
@@ -92,7 +96,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
             <span>
                 {parts.map((part, i) => 
                     part.startsWith('**') && part.endsWith('**') 
-                        ? <strong key={i} className="font-bold text-fab-navy">{part.slice(2, -2)}</strong> 
+                        ? <strong key={i} className="font-bold text-slate-800">{part.slice(2, -2)}</strong> 
                         : <span key={i}>{part}</span>
                 )}
             </span>
@@ -142,9 +146,9 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
             // User Message Display
             addUserMessage(
                 <div className="flex flex-col gap-1">
-                    <span>{newStage.name}</span>
+                    <span className="font-medium">{newStage.name}</span>
                     {newStage.file && (
-                        <div className="flex items-center gap-2 text-xs bg-white/20 p-1.5 rounded w-fit">
+                        <div className="flex items-center gap-2 text-xs bg-white/20 p-2 rounded-lg border border-white/30 w-fit mt-1 backdrop-blur-sm">
                             <Paperclip size={12} /> {newStage.file.name}
                         </div>
                     )}
@@ -153,11 +157,6 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
             setCurrentStageFile(null); // Reset file
             if(fileInputRef.current) fileInputRef.current.value = '';
-
-            // System Confirmation doesn't need to happen every single time if we want speed,
-            // but for chat feel, a subtle ack is good.
-            // We won't add a system message every time to avoid clutter, 
-            // the user sees their bubble.
         }
     };
 
@@ -226,27 +225,27 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
     if (currentStep === 'REVIEW') {
         return (
-            <div className="flex flex-col h-full bg-slate-50 relative overflow-hidden">
+            <div className="flex flex-col h-full bg-slate-50 relative overflow-hidden font-sans">
                 {/* Header */}
                 <div className="px-8 py-6 bg-white border-b border-slate-200 flex justify-between items-center shadow-sm z-10">
                     <div>
-                        <h2 className="text-xl font-bold text-fab-navy flex items-center gap-2">
-                            <FileText size={20} className="text-fab-royal" />
+                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <FileText size={20} className="text-blue-600" />
                             Review & Refine
                         </h2>
-                        <p className="text-sm text-slate-500">I've drafted the process steps. Please review and edit before visualizing.</p>
+                        <p className="text-sm text-slate-500 mt-1">Review the drafted steps before generating the visualization.</p>
                     </div>
                     <div className="flex gap-3">
                         <button 
                             onClick={() => setCurrentStep('STAGES')}
-                            className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-bold text-sm transition-colors"
+                            className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-bold text-sm transition-colors"
                         >
                             Back to Chat
                         </button>
                         <button 
                             onClick={handleFinalGenerate}
                             disabled={isLoading}
-                            className="px-6 py-2 bg-fab-royal text-white rounded-lg font-bold text-sm shadow-lg shadow-fab-royal/20 hover:bg-fab-blue transition-all flex items-center gap-2 disabled:opacity-70"
+                            className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm shadow-md shadow-blue-200 hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-70 disabled:scale-100 hover:scale-[1.02]"
                         >
                             {isLoading ? <Loader2 size={16} className="animate-spin" /> : <PlayCircle size={16} />}
                             Generate Flow
@@ -255,40 +254,40 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 </div>
 
                 {/* Table Area */}
-                <div className="flex-1 overflow-auto p-6">
-                    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                        <table className="w-full text-left border-collapse text-xs">
-                            <thead className="bg-slate-100 border-b border-slate-200 sticky top-0 z-10">
+                <div className="flex-1 overflow-auto p-6 bg-slate-50/50">
+                    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden ring-1 ring-black/5">
+                        <table className="w-full text-left border-collapse text-sm">
+                            <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
                                 <tr>
-                                    <th className="p-3 font-bold text-slate-600 border-r border-slate-200 w-24">ID</th>
-                                    <th className="p-3 font-bold text-slate-600 border-r border-slate-200 w-48">L2 Process</th>
-                                    <th className="p-3 font-bold text-slate-600 border-r border-slate-200 w-64">Step Name</th>
-                                    <th className="p-3 font-bold text-slate-600 border-r border-slate-200 min-w-[200px]">Description</th>
-                                    <th className="p-3 font-bold text-slate-600 border-r border-slate-200 w-28">Actor</th>
-                                    <th className="p-3 font-bold text-slate-600 border-r border-slate-200 w-24">Type</th>
+                                    <th className="p-4 font-bold text-slate-500 border-r border-slate-200 w-24 text-xs uppercase tracking-wider">ID</th>
+                                    <th className="p-4 font-bold text-slate-500 border-r border-slate-200 w-48 text-xs uppercase tracking-wider">L2 Process</th>
+                                    <th className="p-4 font-bold text-slate-500 border-r border-slate-200 w-64 text-xs uppercase tracking-wider">Step Name</th>
+                                    <th className="p-4 font-bold text-slate-500 border-r border-slate-200 min-w-[200px] text-xs uppercase tracking-wider">Description</th>
+                                    <th className="p-4 font-bold text-slate-500 border-r border-slate-200 w-28 text-xs uppercase tracking-wider">Actor</th>
+                                    <th className="p-4 font-bold text-slate-500 border-r border-slate-200 w-24 text-xs uppercase tracking-wider">Type</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {tableData.map((row) => (
-                                    <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                                        <td className="p-2 border-r border-slate-100 font-mono font-medium text-slate-500 bg-slate-50/50">{row.id}</td>
-                                        <td className="p-2 border-r border-slate-100 text-slate-600">{row.l2Process}</td>
-                                        <td className="p-2 border-r border-slate-100">
+                                    <tr key={row.id} className="hover:bg-slate-50/80 transition-colors group">
+                                        <td className="p-3 border-r border-slate-100 font-mono text-xs font-medium text-slate-400 bg-slate-50/30">{row.id}</td>
+                                        <td className="p-3 border-r border-slate-100 text-slate-600 font-medium">{row.l2Process}</td>
+                                        <td className="p-3 border-r border-slate-100">
                                             <input 
                                                 type="text" 
                                                 value={row.stepName} 
                                                 onChange={(e) => handleTableChange(row.id, 'stepName', e.target.value)}
-                                                className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all px-1 py-0.5 font-bold text-slate-800"
+                                                className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all px-1 py-0.5 font-bold text-slate-800 placeholder-slate-300"
                                             />
                                         </td>
-                                        <td className="p-2 border-r border-slate-100">
+                                        <td className="p-3 border-r border-slate-100">
                                             <textarea 
                                                 value={row.stepDescription} 
                                                 onChange={(e) => handleTableChange(row.id, 'stepDescription', e.target.value)}
-                                                className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all px-1 py-0.5 resize-none h-8 focus:h-16 text-slate-600 leading-tight"
+                                                className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all px-1 py-0.5 resize-none h-10 focus:h-20 text-slate-600 leading-snug placeholder-slate-300"
                                             />
                                         </td>
-                                        <td className="p-2 border-r border-slate-100">
+                                        <td className="p-3 border-r border-slate-100">
                                             <input 
                                                 type="text" 
                                                 value={row.actor} 
@@ -296,12 +295,12 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                                 className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all px-1 py-0.5 text-slate-700 font-medium"
                                             />
                                         </td>
-                                        <td className="p-2 border-r border-slate-100">
+                                        <td className="p-3 border-r border-slate-100">
                                             <input 
                                                 type="text" 
                                                 value={row.stepType} 
                                                 onChange={(e) => handleTableChange(row.id, 'stepType', e.target.value)}
-                                                className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all px-1 py-0.5 text-slate-500"
+                                                className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all px-1 py-0.5 text-slate-500 font-medium"
                                             />
                                         </td>
                                     </tr>
@@ -316,84 +315,92 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
     // Chat View
     return (
-        <div className="flex h-full w-full bg-slate-50 relative overflow-hidden flex-col">
+        <div className="flex h-full w-full bg-white relative overflow-hidden flex-col font-sans">
             
             {/* Header */}
-            <div className="px-6 py-4 bg-white border-b border-slate-200 flex items-center justify-between shrink-0 shadow-sm z-10">
+            <div className="px-6 py-4 bg-white border-b border-slate-100 flex items-center justify-between shrink-0 z-10 sticky top-0">
                 <div className="flex items-center gap-4">
-                    <button onClick={onBack} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-full transition-colors">
+                    <button onClick={onBack} className="text-slate-400 hover:text-slate-800 hover:bg-slate-50 p-2 rounded-full transition-all">
                         <ChevronLeft size={24} />
                     </button>
                     <div>
-                        <h1 className="text-lg font-bold text-fab-navy">Process Builder</h1>
-                        <p className="text-xs text-slate-500">AI-Guided Process Definition</p>
+                        <h1 className="text-lg font-bold text-slate-800 tracking-tight">Process Architect</h1>
+                        <p className="text-xs text-slate-500 font-medium">AI-Guided Builder</p>
                     </div>
                 </div>
-                {/* Progress Indicators */}
-                <div className="flex items-center gap-2">
-                    <div className={`h-2 w-2 rounded-full ${currentStep === 'NAME' ? 'bg-fab-royal animate-pulse' : 'bg-slate-300'}`}></div>
-                    <div className={`h-2 w-2 rounded-full ${currentStep === 'START' ? 'bg-fab-royal animate-pulse' : 'bg-slate-300'}`}></div>
-                    <div className={`h-2 w-2 rounded-full ${currentStep === 'END' ? 'bg-fab-royal animate-pulse' : 'bg-slate-300'}`}></div>
-                    <div className={`h-2 w-2 rounded-full ${currentStep === 'STAGES' ? 'bg-fab-royal animate-pulse' : 'bg-slate-300'}`}></div>
+                {/* Progress Steps */}
+                <div className="flex items-center gap-1 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
+                    <div className={`h-2 w-2 rounded-full transition-all duration-300 ${currentStep === 'NAME' ? 'bg-blue-600 scale-125' : 'bg-slate-300'}`}></div>
+                    <div className="w-4 h-px bg-slate-200"></div>
+                    <div className={`h-2 w-2 rounded-full transition-all duration-300 ${currentStep === 'START' ? 'bg-blue-600 scale-125' : 'bg-slate-300'}`}></div>
+                    <div className="w-4 h-px bg-slate-200"></div>
+                    <div className={`h-2 w-2 rounded-full transition-all duration-300 ${currentStep === 'END' ? 'bg-blue-600 scale-125' : 'bg-slate-300'}`}></div>
+                    <div className="w-4 h-px bg-slate-200"></div>
+                    <div className={`h-2 w-2 rounded-full transition-all duration-300 ${currentStep === 'STAGES' ? 'bg-blue-600 scale-125' : 'bg-slate-300'}`}></div>
                 </div>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
-                {messages.map((msg) => (
-                    <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''} animate-in fade-in slide-in-from-bottom-2`}>
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm ${
-                            msg.role === 'user' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-200 text-fab-royal'
-                        }`}>
-                            {msg.role === 'user' ? <span className="text-xs font-bold">YOU</span> : <GIcon className="w-6 h-6" />}
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 bg-slate-50/30">
+                <div className="max-w-3xl mx-auto flex flex-col gap-6">
+                    {messages.map((msg) => (
+                        <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+                            {/* Avatar */}
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 shadow-sm border ${
+                                msg.role === 'user' ? 'bg-slate-900 text-white border-slate-800' : 'bg-white text-blue-600 border-slate-200'
+                            }`}>
+                                {msg.role === 'user' ? <span className="text-[10px] font-bold">YOU</span> : <GIcon className="w-5 h-5" />}
+                            </div>
+                            
+                            {/* Bubble */}
+                            <div className={`max-w-[85%] md:max-w-[80%] px-6 py-4 rounded-2xl shadow-sm text-sm leading-relaxed ${
+                                msg.role === 'user' 
+                                ? 'bg-blue-600 text-white rounded-tr-none shadow-md' 
+                                : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05)]'
+                            }`}>
+                                {msg.content}
+                            </div>
                         </div>
-                        <div className={`max-w-[80%] md:max-w-[70%] px-5 py-4 rounded-2xl shadow-sm text-sm leading-relaxed ${
-                            msg.role === 'user' 
-                            ? 'bg-fab-royal text-white rounded-tr-none' 
-                            : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none'
-                        }`}>
-                            {msg.content}
+                    ))}
+                    
+                    {isTyping && (
+                        <div className="flex gap-4 animate-in fade-in">
+                            <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-blue-600 shrink-0 shadow-sm">
+                                <GIcon className="w-5 h-5" />
+                            </div>
+                            <div className="bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1.5 w-fit">
+                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
+                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-100"></span>
+                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-200"></span>
+                            </div>
                         </div>
-                    </div>
-                ))}
-                
-                {isTyping && (
-                    <div className="flex gap-4 animate-in fade-in">
-                        <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-fab-royal shrink-0 shadow-sm">
-                            <GIcon className="w-6 h-6" />
-                        </div>
-                        <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1">
-                            <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></span>
-                            <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-100"></span>
-                            <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-200"></span>
-                        </div>
-                    </div>
-                )}
-                <div ref={messagesEndRef} />
+                    )}
+                    <div ref={messagesEndRef} />
+                </div>
             </div>
 
             {/* Input Area */}
-            <div className="bg-white border-t border-slate-200 p-4 md:p-6 shrink-0 relative z-20">
+            <div className="p-4 md:p-6 shrink-0 relative z-20 bg-gradient-to-t from-white via-white to-transparent">
                 <div className="max-w-3xl mx-auto">
                     {/* File Attachment Pill */}
                     {currentStageFile && (
-                        <div className="absolute top-0 transform -translate-y-full mb-2 bg-white border border-slate-200 shadow-md rounded-lg p-2 flex items-center gap-2 animate-in slide-in-from-bottom-2">
-                            <div className="p-1.5 bg-blue-50 text-blue-600 rounded">
-                                <FileText size={16} />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 transform -translate-y-full mb-4 bg-white border border-slate-200 shadow-lg rounded-full py-1.5 px-3 flex items-center gap-3 animate-in slide-in-from-bottom-2">
+                            <div className="p-1 bg-blue-50 text-blue-600 rounded-full">
+                                <FileText size={14} />
                             </div>
-                            <span className="text-xs font-medium text-slate-700 max-w-[200px] truncate">{currentStageFile.name}</span>
-                            <button onClick={() => setCurrentStageFile(null)} className="text-slate-400 hover:text-rose-500 ml-2">
+                            <span className="text-xs font-bold text-slate-700 max-w-[200px] truncate">{currentStageFile.name}</span>
+                            <button onClick={() => setCurrentStageFile(null)} className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full p-0.5 transition-colors">
                                 <X size={14} />
                             </button>
                         </div>
                     )}
 
-                    {/* Input Container */}
-                    <div className="flex gap-2 items-end">
+                    {/* Input Bar */}
+                    <div className="bg-white border border-slate-200 shadow-xl rounded-full p-1.5 pl-5 flex items-center gap-2 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
                         {currentStep === 'STAGES' && (
                             <button 
                                 onClick={() => fileInputRef.current?.click()}
-                                className="p-3.5 bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-fab-royal rounded-xl transition-colors shrink-0"
+                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors shrink-0"
                                 title="Upload Reference Document"
                             >
                                 <Paperclip size={20} />
@@ -407,28 +414,26 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                             accept=".pdf,.docx,.txt" 
                         />
                         
-                        <div className="flex-1 bg-slate-100 rounded-xl flex items-center px-4 py-3 focus-within:ring-2 focus-within:ring-fab-royal/50 transition-all border border-transparent focus-within:border-fab-royal focus-within:bg-white">
-                            <input
-                                type="text"
-                                value={inputValue}
-                                onChange={(e) => setInputValue(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                                placeholder={
-                                    currentStep === 'NAME' ? "Enter Product / Policy Name..." :
-                                    currentStep === 'START' ? "What starts the process?..." :
-                                    currentStep === 'END' ? "What ends the process?..." :
-                                    "Enter Stage Name..."
-                                }
-                                className="bg-transparent border-none outline-none w-full text-sm text-slate-800 placeholder:text-slate-400"
-                                autoFocus
-                            />
-                        </div>
+                        <input
+                            type="text"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                            placeholder={
+                                currentStep === 'NAME' ? "Enter Product / Policy Name..." :
+                                currentStep === 'START' ? "What starts the process?..." :
+                                currentStep === 'END' ? "What ends the process?..." :
+                                "Type stage name..."
+                            }
+                            className="flex-1 bg-transparent border-none outline-none text-sm text-slate-800 placeholder:text-slate-400 h-10"
+                            autoFocus
+                        />
 
                         {currentStep === 'STAGES' ? (
                             <div className="flex gap-2">
                                 <button 
                                     onClick={handleSendMessage}
-                                    className="p-3.5 bg-fab-royal text-white rounded-xl shadow-lg shadow-fab-royal/20 hover:bg-fab-blue transition-all disabled:opacity-50"
+                                    className="p-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all shadow-md disabled:opacity-50 disabled:shadow-none hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
                                     disabled={!inputValue.trim() && !currentStageFile}
                                     title="Add Stage"
                                 >
@@ -437,9 +442,9 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                 <button 
                                     onClick={handleFinishStages}
                                     disabled={stages.length === 0}
-                                    className="px-4 py-3 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all font-bold text-sm flex items-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-4 py-2 bg-emerald-500 text-white rounded-full font-bold text-xs hover:bg-emerald-600 transition-all shadow-md flex items-center gap-2 disabled:opacity-50 disabled:shadow-none whitespace-nowrap mr-1"
                                 >
-                                    <Sparkles size={16} />
+                                    <Sparkles size={14} />
                                     Done
                                 </button>
                             </div>
@@ -447,18 +452,18 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                             <button 
                                 onClick={handleSendMessage}
                                 disabled={!inputValue.trim()}
-                                className="p-3.5 bg-fab-royal text-white rounded-xl shadow-lg shadow-fab-royal/20 hover:bg-fab-blue transition-all disabled:opacity-50 disabled:shadow-none"
+                                className="p-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all shadow-md disabled:opacity-50 disabled:shadow-none hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 mr-1"
                             >
-                                <ArrowUp size={20} strokeWidth={3} />
+                                <ArrowUp size={20} strokeWidth={2.5} />
                             </button>
                         )}
                     </div>
                     
                     {currentStep === 'STAGES' && stages.length > 0 && (
-                        <div className="mt-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                        <div className="mt-4 flex gap-2 overflow-x-auto pb-2 px-1 no-scrollbar justify-center">
                             {stages.map((s, i) => (
-                                <div key={s.id} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 whitespace-nowrap">
-                                    <span className="w-4 h-4 bg-fab-royal text-white rounded-full flex items-center justify-center text-[9px] font-bold">{i+1}</span>
+                                <div key={s.id} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 shadow-sm whitespace-nowrap animate-in fade-in slide-in-from-bottom-2">
+                                    <span className="w-4 h-4 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[9px]">{i+1}</span>
                                     {s.name}
                                 </div>
                             ))}
