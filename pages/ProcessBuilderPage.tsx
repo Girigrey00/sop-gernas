@@ -3,7 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
     ChevronLeft, Paperclip, Plus, X, 
     FileText, PlayCircle, Loader2, CheckCircle2,
-    Sparkles, ArrowUp, TableProperties, Hammer, Briefcase
+    Sparkles, ArrowUp, TableProperties, Hammer, Zap,
+    GitCommit
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { ProcessDefinitionRow, SopResponse } from '../types';
@@ -30,31 +31,39 @@ interface StageData {
 
 // Interactive Stage Card Component (Display in History)
 const StageCard = ({ stage, index }: { stage: StageData, index: number }) => (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm min-w-[240px] max-w-sm relative group hover:border-blue-300 hover:shadow-md transition-all animate-in zoom-in-95 duration-300">
-        <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold shadow-sm">
-                    {index + 1}
-                </div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">L2 Stage</span>
-            </div>
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                <CheckCircle2 size={16} className="text-emerald-500" />
-            </div>
+    <div className="relative">
+        {/* Visual Connector Line for Flow Effect */}
+        <div className="absolute -left-8 top-[-40px] bottom-0 w-px border-l-2 border-dashed border-slate-200 hidden md:block"></div>
+        <div className="absolute -left-[35px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-slate-100 border-2 border-slate-300 hidden md:flex items-center justify-center z-10">
+            <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
         </div>
-        <h4 className="font-bold text-slate-800 text-sm leading-tight ml-8">{stage.name}</h4>
-        {stage.file && (
-            <div className="flex items-center gap-2 mt-3 ml-8 bg-slate-50 p-2 rounded-lg border border-slate-100 w-fit group-hover:bg-blue-50/50 transition-colors">
-                <div className="bg-white p-1 rounded border border-slate-200 shadow-sm">
-                    <FileText size={12} className="text-blue-500" />
+
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm min-w-[240px] max-w-sm relative group hover:border-blue-300 hover:shadow-md transition-all animate-in zoom-in-95 duration-300">
+            <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold shadow-sm ring-2 ring-white">
+                        {index + 1}
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">L2 Stage</span>
                 </div>
-                <span className="text-[10px] text-slate-600 font-medium truncate max-w-[140px]">{stage.file.name}</span>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <CheckCircle2 size={16} className="text-emerald-500" />
+                </div>
             </div>
-        )}
+            <h4 className="font-bold text-slate-800 text-sm leading-tight ml-8">{stage.name}</h4>
+            {stage.file && (
+                <div className="flex items-center gap-2 mt-3 ml-8 bg-slate-50 p-2 rounded-lg border border-slate-100 w-fit group-hover:bg-blue-50/50 transition-colors">
+                    <div className="bg-white p-1 rounded border border-slate-200 shadow-sm">
+                        <FileText size={12} className="text-blue-500" />
+                    </div>
+                    <span className="text-[10px] text-slate-600 font-medium truncate max-w-[140px]">{stage.file.name}</span>
+                </div>
+            )}
+        </div>
     </div>
 );
 
-// Input Form Component (A2UI Style Widget)
+// Input Form Component (Modern AI Node Creator Style)
 const StageInputForm = ({ onAdd }: { onAdd: (name: string, file: File | null) => void }) => {
     const [name, setName] = useState('');
     const [file, setFile] = useState<File | null>(null);
@@ -69,53 +78,61 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, file: File | null) =>
     };
 
     return (
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-300 group ring-1 ring-slate-100">
-            {/* Header / Stripe */}
-            <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 via-blue-400 to-blue-300"></div>
+        <div className="w-full max-w-md bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl shadow-slate-200/50 border border-white/50 overflow-hidden animate-in zoom-in-95 duration-300 group ring-1 ring-slate-100 relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-transparent to-indigo-50/30 pointer-events-none" />
             
-            <div className="p-5">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg shadow-sm">
-                            <Plus size={14} strokeWidth={3} />
-                        </div>
-                        <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Define New Stage</span>
+            {/* Header */}
+            <div className="px-5 py-3 border-b border-slate-100/50 flex justify-between items-center bg-white/40">
+                <div className="flex items-center gap-2">
+                    <div className="p-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded text-white shadow-sm shadow-blue-200">
+                        <Zap size={12} fill="currentColor" />
                     </div>
+                    <span className="text-xs font-bold text-slate-700 tracking-wide">Define Logic Node</span>
                 </div>
-
+                <div className="flex gap-1.5 opacity-50">
+                    <div className="w-1 h-1 rounded-full bg-slate-400"></div>
+                    <div className="w-1 h-1 rounded-full bg-slate-400"></div>
+                    <div className="w-1 h-1 rounded-full bg-slate-400"></div>
+                </div>
+            </div>
+            
+            <div className="p-5 relative z-10">
                 <div className="space-y-4">
-                    {/* Minimalist Input */}
+                    {/* Modern Input */}
                     <div className="relative group/input">
+                        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                            <GitCommit size={16} className="text-slate-300 group-focus-within/input:text-blue-500 transition-colors" />
+                        </div>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                            placeholder="Type stage name..."
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all font-medium placeholder:text-slate-400 text-slate-800"
+                            placeholder="Type stage name (e.g. Verification)..."
+                            className="w-full bg-white/60 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all font-medium placeholder:text-slate-400 text-slate-800 shadow-inner"
                             autoFocus
                         />
                     </div>
                     
                     <div className="flex items-center justify-between gap-3 pt-1">
+                        {/* File Trigger */}
                         <div className="flex items-center gap-2">
-                            {/* File Button */}
                             <button 
                                 onClick={() => fileRef.current?.click()}
                                 className={`px-3 py-2 rounded-xl border transition-all text-xs font-bold flex items-center gap-2 ${
                                     file 
-                                    ? 'bg-blue-50 border-blue-200 text-blue-600 shadow-inner' 
-                                    : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                                    ? 'bg-indigo-50 border-indigo-200 text-indigo-600 shadow-sm' 
+                                    : 'bg-white/50 border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 hover:border-slate-300 hover:shadow-sm'
                                 }`}
                             >
                                 <Paperclip size={14} />
-                                {file ? <span className="max-w-[100px] truncate">{file.name}</span> : "Reference Doc"}
+                                {file ? <span className="max-w-[100px] truncate">{file.name}</span> : "Attach Context"}
                             </button>
                             
                             {file && (
                                 <button 
                                     onClick={() => { setFile(null); if(fileRef.current) fileRef.current.value=''; }} 
-                                    className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                                    className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors"
                                 >
                                     <X size={14} />
                                 </button>
@@ -123,13 +140,13 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, file: File | null) =>
                             <input type="file" ref={fileRef} onChange={(e) => e.target.files && setFile(e.target.files[0])} className="hidden" accept=".pdf,.docx,.txt" />
                         </div>
 
-                        {/* Add Button */}
+                        {/* Action Button */}
                         <button 
                             onClick={handleSubmit}
                             disabled={!name.trim() && !file}
                             className="bg-slate-900 text-white pl-4 pr-5 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-800 disabled:opacity-50 disabled:scale-95 disabled:cursor-not-allowed transition-all shadow-lg shadow-slate-900/20 flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0"
                         >
-                            Add <ArrowUp size={14} strokeWidth={3} />
+                            Add Node <ArrowUp size={14} strokeWidth={3} />
                         </button>
                     </div>
                 </div>
@@ -236,7 +253,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
             addUserMessage(text);
             setEndTrigger(text);
             setCurrentStep('STAGES');
-            addSystemMessage("Understood. Now, let's define the **L2 Process Stages**.\n\nUse the card below to add each stage with any reference documents.");
+            addSystemMessage("Understood. Now, let's define the **L2 Process Stages**.\n\nUse the node creator below to build your flow structure.");
         } 
         // STAGES step now handled by StageInputForm or Footer Button
     };
@@ -421,7 +438,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                     </button>
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg">
-                            <Briefcase size={20} className="text-blue-400" />
+                            <Hammer size={20} className="text-orange-500" />
                         </div>
                         <div>
                             <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">Process Architect</h1>
@@ -443,17 +460,24 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 bg-slate-50/50">
-                <div className="max-w-3xl mx-auto flex flex-col gap-6">
+                <div className="max-w-3xl mx-auto flex flex-col gap-6 pl-4 md:pl-0">
                     {messages.map((msg) => (
                         <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-                            {/* Avatar */}
-                            <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 shadow-sm border transition-all ${
-                                msg.role === 'user' ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-fab-royal border-slate-200'
-                            }`}>
-                                {msg.role === 'user' ? (
-                                    <span className="text-[10px] font-bold">YOU</span>
-                                ) : (
-                                    <Hammer size={18} className="text-orange-500 fill-orange-500/20" />
+                            {/* Avatar Column */}
+                            <div className="flex flex-col items-center gap-1 shrink-0">
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-sm border transition-all ${
+                                    msg.role === 'user' ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-fab-royal border-slate-200'
+                                }`}>
+                                    {msg.role === 'user' ? (
+                                        <span className="text-[10px] font-bold">YOU</span>
+                                    ) : (
+                                        <Hammer size={18} className="text-orange-500 fill-orange-500/20" />
+                                    )}
+                                </div>
+                                {msg.role === 'system' && (
+                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider text-center w-16 leading-none mt-0.5">
+                                        Process<br/>Builder
+                                    </span>
                                 )}
                             </div>
                             
@@ -474,10 +498,15 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                     
                     {isTyping && (
                         <div className="flex gap-4 animate-in fade-in">
-                            <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-blue-600 shrink-0 shadow-sm">
-                                <Hammer size={18} className="text-orange-500 fill-orange-500/20" />
+                            <div className="flex flex-col items-center gap-1 shrink-0">
+                                <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-blue-600 shadow-sm">
+                                    <Hammer size={18} className="text-orange-500 fill-orange-500/20" />
+                                </div>
+                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider text-center w-16 leading-none mt-0.5">
+                                    Process<br/>Builder
+                                </span>
                             </div>
-                            <div className="bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1.5 w-fit">
+                            <div className="bg-white border border-slate-200 px-5 py-4 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1.5 w-fit h-fit">
                                 <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
                                 <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-100"></span>
                                 <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-200"></span>
@@ -487,8 +516,11 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
                     {/* Inline Input Card for Stages */}
                     {currentStep === 'STAGES' && (
-                        <div className="flex justify-start w-full">
-                            <div className="w-9 shrink-0 mr-4"></div> {/* Spacer for alignment with bot avatar */}
+                        <div className="flex justify-start w-full relative">
+                            {/* Visual Guide Line connecting to input */}
+                            <div className="absolute left-[18px] top-[-30px] bottom-1/2 w-px border-l-2 border-dashed border-slate-300 z-0"></div>
+                            
+                            <div className="w-[52px] shrink-0 mr-4"></div> {/* Spacer for alignment with bot avatar */}
                             <StageInputForm onAdd={handleAddStage} />
                         </div>
                     )}
