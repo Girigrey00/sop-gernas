@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { 
     Send, Loader2, Sparkles, ShieldCheck, 
@@ -7,7 +8,6 @@ import {
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
 import { MessageRenderer, CitationBlock, GIcon, cleanQuestions } from './ChatAssistant';
-import { PlaceholdersAndVanishInput } from '@/components/ui/placeholders-and-vanish-input';
 
 interface PolicyChatProps {
     sopData: SopResponse;
@@ -137,7 +137,7 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext, onBack
 
     // --- Header Component (Shared) ---
     const Header = () => (
-        <div className="bg-white px-6 py-4 flex items-center gap-4 z-10 shrink-0">
+        <div className="bg-white px-6 py-4 flex items-center gap-4 z-10 shrink-0 border-b border-slate-100">
             {onBack && (
                 <button onClick={onBack} className="text-slate-500 hover:text-slate-800 transition-colors">
                     <ArrowLeft size={20} />
@@ -153,13 +153,6 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext, onBack
             </div>
         </div>
     );
-
-    const inputPlaceholders = [
-        "Ask about policy guidelines...",
-        "What are the compliance requirements?",
-        "Search for security standards",
-        "Who is the policy owner?"
-    ];
 
     // --- LANDING VIEW ---
     if (messages.length === 0) {
@@ -216,16 +209,28 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext, onBack
 
                 {/* Footer Input */}
                 <div className="shrink-0 pb-8 px-4 w-full max-w-3xl mx-auto">
-                    <PlaceholdersAndVanishInput
-                        placeholders={inputPlaceholders}
-                        onChange={(e) => setInput(e.target.value)}
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            if (!isLoading) handleSend(input);
-                        }}
-                    />
+                    <form 
+                        onSubmit={(e) => { e.preventDefault(); handleSend(); }}
+                        className="w-full flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-2 py-2 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400 transition-all shadow-sm"
+                    >
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            placeholder="Ask about policy guidelines, requirements, or standards..."
+                            className="flex-1 bg-transparent border-none outline-none text-sm px-4 text-slate-800 placeholder:text-slate-400"
+                            disabled={isLoading}
+                        />
+                        <button
+                            type="submit"
+                            disabled={!input.trim() || isLoading}
+                            className="p-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                        >
+                            <Send size={16} />
+                        </button>
+                    </form>
                     <p className="text-[10px] text-center text-slate-400 mt-4">
-                        Policy Standards AI may display inaccurate info, including about people, so double-check its responses.
+                        Policy Standards AI may display inaccurate info, so double-check its responses.
                     </p>
                 </div>
             </div>
@@ -301,7 +306,7 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext, onBack
                             </div>
                             <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2">
                                 <Loader2 size={16} className="animate-spin text-fab-royal" />
-                                <span className="text-xs text-slate-500 font-medium">Analyzing policies...</span>
+                                <span className="text-xs text-slate-500 font-medium">Thinking...</span>
                             </div>
                         </div>
                     )}
@@ -310,17 +315,27 @@ const PolicyChat: React.FC<PolicyChatProps> = ({ sopData, productContext, onBack
             </div>
 
             {/* Input Area */}
-            <div className="w-full bg-white border-t border-slate-100 p-4 pb-6">
-                <div className="max-w-3xl mx-auto">
-                    <PlaceholdersAndVanishInput
-                        placeholders={inputPlaceholders}
+            <div className="w-full bg-white border-t border-slate-100 p-4 pb-6 shadow-lg">
+                <form 
+                    onSubmit={(e) => { e.preventDefault(); handleSend(); }}
+                    className="w-full max-w-3xl mx-auto flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-2 py-2 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400 transition-all shadow-sm"
+                >
+                    <input
+                        type="text"
+                        value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            if (!isLoading) handleSend(input);
-                        }}
+                        placeholder="Ask follow-up questions..."
+                        className="flex-1 bg-transparent border-none outline-none text-sm px-4 text-slate-800 placeholder:text-slate-400"
+                        disabled={isLoading}
                     />
-                </div>
+                    <button
+                        type="submit"
+                        disabled={!input.trim() || isLoading}
+                        className="p-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                    >
+                        <Send size={16} />
+                    </button>
+                </form>
             </div>
         </div>
     );
