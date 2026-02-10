@@ -5,18 +5,19 @@ import {
     FileText, PlayCircle, Loader2, CheckCircle2,
     Sparkles, ArrowUp, TableProperties, Hammer, Zap,
     GitCommit, Workflow, Layers, HardHat, Network, 
-    GitBranch, Boxes, FileStack, ArrowRightCircle
+    GitBranch, Boxes, FileStack, ArrowRightCircle,
+    Bot, Rocket
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { apiService } from '../services/apiService';
 import { ProcessDefinitionRow, SopResponse } from '../types';
-import { GIcon } from '../components/ChatAssistant'; // Reusing the brand icon
 
 interface ProcessBuilderPageProps {
     onBack: () => void;
     onFlowGenerated: (data: SopResponse) => void;
 }
 
-type BuilderStep = 'NAME' | 'START' | 'END' | 'STAGES' | 'REVIEW';
+type BuilderStep = 'WELCOME' | 'NAME' | 'START' | 'END' | 'STAGES' | 'REVIEW';
 
 interface Message {
     id: string;
@@ -29,6 +30,63 @@ interface StageData {
     name: string;
     file: File | null;
 }
+
+// --- Animated Robot Component (Lottie Style) ---
+const RobotAvatar = () => {
+    return (
+        <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
+            {/* Background Glow */}
+            <div className="absolute inset-0 bg-cyan-500/20 blur-3xl rounded-full animate-pulse"></div>
+            
+            <motion.svg
+                viewBox="0 0 200 200"
+                className="w-full h-full relative z-10 drop-shadow-2xl"
+                animate={{ y: [0, -15, 0] }}
+                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+            >
+                <defs>
+                    <linearGradient id="robotGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#06b6d4" /> {/* Cyan-500 */}
+                        <stop offset="100%" stopColor="#3b82f6" /> {/* Blue-500 */}
+                    </linearGradient>
+                </defs>
+
+                {/* Antenna */}
+                <motion.g animate={{ rotate: [-5, 5, -5] }} transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }} style={{ originX: "100px", originY: "60px" }}>
+                    <line x1="100" y1="60" x2="100" y2="30" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round" />
+                    <circle cx="100" cy="25" r="8" fill="#f43f5e" className="animate-pulse" />
+                </motion.g>
+
+                {/* Head */}
+                <rect x="60" y="60" width="80" height="70" rx="20" fill="url(#robotGradient)" stroke="white" strokeWidth="3" />
+                
+                {/* Face/Screen */}
+                <rect x="70" y="75" width="60" height="40" rx="10" fill="#0f172a" />
+
+                {/* Eyes */}
+                <motion.g animate={{ scaleY: [1, 0.1, 1, 1, 1] }} transition={{ repeat: Infinity, duration: 3, times: [0, 0.05, 0.1, 0.8, 1] }}>
+                    <circle cx="85" cy="95" r="6" fill="#22d3ee" /> {/* Left Eye */}
+                    <circle cx="115" cy="95" r="6" fill="#22d3ee" /> {/* Right Eye */}
+                </motion.g>
+
+                {/* Mouth */}
+                <path d="M 90 108 Q 100 112 110 108" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" fill="none" />
+
+                {/* Body */}
+                <path d="M 70 140 Q 50 140 50 160 L 50 180 L 150 180 L 150 160 Q 150 140 130 140 Z" fill="white" stroke="#e2e8f0" strokeWidth="2" />
+                <rect x="85" y="150" width="30" height="20" rx="4" fill="#e2e8f0" />
+
+                {/* Arms */}
+                <motion.path d="M 50 160 Q 30 160 30 140" stroke="#94a3b8" strokeWidth="6" strokeLinecap="round" fill="none" 
+                    animate={{ rotate: [0, 10, 0] }} transition={{ repeat: Infinity, duration: 2, delay: 0.5 }} style={{ originX: "50px", originY: "160px" }}
+                />
+                <motion.path d="M 150 160 Q 170 160 170 140" stroke="#94a3b8" strokeWidth="6" strokeLinecap="round" fill="none" 
+                    animate={{ rotate: [0, -10, 0] }} transition={{ repeat: Infinity, duration: 2, delay: 0.5 }} style={{ originX: "150px", originY: "160px" }}
+                />
+            </motion.svg>
+        </div>
+    );
+};
 
 // Interactive Stage Card Component (Display in History)
 const StageCard = ({ stage, index }: { stage: StageData, index: number }) => (
@@ -160,7 +218,7 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, file: File | null) =>
 
 const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowGenerated }) => {
     // State
-    const [currentStep, setCurrentStep] = useState<BuilderStep>('NAME');
+    const [currentStep, setCurrentStep] = useState<BuilderStep>('WELCOME');
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false); // Bot typing indicator
@@ -194,9 +252,55 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     useEffect(() => {
         if (!hasInitialized.current) {
             hasInitialized.current = true;
-            addSystemMessage("Hello! I'm your Process Builder. Let's build a new Standard Operating Procedure (SOP) together.\n\nFirst, please enter the **Product or Policy Name** you are working on.");
+            // Add Welcome Hero immediately
+            setMessages([{
+                id: 'welcome-hero',
+                role: 'system',
+                content: <WelcomeHero />
+            }]);
         }
     }, []);
+
+    // Welcome Component with Robot and CTA
+    const WelcomeHero = () => (
+        <div className="w-full flex flex-col items-center justify-center py-8 animate-in fade-in zoom-in-95 duration-500">
+            <RobotAvatar />
+            <h2 className="text-2xl font-bold text-slate-800 mt-6 mb-2 text-center">
+                Welcome to GERNAS Architect
+            </h2>
+            <p className="text-slate-500 text-center max-w-md mb-8 text-sm leading-relaxed">
+                I'm your AI Process Assistant. I can help you structure complex standard operating procedures (SOPs), define risks, and visualize workflows in minutes.
+            </p>
+            <button 
+                onClick={handleStartBuilding}
+                className="group relative inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-full font-bold text-base shadow-xl shadow-cyan-200 hover:shadow-cyan-300 transition-all hover:scale-105 active:scale-95 overflow-hidden"
+            >
+                <span className="relative z-10 flex items-center gap-2">
+                    <Rocket size={20} className="group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" />
+                    Start Building
+                </span>
+                <div className="absolute inset-0 bg-white/20 group-hover:translate-x-full transition-transform duration-500 skew-x-12 -translate-x-full"></div>
+            </button>
+        </div>
+    );
+
+    const handleStartBuilding = () => {
+        setMessages(prev => [
+            ...prev,
+            { id: 'start-action', role: 'user', content: 'Start Building' }
+        ]);
+        
+        setCurrentStep('NAME');
+        setIsTyping(true);
+        setTimeout(() => {
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                role: 'system',
+                content: formatText("Let's get started! 🚀\n\nFirst, please enter the **Product or Policy Name** you are working on.")
+            }]);
+            setIsTyping(false);
+        }, 800);
+    };
 
     // Helper to add messages
     const addSystemMessage = (text: string, delay = 600) => {
@@ -449,42 +553,47 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                         </div>
                     </div>
                 </div>
-                {/* Progress Steps */}
-                <div className="flex items-center gap-1 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 hidden md:flex">
-                    <div className={`h-2 w-2 rounded-full transition-all duration-300 ${currentStep === 'NAME' ? 'bg-blue-600 scale-125' : 'bg-slate-300'}`}></div>
-                    <div className="w-4 h-px bg-slate-200"></div>
-                    <div className={`h-2 w-2 rounded-full transition-all duration-300 ${currentStep === 'START' ? 'bg-blue-600 scale-125' : 'bg-slate-300'}`}></div>
-                    <div className="w-4 h-px bg-slate-200"></div>
-                    <div className={`h-2 w-2 rounded-full transition-all duration-300 ${currentStep === 'END' ? 'bg-blue-600 scale-125' : 'bg-slate-300'}`}></div>
-                    <div className="w-4 h-px bg-slate-200"></div>
-                    <div className={`h-2 w-2 rounded-full transition-all duration-300 ${currentStep === 'STAGES' ? 'bg-blue-600 scale-125' : 'bg-slate-300'}`}></div>
-                </div>
+                
+                {/* Progress Steps (Hide if in Welcome) */}
+                {currentStep !== 'WELCOME' && (
+                    <div className="flex items-center gap-1 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 hidden md:flex animate-in fade-in">
+                        <div className={`h-2 w-2 rounded-full transition-all duration-300 ${currentStep === 'NAME' ? 'bg-blue-600 scale-125' : 'bg-slate-300'}`}></div>
+                        <div className="w-4 h-px bg-slate-200"></div>
+                        <div className={`h-2 w-2 rounded-full transition-all duration-300 ${currentStep === 'START' ? 'bg-blue-600 scale-125' : 'bg-slate-300'}`}></div>
+                        <div className="w-4 h-px bg-slate-200"></div>
+                        <div className={`h-2 w-2 rounded-full transition-all duration-300 ${currentStep === 'END' ? 'bg-blue-600 scale-125' : 'bg-slate-300'}`}></div>
+                        <div className="w-4 h-px bg-slate-200"></div>
+                        <div className={`h-2 w-2 rounded-full transition-all duration-300 ${currentStep === 'STAGES' ? 'bg-blue-600 scale-125' : 'bg-slate-300'}`}></div>
+                    </div>
+                )}
             </div>
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 bg-slate-50/50">
-                <div className="max-w-3xl mx-auto flex flex-col gap-6 pl-4 md:pl-0">
+                <div className={`max-w-3xl mx-auto flex flex-col gap-6 pl-4 md:pl-0 ${currentStep === 'WELCOME' ? 'h-full justify-center' : ''}`}>
                     {messages.map((msg) => (
                         <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
                             {/* Avatar Column */}
-                            <div className="flex flex-col items-center gap-1 shrink-0">
-                                <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-sm border transition-all ${
-                                    msg.role === 'user' ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-fab-royal border-slate-200'
-                                }`}>
-                                    {msg.role === 'user' ? (
-                                        <span className="text-[10px] font-bold">YOU</span>
-                                    ) : (
-                                        <Network size={18} className="text-cyan-600 fill-cyan-100" />
+                            {msg.role !== 'system' || currentStep !== 'WELCOME' ? (
+                                <div className="flex flex-col items-center gap-1 shrink-0">
+                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-sm border transition-all ${
+                                        msg.role === 'user' ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-fab-royal border-slate-200'
+                                    }`}>
+                                        {msg.role === 'user' ? (
+                                            <span className="text-[10px] font-bold">YOU</span>
+                                        ) : (
+                                            <Network size={18} className="text-cyan-600 fill-cyan-100" />
+                                        )}
+                                    </div>
+                                    {msg.role === 'system' && (
+                                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider text-center w-16 leading-none mt-0.5">
+                                            Process<br/>Builder
+                                        </span>
                                     )}
                                 </div>
-                                {msg.role === 'system' && (
-                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider text-center w-16 leading-none mt-0.5">
-                                        Process<br/>Builder
-                                    </span>
-                                )}
-                            </div>
+                            ) : null}
                             
-                            {/* Bubble */}
+                            {/* Bubble or Custom Content */}
                             <div className={`max-w-[85%] md:max-w-[80%] ${
                                 typeof msg.content === 'string' || (React.isValidElement(msg.content) && msg.content.type === 'span') 
                                 ? `px-6 py-4 rounded-2xl shadow-sm text-sm leading-relaxed ${
@@ -492,7 +601,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                     ? 'bg-blue-600 text-white rounded-tr-none shadow-md' 
                                     : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05)]'
                                   }` 
-                                : '' 
+                                : 'w-full' 
                             }`}>
                                 {msg.content}
                             </div>
@@ -541,59 +650,61 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
             </div>
 
             {/* Input Area / Footer Actions */}
-            <div className="p-4 md:p-6 shrink-0 relative z-20 bg-gradient-to-t from-white via-white to-transparent">
-                <div className="max-w-3xl mx-auto">
-                    
-                    {currentStep === 'STAGES' ? (
-                        /* Generate Button for Stages Step */
-                        <button 
-                            onClick={handleFinishStages}
-                            disabled={stages.length === 0}
-                            className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-2xl font-bold shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:shadow-none hover:scale-[1.01] active:scale-[0.99] border-t border-white/20"
-                        >
-                            <Sparkles size={20} className={stages.length > 0 ? "animate-pulse" : ""} />
-                            Generate Process Flow Table
-                            <span className="bg-white/20 px-2 py-0.5 rounded text-xs ml-2">
-                                {stages.length} Stage{stages.length !== 1 ? 's' : ''} Added
-                            </span>
-                        </button>
-                    ) : (
-                        /* Standard Chat Input for other steps */
-                        <div className="bg-white border border-slate-200 shadow-xl rounded-full p-1.5 pl-5 flex items-center gap-2 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
-                            <input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                onChange={handleFileUpload} 
-                                className="hidden" 
-                                accept=".pdf,.docx,.txt" 
-                            />
-                            
-                            <input
-                                type="text"
-                                value={inputValue}
-                                onChange={(e) => setInputValue(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                                placeholder={
-                                    currentStep === 'NAME' ? "Enter Product / Policy Name..." :
-                                    currentStep === 'START' ? "What starts the process?..." :
-                                    currentStep === 'END' ? "What ends the process?..." :
-                                    "Type message..."
-                                }
-                                className="flex-1 bg-transparent border-none outline-none text-sm text-slate-800 placeholder:text-slate-400 h-10"
-                                autoFocus
-                            />
-
+            {currentStep !== 'WELCOME' && (
+                <div className="p-4 md:p-6 shrink-0 relative z-20 bg-gradient-to-t from-white via-white to-transparent">
+                    <div className="max-w-3xl mx-auto">
+                        
+                        {currentStep === 'STAGES' ? (
+                            /* Generate Button for Stages Step */
                             <button 
-                                onClick={handleSendMessage}
-                                disabled={!inputValue.trim()}
-                                className="p-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all shadow-md disabled:opacity-50 disabled:shadow-none hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 mr-1"
+                                onClick={handleFinishStages}
+                                disabled={stages.length === 0}
+                                className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-2xl font-bold shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:shadow-none hover:scale-[1.01] active:scale-[0.99] border-t border-white/20"
                             >
-                                <ArrowUp size={20} strokeWidth={2.5} />
+                                <Sparkles size={20} className={stages.length > 0 ? "animate-pulse" : ""} />
+                                Generate Process Flow Table
+                                <span className="bg-white/20 px-2 py-0.5 rounded text-xs ml-2">
+                                    {stages.length} Stage{stages.length !== 1 ? 's' : ''} Added
+                                </span>
                             </button>
-                        </div>
-                    )}
+                        ) : (
+                            /* Standard Chat Input for other steps */
+                            <div className="bg-white border border-slate-200 shadow-xl rounded-full p-1.5 pl-5 flex items-center gap-2 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    onChange={handleFileUpload} 
+                                    className="hidden" 
+                                    accept=".pdf,.docx,.txt" 
+                                />
+                                
+                                <input
+                                    type="text"
+                                    value={inputValue}
+                                    onChange={(e) => setInputValue(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                                    placeholder={
+                                        currentStep === 'NAME' ? "Enter Product / Policy Name..." :
+                                        currentStep === 'START' ? "What starts the process?..." :
+                                        currentStep === 'END' ? "What ends the process?..." :
+                                        "Type message..."
+                                    }
+                                    className="flex-1 bg-transparent border-none outline-none text-sm text-slate-800 placeholder:text-slate-400 h-10"
+                                    autoFocus
+                                />
+
+                                <button 
+                                    onClick={handleSendMessage}
+                                    disabled={!inputValue.trim()}
+                                    className="p-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all shadow-md disabled:opacity-50 disabled:shadow-none hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 mr-1"
+                                >
+                                    <ArrowUp size={20} strokeWidth={2.5} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };
