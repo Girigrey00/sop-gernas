@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { 
     ChevronLeft, Paperclip, Plus, X, 
@@ -36,7 +35,7 @@ interface StageData {
 // --- High-Fidelity Animated Robot (Image Based) ---
 const RobotAvatar = ({ compact = false }: { compact?: boolean }) => {
     // NOTE: Place your 'gernas-robot.png' file in the /public folder of your project
-    const ROBOT_IMAGE_SRC = "/public/folder/gernas-robot.png"; 
+    const ROBOT_IMAGE_SRC = "/gernas-robot.png"; 
 
     return (
         <div className={`relative ${compact ? 'w-12 h-12' : 'w-72 h-72'} flex items-center justify-center pointer-events-none`}>
@@ -307,7 +306,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
             setProductName(text);
             // Skip START/END triggers and go straight to STAGES to simplify flow
             setCurrentStep('STAGES');
-            addSystemMessage("Now, list the L2 process stages.");
+            addSystemMessage("Now, list the L2 process stages. You can add multiple stages.");
         } 
     };
 
