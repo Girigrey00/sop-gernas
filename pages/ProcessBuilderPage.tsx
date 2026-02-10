@@ -32,107 +32,58 @@ interface StageData {
     file: File | null;
 }
 
-// --- High-Fidelity Animated Robot (Futuristic Style) ---
+// --- High-Fidelity Animated Robot (Image Based) ---
 const RobotAvatar = ({ compact = false }: { compact?: boolean }) => {
+    // NOTE: Place your 'gernas-robot.png' file in the /public folder of your project
+    const ROBOT_IMAGE_SRC = "/gernas-robot.png"; 
+
     return (
-        <div className={`relative ${compact ? 'w-12 h-12' : 'w-64 h-64'} flex items-center justify-center pointer-events-none`}>
+        <div className={`relative ${compact ? 'w-12 h-12' : 'w-72 h-72'} flex items-center justify-center pointer-events-none`}>
             
             {/* Ambient Glows (Only in large mode) */}
             {!compact && (
                 <>
                     <motion.div 
-                        className="absolute w-full h-full bg-blue-400/20 rounded-full blur-3xl"
-                        animate={{ scale: [0.8, 1.1, 0.8], opacity: [0.3, 0.6, 0.3] }}
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-cyan-400/30 rounded-full blur-[60px]"
+                        animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.3, 0.6, 0.3] }}
                         transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
                     />
-                    {/* Orbiting Ring */}
                     <motion.div 
-                        className="absolute w-[120%] h-[40%] border border-blue-300/30 rounded-[100%] z-0"
-                        style={{ rotateX: 70 }}
-                        animate={{ rotateZ: 360 }}
-                        transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100%] h-[100%] bg-blue-500/10 rounded-full blur-[80px]"
+                        animate={{ scale: [1.1, 0.9, 1.1], opacity: [0.2, 0.4, 0.2] }}
+                        transition={{ repeat: Infinity, duration: 6, ease: "easeInOut", delay: 1 }}
                     />
                 </>
             )}
             
-            <motion.svg
-                viewBox="0 0 200 200"
-                className="w-full h-full relative z-10 drop-shadow-2xl"
-                animate={{ y: compact ? 0 : [0, -12, 0] }}
-                transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
-            >
-                <defs>
-                    <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#ffffff" />
-                        <stop offset="100%" stopColor="#e2e8f0" />
-                    </linearGradient>
-                    <linearGradient id="screenGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#1e293b" />
-                        <stop offset="100%" stopColor="#0f172a" />
-                    </linearGradient>
-                    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="3" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
-                </defs>
-
-                {/* --- Body --- */}
-                <path d="M 60 140 Q 50 140 50 160 L 50 175 Q 50 185 60 185 L 140 185 Q 150 185 150 175 L 150 160 Q 150 140 140 140 Z" fill="url(#bodyGradient)" stroke="#cbd5e1" strokeWidth="2" />
+            {/* The Robot Image with Floating Animation */}
+            <motion.img
+                src={ROBOT_IMAGE_SRC}
+                alt="GERNAS AI Assistant"
+                className="w-full h-full object-contain relative z-10 drop-shadow-2xl"
                 
-                {/* Core Reactor */}
-                <motion.circle 
-                    cx="100" cy="162" r="8" fill="#3b82f6" 
-                    animate={{ opacity: [0.6, 1, 0.6], r: [8, 9, 8] }} 
-                    transition={{ repeat: Infinity, duration: 2 }} 
-                />
+                // Levitation Animation
+                animate={{ 
+                    y: compact ? 0 : [0, -15, 0],
+                    scale: compact ? 1 : [1, 1.02, 1] // Subtle breathing effect
+                }}
+                transition={{ 
+                    repeat: Infinity, 
+                    duration: 4.5, 
+                    ease: "easeInOut" 
+                }}
+                
+                // Fallback if image missing (renders a simple bot icon temporarily)
+                onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }}
+            />
 
-                {/* --- Head --- */}
-                <motion.g
-                    animate={{ rotate: [0, 2, 0, -2, 0] }}
-                    transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
-                    style={{ originX: "100px", originY: "140px" }}
-                >
-                    <rect x="55" y="50" width="90" height="80" rx="24" fill="url(#bodyGradient)" stroke="#fff" strokeWidth="4" />
-                    
-                    {/* Face Screen */}
-                    <rect x="65" y="65" width="70" height="45" rx="14" fill="url(#screenGradient)" stroke="#334155" strokeWidth="2" />
-
-                    {/* Eyes */}
-                    <motion.g animate={{ scaleY: [1, 0.1, 1, 1, 1] }} transition={{ repeat: Infinity, duration: 4, times: [0, 0.05, 0.1, 0.9, 1], delay: 0.5 }}>
-                        <circle cx="85" cy="88" r="6" fill="#38bdf8" filter="url(#glow)" /> 
-                        <circle cx="115" cy="88" r="6" fill="#38bdf8" filter="url(#glow)" /> 
-                    </motion.g>
-
-                    {/* Antenna */}
-                    <line x1="100" y1="50" x2="100" y2="30" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round" />
-                    <motion.circle 
-                        cx="100" cy="25" r="5" fill="#f43f5e" 
-                        animate={{ opacity: [0.4, 1, 0.4] }} 
-                        transition={{ repeat: Infinity, duration: 1.5 }} 
-                    />
-                </motion.g>
-
-                {/* --- Arms --- */}
-                <motion.path 
-                    d="M 45 155 Q 25 155 25 135" 
-                    stroke="#94a3b8" strokeWidth="6" strokeLinecap="round" fill="none" 
-                    animate={{ d: ["M 45 155 Q 25 155 25 135", "M 45 155 Q 25 145 25 125", "M 45 155 Q 25 155 25 135"] }}
-                    transition={{ repeat: Infinity, duration: 3 }}
-                />
-                <motion.path 
-                    d="M 155 155 Q 175 155 175 135" 
-                    stroke="#94a3b8" strokeWidth="6" strokeLinecap="round" fill="none" 
-                    animate={{ d: ["M 155 155 Q 175 155 175 135", "M 155 155 Q 175 145 175 125", "M 155 155 Q 175 155 175 135"] }}
-                    transition={{ repeat: Infinity, duration: 3, delay: 1.5 }}
-                />
-
-                {/* --- Hover Shadow --- */}
-                <motion.ellipse 
-                    cx="100" cy="195" rx="40" ry="6" fill="#000" opacity="0.1" 
-                    animate={{ rx: compact ? 40 : [35, 45, 35], opacity: [0.1, 0.05, 0.1] }}
-                    transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
-                />
-            </motion.svg>
+            {/* Fallback SVG in case image is not found */}
+            <div className="hidden absolute inset-0 flex items-center justify-center text-slate-300">
+                <Bot size={compact ? 24 : 100} />
+            </div>
         </div>
     );
 };
@@ -145,8 +96,9 @@ const MessageBubble = ({ role, content, isTyping }: { role: 'system' | 'user', c
         return (
             <div className="flex gap-4 animate-in slide-in-from-bottom-2 fade-in duration-500 w-full max-w-4xl mx-auto mb-6">
                 <div className="shrink-0 mt-1">
-                    <div className="w-8 h-8 rounded-full bg-white border border-slate-100 flex items-center justify-center shadow-sm">
-                        <Sparkles size={16} className="text-blue-500 fill-blue-100" />
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-white to-blue-50 border border-blue-100 flex items-center justify-center shadow-sm overflow-hidden">
+                        {/* Use compact robot avatar as system icon */}
+                        <RobotAvatar compact />
                     </div>
                 </div>
                 <div className="flex-1 space-y-2">
