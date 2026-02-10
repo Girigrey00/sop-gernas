@@ -36,7 +36,7 @@ interface StageData {
 // --- High-Fidelity Animated Robot (Image Based) ---
 const RobotAvatar = ({ compact = false }: { compact?: boolean }) => {
     // NOTE: Place your 'gernas-robot.png' file in the /public folder of your project
-    const ROBOT_IMAGE_SRC = "/gernas-robot.png"; 
+    const ROBOT_IMAGE_SRC = "/public/folder/gernas-robot.png"; 
 
     return (
         <div className={`relative ${compact ? 'w-12 h-12' : 'w-72 h-72'} flex items-center justify-center pointer-events-none`}>
