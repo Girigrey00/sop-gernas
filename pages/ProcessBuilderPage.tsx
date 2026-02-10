@@ -17,7 +17,8 @@ interface ProcessBuilderPageProps {
     onFlowGenerated: (data: SopResponse) => void;
 }
 
-type BuilderStep = 'WELCOME' | 'NAME' | 'START' | 'END' | 'STAGES' | 'REVIEW';
+// Simplified Flow: Welcome -> Name -> Stages -> Review
+type BuilderStep = 'WELCOME' | 'NAME' | 'STAGES' | 'REVIEW';
 
 interface Message {
     id: string;
@@ -554,15 +555,16 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 {/* Progress Indicators */}
                 <div className="hidden md:flex items-center gap-2">
                     {['NAME', 'STAGES'].map((step, i) => {
-                        const steps = ['NAME', 'STAGES'];
-                        const currIdx = steps.indexOf(currentStep);
-                        const stepIdx = steps.indexOf(step);
+                        // Define logical order to handle 'REVIEW' state correctly (it implies previous steps done)
+                        const logicalOrder = ['NAME', 'STAGES', 'REVIEW'];
+                        const currIdx = logicalOrder.indexOf(currentStep);
+                        const stepIdx = logicalOrder.indexOf(step);
                         const isActive = stepIdx <= currIdx;
                         
                         return (
                             <div key={step} className="flex items-center gap-2">
                                 <div className={`w-2.5 h-2.5 rounded-full transition-colors ${isActive ? 'bg-blue-600' : 'bg-slate-300'}`}></div>
-                                {i < steps.length - 1 && <div className={`w-8 h-0.5 rounded-full ${isActive && stepIdx < currIdx ? 'bg-blue-600' : 'bg-slate-200'}`}></div>}
+                                {i < 1 && <div className={`w-8 h-0.5 rounded-full ${isActive && stepIdx < currIdx ? 'bg-blue-600' : 'bg-slate-200'}`}></div>}
                             </div>
                         );
                     })}
