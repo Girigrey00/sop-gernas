@@ -304,20 +304,9 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         if (currentStep === 'NAME') {
             addUserMessage(text);
             setProductName(text);
-            setCurrentStep('START');
-            addSystemMessage(`Great! We're building **${text}**. What triggers this process?`);
-        } 
-        else if (currentStep === 'START') {
-            addUserMessage(text);
-            setStartTrigger(text);
-            setCurrentStep('END');
-            addSystemMessage("Got it. What is the expected outcome or end state?");
-        } 
-        else if (currentStep === 'END') {
-            addUserMessage(text);
-            setEndTrigger(text);
+            // Skip START/END triggers and go straight to STAGES to simplify flow
             setCurrentStep('STAGES');
-            addSystemMessage("Now, list the high-level process stages.");
+            addSystemMessage("Now, list the L2 process stages.");
         } 
     };
 
@@ -343,8 +332,8 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         try {
             const data = await apiService.generateTableFromBuilder({
                 productName,
-                startTrigger,
-                endTrigger,
+                startTrigger: startTrigger || 'Process Start',
+                endTrigger: endTrigger || 'Process End',
                 stages: stages.map(s => ({ name: s.name }))
             });
             setTableData(data);
@@ -564,8 +553,8 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 
                 {/* Progress Indicators */}
                 <div className="hidden md:flex items-center gap-2">
-                    {['NAME', 'START', 'END', 'STAGES'].map((step, i) => {
-                        const steps = ['NAME', 'START', 'END', 'STAGES'];
+                    {['NAME', 'STAGES'].map((step, i) => {
+                        const steps = ['NAME', 'STAGES'];
                         const currIdx = steps.indexOf(currentStep);
                         const stepIdx = steps.indexOf(step);
                         const isActive = stepIdx <= currIdx;
