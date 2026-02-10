@@ -1,6 +1,6 @@
 
 import  { useEffect, useState } from 'react';
-import {  LogOut, ChevronRight, BookOpen, ChevronLeft, User, Clock, MessageSquare, FileText, ShieldCheck, GitMerge, AlertOctagon, FilePlus, Home, Layout, History } from 'lucide-react';
+import {  LogOut, ChevronRight, BookOpen, ChevronLeft, User, Clock, MessageSquare, FileText, ShieldCheck, GitMerge, AlertOctagon, FilePlus } from 'lucide-react';
 import { View, ChatSession, Product } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -48,14 +48,15 @@ const Sidebar = ({
   }, [currentView, productContext]); // Refresh when view changes or product context changes
 
   const navItems = [
-    { id: 'HOME', label: 'Home', icon: Home },
-    { id: 'CANVAS', label: 'Canvas', icon: Layout },
-    { id: 'HISTORY', label: 'History', icon: History },
+    { id: 'HOME', label: 'Procedure', icon: FileText },
+    { id: 'PROCESS_LINEAGE', label: 'Policy Standards', icon: ShieldCheck },
     { id: 'PROCESS_BUILDER', label: 'Process Builder', icon: FilePlus },
     { id: 'PROCESS_ANALYSIS', label: 'Process Lineage', icon: GitMerge },
-    { id: 'PROCESS_LINEAGE', label: 'Policy Standards', icon: ShieldCheck },
+    { id: 'IMPACT_ASSESSMENT', label: 'Impact Assessment', icon: AlertOctagon, badge: 'Coming Soon' },
+    // Only show Library/History if a product context is selected
     ...(productContext ? [
         { id: 'LIBRARY', label: 'Library', icon: BookOpen },
+        { id: 'HISTORY', label: 'History', icon: Clock }
     ] : []),
   ];
 
@@ -75,7 +76,7 @@ const Sidebar = ({
         {!isCollapsed && (
             <div className="animate-in fade-in duration-300 text-center">
               <h1 className="text-white font-bold text-sm tracking-wide leading-none">GERNAS</h1>
-              <p className="text-[10px] text-fab-sky/60 font-medium tracking-wide mt-1">SOP Flow</p>
+              <p className="text-[10px] text-fab-sky/60 font-medium tracking-wide mt-1">ISOP</p>
             </div>
         )}
       </div>
@@ -99,20 +100,11 @@ const Sidebar = ({
             )}
             {navItems.map(item => {
                 const Icon = item.icon;
-                // Map CANVAS/SOPS view to HOME for highlighting if no specific match, unless CANVAS is selected
+                // Map CANVAS/SOPS view to HOME for highlighting if no specific match
                 let isActive = currentView === item.id;
-                
-                // Specific handling: Canvas page active means CANVAS item active
-                if (currentView === 'CANVAS' && item.id === 'CANVAS') isActive = true;
-                else if (currentView === 'HOME' && item.id === 'HOME') isActive = true;
-                // SOPS view falls back to HOME usually, unless we want strict
-                
+                if (item.id === 'HOME' && (currentView === 'CANVAS' || currentView === 'SOPS')) isActive = true;
                 if (item.id === 'PROCESS_ANALYSIS' && currentView === 'ANALYSIS_CANVAS') isActive = true;
                 if (item.id === 'PROCESS_LINEAGE' && currentView === 'LINEAGE_CHAT') isActive = true;
-
-                // Special case for History view which is technically Sidebar state
-                // But if user clicks History, we might want to highlight it while staying on current view or toggling
-                // Here we treat it as a view toggle mostly.
 
                 return (
                   <button
@@ -129,10 +121,10 @@ const Sidebar = ({
                       <Icon size={isCollapsed ? 22 : 18} className={`${isActive ? 'text-white' : 'text-fab-sky/50 group-hover:text-fab-sky'} transition-colors`} />
                       {!isCollapsed && <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>}
                     </div>
-                    {!isCollapsed && (item as any).badge && (
-                       <span className="text-[9px] bg-fab-sky/20 text-fab-sky border border-fab-sky/20 px-1.5 py-0.5 rounded font-bold">{(item as any).badge}</span>
+                    {!isCollapsed && item.badge && (
+                       <span className="text-[9px] bg-fab-sky/20 text-fab-sky border border-fab-sky/20 px-1.5 py-0.5 rounded font-bold">{item.badge}</span>
                     )}
-                    {!isCollapsed && !(item as any).badge && isActive && <ChevronRight size={14} className="text-fab-sky" />}
+                    {!isCollapsed && !item.badge && isActive && <ChevronRight size={14} className="text-fab-sky" />}
                     
                     {/* Active Bar Indicator for Collapsed Mode */}
                     {isCollapsed && isActive && (
@@ -143,11 +135,11 @@ const Sidebar = ({
             })}
           </div>
 
-          {/* History List (Scrollable Area) - Always show if history exists */}
-          {!isCollapsed && historySessions.length > 0 && (
+          {/* Product History List (Scrollable Area) */}
+          {!isCollapsed && productContext && historySessions.length > 0 && (
             <div className="flex-1 overflow-y-auto px-3 pb-4 border-t border-fab-royal/20 pt-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fab-royal/40 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-fab-royal/80">
                 <p className="px-3 mb-3 text-[10px] font-bold text-fab-sky/50 tracking-wider flex items-center justify-between">
-                    {productContext ? 'Product History' : 'Recent History'}
+                    Product History
                     <span className="bg-fab-royal/30 px-1.5 py-0.5 rounded text-white text-[9px]">{historySessions.length}</span>
                 </p>
                 <div className="space-y-1">

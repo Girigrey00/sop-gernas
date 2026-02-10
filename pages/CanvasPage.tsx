@@ -45,30 +45,19 @@ interface CanvasPageProps {
     initialSessionId?: string;
 }
 
-const EMPTY_SOP: SopResponse = {
-    startNode: { stepId: 'START', stepName: 'Start', description: 'Process Initiation', actor: 'System', stepType: 'Start', nextStep: null },
-    endNode: { stepId: 'END', stepName: 'End', description: 'Process Completion', actor: 'System', stepType: 'End', nextStep: null },
-    processDefinition: { title: 'New Canvas', version: '1.0', classification: 'Internal', documentLink: '#' },
-    processObjectives: [],
-    inherentRisks: [],
-    processFlow: { stages: [] },
-    metadata: {}
-};
-
 // Internal component containing the logic that requires the ReactFlow context
 const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, onFlowGenerated, onBack, productContext, initialSessionId }) => {
     // Flow State
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-    // Use fallback SOP if no initial data to ensure UI (Sidebar/Chat) renders
-    const [sopData, setSopData] = useState<SopResponse | null>(initialData || EMPTY_SOP);
+    const [sopData, setSopData] = useState<SopResponse | null>(null);
     
     // UI State
     const [layoutMode, setLayoutMode] = useState<LayoutType>('SWIMLANE');
     const [activeStage, setActiveStage] = useState<string>('ALL');
     const [selectedStep, setSelectedStep] = useState<ProcessStep | null>(null);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Open by default
-    const [activePanel, setActivePanel] = useState<'GUIDE' | 'CHAT'>('CHAT'); // Default to Chat for interaction
+    const [isSidebarOpen, setIsSidebarOpen] = useState(!!initialSessionId); // Open by default if session ID provided
+    const [activePanel, setActivePanel] = useState<'GUIDE' | 'CHAT'>(initialSessionId ? 'CHAT' : 'GUIDE'); // Default to Chat if session ID provided
     const [isLoading, setIsLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState<string>('Generating Flow...');
     const [isDownloading, setIsDownloading] = useState(false);
@@ -153,9 +142,6 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
         } else if (productContext) {
             // No data, but we have a product context. Fetch/Poll flow.
             pollFlowData(productContext.product_name);
-        } else {
-            // No context, just load empty
-            loadData(EMPTY_SOP);
         }
     }, [initialPrompt, initialData, productContext]);
 
@@ -466,7 +452,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                 </div>
 
                 {/* 3. Stage Navigation Bar */}
-                {sopData && sopData.processFlow && sopData.processFlow.stages && sopData.processFlow.stages.length > 0 && (
+                {sopData && sopData.processFlow && sopData.processFlow.stages && (
                     <div className="bg-white/90 backdrop-blur shadow-md border border-slate-200 rounded-xl p-1 flex items-center gap-1 overflow-x-auto max-w-full pointer-events-auto no-scrollbar w-auto">
                          <button 
                             onClick={() => {
@@ -513,7 +499,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
             {/* Responsible Actors Legend & Toggle */}
             <div className="absolute bottom-6 left-6 z-30 flex flex-col items-start gap-2">
                 {/* Legend Card */}
-                {isLegendOpen && actorLegend.length > 0 && (
+                {isLegendOpen && (
                     <div className="bg-white/90 backdrop-blur-md border border-slate-200/50 shadow-xl rounded-2xl p-4 w-52 animate-in fade-in slide-in-from-bottom-2 duration-200 mb-2">
                         <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200/50">
                             <div className="flex items-center gap-2 text-slate-600">
