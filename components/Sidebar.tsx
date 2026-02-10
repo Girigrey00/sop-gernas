@@ -1,6 +1,6 @@
 
 import  { useEffect, useState } from 'react';
-import {  LogOut, ChevronRight, BookOpen, ChevronLeft, User, Clock, MessageSquare, FileText, ShieldCheck, GitMerge, AlertOctagon } from 'lucide-react';
+import {  LogOut, ChevronRight, BookOpen, ChevronLeft, User, Clock, MessageSquare, FileText, ShieldCheck, GitMerge, AlertOctagon, FilePlus } from 'lucide-react';
 import { View, ChatSession, Product } from '../types';
 import { apiService } from '../services/apiService';
 
@@ -50,6 +50,7 @@ const Sidebar = ({
   const navItems = [
     { id: 'HOME', label: 'Procedure', icon: FileText },
     { id: 'PROCESS_LINEAGE', label: 'Policy Standards', icon: ShieldCheck },
+    { id: 'PROCESS_BUILDER', label: 'Process Builder', icon: FilePlus },
     { id: 'PROCESS_ANALYSIS', label: 'Process Lineage', icon: GitMerge },
     { id: 'IMPACT_ASSESSMENT', label: 'Impact Assessment', icon: AlertOctagon, badge: 'Coming Soon' },
     // Only show Library/History if a product context is selected

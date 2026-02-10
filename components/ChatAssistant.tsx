@@ -574,6 +574,65 @@ const MetricWidget: React.FC<{ row: string[], headers: string[] }> = ({ row, hea
    )
 }
 
+const RiskWidget: React.FC<{ riskId: string, sopData: SopResponse, fallbackText: string }> = ({ riskId, sopData, fallbackText }) => {
+    const risk = sopData.inherentRisks?.find(r => r.riskId === riskId);
+    return (
+        <div className="flex items-start gap-3 p-3 my-2 bg-rose-50 border border-rose-100 rounded-xl shadow-sm w-full animate-in slide-in-from-left-2 hover:bg-rose-100/50 transition-colors">
+            <div className="mt-0.5 w-8 h-8 rounded-full bg-white border border-rose-200 flex items-center justify-center text-rose-500 shadow-sm shrink-0">
+                <AlertOctagon size={16} />
+            </div>
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-[10px] font-bold text-white bg-rose-500 px-1.5 py-0.5 rounded-md">{riskId}</span>
+                    <span className="text-xs font-bold text-rose-900 truncate">{risk?.riskType || 'Risk Identified'}</span>
+                </div>
+                <p className="text-xs text-rose-800 leading-relaxed break-words">{risk?.description || fallbackText}</p>
+            </div>
+        </div>
+    );
+};
+
+const StepWidget: React.FC<{ stepId: string, sopData: SopResponse, onClick?: (id: string) => void }> = ({ stepId, sopData, onClick }) => {
+    let step = null;
+    if (sopData.processFlow && sopData.processFlow.stages) {
+        for (const stage of sopData.processFlow.stages) {
+            const found = stage.steps.find(s => s.stepId === stepId);
+            if (found) {
+                step = found;
+                break;
+            }
+        }
+    }
+    
+    // Fallback if not found in stages (e.g. START/END or generated ID)
+    if (!step) {
+        if (sopData.startNode && sopData.startNode.stepId === stepId) step = sopData.startNode;
+        else if (sopData.endNode && sopData.endNode.stepId === stepId) step = sopData.endNode;
+    }
+
+    const title = step ? step.stepName : stepId;
+    const desc = step ? step.description : 'Click to view details';
+
+    return (
+        <button 
+            onClick={() => onClick && onClick(stepId)}
+            className="flex items-center gap-3 p-3 my-2 bg-white border border-slate-200 hover:border-blue-400 hover:shadow-md rounded-xl transition-all w-full text-left group animate-in slide-in-from-left-2 cursor-pointer"
+        >
+            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <ArrowRightCircle size={20} />
+            </div>
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{stepId}</span>
+                    <span className="text-sm font-bold text-slate-800 truncate group-hover:text-blue-700">{title}</span>
+                </div>
+                {step && <p className="text-xs text-slate-500 mt-0.5 truncate">{desc}</p>}
+            </div>
+            <ChevronRight size={16} className="text-slate-300 group-hover:text-blue-500" />
+        </button>
+    );
+};
+
 // --- Citation Block ---
 const CitationBlock = ({ citations, onCitationClick }: { citations: Record<string, string>, onCitationClick?: (doc: string, page?: string) => void }) => {
   const [isOpen, setIsOpen] = useState(false);

@@ -1,6 +1,6 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
+/* 
+  DEPRECATED: This file has been removed as custom UI components are no longer used.
+  Standard class strings or template literals are used instead of cn().
+*/
+export {};
