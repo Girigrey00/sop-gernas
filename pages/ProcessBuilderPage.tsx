@@ -6,7 +6,7 @@ import {
     Sparkles, ArrowUp, TableProperties, Hammer, Zap,
     Workflow, Layers, Network, 
     Boxes, FileStack, ArrowRightCircle,
-    Bot, Rocket, Send, Edit2, Trash2
+    Bot, Rocket, Send, Edit2, Trash2, Cpu
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { apiService } from '../services/apiService';
@@ -23,6 +23,7 @@ interface Message {
     id: string;
     role: 'system' | 'user';
     content: React.ReactNode;
+    isTyping?: boolean;
 }
 
 interface StageData {
@@ -31,46 +32,106 @@ interface StageData {
     file: File | null;
 }
 
-// --- Animated Robot Component (Gemini Style) ---
+// --- High-Fidelity Animated Robot (Futuristic Style) ---
 const RobotAvatar = ({ compact = false }: { compact?: boolean }) => {
     return (
-        <div className={`relative ${compact ? 'w-12 h-12' : 'w-48 h-48'} flex items-center justify-center transition-all duration-500`}>
-            {/* Background Glow */}
-            {!compact && <div className="absolute inset-0 bg-blue-400/20 blur-[60px] rounded-full animate-pulse"></div>}
+        <div className={`relative ${compact ? 'w-12 h-12' : 'w-64 h-64'} flex items-center justify-center pointer-events-none`}>
+            
+            {/* Ambient Glows (Only in large mode) */}
+            {!compact && (
+                <>
+                    <motion.div 
+                        className="absolute w-full h-full bg-blue-400/20 rounded-full blur-3xl"
+                        animate={{ scale: [0.8, 1.1, 0.8], opacity: [0.3, 0.6, 0.3] }}
+                        transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                    />
+                    {/* Orbiting Ring */}
+                    <motion.div 
+                        className="absolute w-[120%] h-[40%] border border-blue-300/30 rounded-[100%] z-0"
+                        style={{ rotateX: 70 }}
+                        animate={{ rotateZ: 360 }}
+                        transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
+                    />
+                </>
+            )}
             
             <motion.svg
                 viewBox="0 0 200 200"
-                className="w-full h-full relative z-10"
-                animate={{ y: compact ? 0 : [0, -10, 0] }}
-                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                className="w-full h-full relative z-10 drop-shadow-2xl"
+                animate={{ y: compact ? 0 : [0, -12, 0] }}
+                transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
             >
                 <defs>
-                    <linearGradient id="robotGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4285F4" /> {/* Google Blue */}
-                        <stop offset="100%" stopColor="#8AB4F8" /> {/* Lighter Blue */}
+                    <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#ffffff" />
+                        <stop offset="100%" stopColor="#e2e8f0" />
                     </linearGradient>
+                    <linearGradient id="screenGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#1e293b" />
+                        <stop offset="100%" stopColor="#0f172a" />
+                    </linearGradient>
+                    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
                 </defs>
 
-                {/* Head */}
-                <rect x="60" y="60" width="80" height="70" rx="20" fill="url(#robotGradient)" />
+                {/* --- Body --- */}
+                <path d="M 60 140 Q 50 140 50 160 L 50 175 Q 50 185 60 185 L 140 185 Q 150 185 150 175 L 150 160 Q 150 140 140 140 Z" fill="url(#bodyGradient)" stroke="#cbd5e1" strokeWidth="2" />
                 
-                {/* Face/Screen */}
-                <rect x="70" y="75" width="60" height="40" rx="12" fill="#FFFFFF" fillOpacity="0.9" />
+                {/* Core Reactor */}
+                <motion.circle 
+                    cx="100" cy="162" r="8" fill="#3b82f6" 
+                    animate={{ opacity: [0.6, 1, 0.6], r: [8, 9, 8] }} 
+                    transition={{ repeat: Infinity, duration: 2 }} 
+                />
 
-                {/* Eyes */}
-                <motion.g animate={{ scaleY: [1, 0.1, 1, 1, 1] }} transition={{ repeat: Infinity, duration: 4, times: [0, 0.05, 0.1, 0.8, 1], delay: 1 }}>
-                    <circle cx="90" cy="95" r="5" fill="#4285F4" /> 
-                    <circle cx="110" cy="95" r="5" fill="#4285F4" /> 
+                {/* --- Head --- */}
+                <motion.g
+                    animate={{ rotate: [0, 2, 0, -2, 0] }}
+                    transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+                    style={{ originX: "100px", originY: "140px" }}
+                >
+                    <rect x="55" y="50" width="90" height="80" rx="24" fill="url(#bodyGradient)" stroke="#fff" strokeWidth="4" />
+                    
+                    {/* Face Screen */}
+                    <rect x="65" y="65" width="70" height="45" rx="14" fill="url(#screenGradient)" stroke="#334155" strokeWidth="2" />
+
+                    {/* Eyes */}
+                    <motion.g animate={{ scaleY: [1, 0.1, 1, 1, 1] }} transition={{ repeat: Infinity, duration: 4, times: [0, 0.05, 0.1, 0.9, 1], delay: 0.5 }}>
+                        <circle cx="85" cy="88" r="6" fill="#38bdf8" filter="url(#glow)" /> 
+                        <circle cx="115" cy="88" r="6" fill="#38bdf8" filter="url(#glow)" /> 
+                    </motion.g>
+
+                    {/* Antenna */}
+                    <line x1="100" y1="50" x2="100" y2="30" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round" />
+                    <motion.circle 
+                        cx="100" cy="25" r="5" fill="#f43f5e" 
+                        animate={{ opacity: [0.4, 1, 0.4] }} 
+                        transition={{ repeat: Infinity, duration: 1.5 }} 
+                    />
                 </motion.g>
 
-                {/* Antenna */}
-                <line x1="100" y1="60" x2="100" y2="40" stroke="#4285F4" strokeWidth="4" strokeLinecap="round" />
-                <motion.circle cx="100" cy="35" r="6" fill="#EA4335" animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2 }} />
+                {/* --- Arms --- */}
+                <motion.path 
+                    d="M 45 155 Q 25 155 25 135" 
+                    stroke="#94a3b8" strokeWidth="6" strokeLinecap="round" fill="none" 
+                    animate={{ d: ["M 45 155 Q 25 155 25 135", "M 45 155 Q 25 145 25 125", "M 45 155 Q 25 155 25 135"] }}
+                    transition={{ repeat: Infinity, duration: 3 }}
+                />
+                <motion.path 
+                    d="M 155 155 Q 175 155 175 135" 
+                    stroke="#94a3b8" strokeWidth="6" strokeLinecap="round" fill="none" 
+                    animate={{ d: ["M 155 155 Q 175 155 175 135", "M 155 155 Q 175 145 175 125", "M 155 155 Q 175 155 175 135"] }}
+                    transition={{ repeat: Infinity, duration: 3, delay: 1.5 }}
+                />
 
-                {/* Body (Simple Curve) */}
-                {!compact && (
-                    <path d="M 70 140 Q 50 140 50 160 L 50 170 L 150 170 L 150 160 Q 150 140 130 140 Z" fill="#E8F0FE" />
-                )}
+                {/* --- Hover Shadow --- */}
+                <motion.ellipse 
+                    cx="100" cy="195" rx="40" ry="6" fill="#000" opacity="0.1" 
+                    animate={{ rx: compact ? 40 : [35, 45, 35], opacity: [0.1, 0.05, 0.1] }}
+                    transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
+                />
             </motion.svg>
         </div>
     );
@@ -386,29 +447,55 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
     if (currentStep === 'WELCOME') {
         return (
-            <div className="flex flex-col h-full w-full bg-slate-50 relative overflow-hidden font-sans items-center justify-center">
-                <button onClick={onBack} className="absolute top-6 left-6 p-3 rounded-full bg-white hover:bg-slate-100 shadow-sm border border-slate-200 transition-colors z-10 text-slate-500">
-                    <ChevronLeft size={24} />
+            <div className="flex flex-col h-full w-full relative overflow-hidden font-sans items-center justify-center">
+                
+                {/* Modern Dynamic Background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-blue-50/50 -z-20"></div>
+                <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-100/40 rounded-full blur-[100px] animate-pulse -z-10"></div>
+                <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-indigo-100/40 rounded-full blur-[80px] animate-pulse delay-1000 -z-10"></div>
+
+                <button 
+                    onClick={onBack} 
+                    className="absolute top-8 left-8 p-3 rounded-full bg-white/80 backdrop-blur-md hover:bg-white shadow-sm border border-slate-200 transition-all z-20 text-slate-500 hover:text-slate-800 hover:scale-105 active:scale-95 group"
+                >
+                    <ChevronLeft size={24} className="group-hover:-translate-x-0.5 transition-transform" />
                 </button>
 
-                <div className="flex flex-col items-center max-w-2xl px-6 text-center animate-in fade-in zoom-in-95 duration-700">
-                    <RobotAvatar />
-                    <h1 className="text-4xl font-bold text-slate-800 mt-8 mb-4 tracking-tight">
-                        Process Architect
+                <div className="flex flex-col items-center max-w-4xl px-6 text-center z-10">
+                    
+                    {/* Animated Robot Avatar */}
+                    <div className="mb-8 hover:scale-105 transition-transform duration-700 ease-out cursor-default">
+                        <RobotAvatar />
+                    </div>
+
+                    {/* Typography */}
+                    <h1 className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-800 via-blue-800 to-indigo-900 mb-6 tracking-tight leading-tight drop-shadow-sm">
+                        Design Your <br className="hidden md:block"/> Process Workflow
                     </h1>
-                    <p className="text-lg text-slate-500 mb-10 leading-relaxed">
-                        Design complex enterprise workflows with AI assistance.<br/>
-                        From concept to structured SOP in minutes.
+                    
+                    <p className="text-lg md:text-xl text-slate-500 mb-10 leading-relaxed max-w-2xl font-medium">
+                        AI-powered architecture for complex SOPs.<br/>
+                        Transform your concepts into structured diagrams in minutes.
                     </p>
                     
+                    {/* CTA Button */}
                     <button 
                         onClick={handleStartBuilding}
-                        className="group relative flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-full font-bold text-lg shadow-xl shadow-blue-200 hover:shadow-2xl hover:shadow-blue-300 hover:scale-105 transition-all active:scale-95"
+                        className="group relative flex items-center gap-4 px-10 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full font-bold text-lg shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
                     >
-                        <Sparkles size={20} className="text-blue-100" />
-                        Create New Process
-                        <div className="absolute inset-0 rounded-full ring-2 ring-white/20 group-hover:ring-4 transition-all"></div>
+                        <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12"></div>
+                        <span className="relative z-10 flex items-center gap-3">
+                            <Rocket size={22} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                            Start Building
+                        </span>
                     </button>
+
+                    {/* Footer Info */}
+                    <div className="mt-12 flex gap-8 text-xs font-semibold text-slate-400 uppercase tracking-widest opacity-60">
+                        <span className="flex items-center gap-2"><Cpu size={14} /> AI Powered</span>
+                        <span className="flex items-center gap-2"><Workflow size={14} /> Smart Routing</span>
+                        <span className="flex items-center gap-2"><Zap size={14} /> Instant Gen</span>
+                    </div>
                 </div>
             </div>
         );
