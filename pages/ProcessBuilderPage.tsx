@@ -148,7 +148,7 @@ const StageCard = ({ stage, index, onDelete }: { stage: StageData, index: number
                 <div className="text-xs text-slate-500 flex items-start gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
                     <FileStack size={14} className="text-blue-500 mt-0.5 shrink-0" />
                     <span className="leading-relaxed">
-                        Data uploaded: <strong className="text-slate-700">{stage.files.length > 0 ? stage.files.map(f => f.name).join(', ') : 'No document attached'}</strong>
+                        This stage will use uploaded data to build process: <strong className="text-slate-700">{stage.files.length > 0 ? stage.files.map(f => f.name).join(', ') : 'No document attached'}</strong>
                     </span>
                 </div>
             </div>
@@ -310,7 +310,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
             <span>
                 {parts.map((part, i) => 
                     part.startsWith('**') && part.endsWith('**') 
-                        ? <strong key={i} className="font-bold text-slate-900">{part.slice(2, -2)}</strong> 
+                        ? <strong key={i} className="font-bold text-blue-600">{part.slice(2, -2)}</strong> 
                         : <span key={i}>{part}</span>
                 )}
             </span>
@@ -323,19 +323,6 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         setCurrentStep('NAME');
         setIsTyping(true);
         
-        // Static Bulletin Instruction + Name Request
-        const instructions = 
-`**Create New Process**
-
-Follow these steps to build your Standard Operating Procedure (SOP):
-
-1. **Input Name**: Provide a unique name for the process.
-2. **Define Stages**: List the L2 process stages one by one.
-3. **Upload Evidence**: **Mandatory** document upload for each stage to ground the AI.
-4. **Generate**: Review the structured table and generate the diagram.
-
-Please enter the **Process Name** to begin.`;
-
         setTimeout(() => {
             setMessages([{
                 id: 'init',
@@ -354,7 +341,7 @@ Please enter the **Process Name** to begin.`;
                                 </ul>
                             </div>
                         </div>
-                        <p>Please enter the **Process Name** to begin.</p>
+                        <p>Please enter the <strong className="text-blue-600">Process Name</strong> to begin.</p>
                     </div>
                 )
             }]);
