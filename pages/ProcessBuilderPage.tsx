@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { 
     ChevronLeft, Paperclip, Plus, X, 
@@ -5,7 +6,7 @@ import {
     Sparkles, ArrowUp, TableProperties, Hammer, Zap,
     Workflow, Layers, Network, 
     Boxes, FileStack, ArrowRightCircle,
-    Bot, Rocket, Send, Edit2, Trash2, Cpu
+    Bot, Rocket, Send, Edit2, Trash2, Cpu, File
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { apiService } from '../services/apiService';
@@ -16,26 +17,26 @@ interface ProcessBuilderPageProps {
     onFlowGenerated: (data: SopResponse) => void;
 }
 
-// Simplified Flow: Welcome -> Name -> Stages -> Review
-type BuilderStep = 'WELCOME' | 'NAME' | 'STAGES' | 'REVIEW';
+// Simplified Flow: Welcome -> Type Selection -> Name -> Stages -> Review
+type BuilderStep = 'WELCOME' | 'TYPE_SELECT' | 'NAME' | 'STAGES' | 'REVIEW';
 
 interface Message {
     id: string;
     role: 'system' | 'user';
     content: React.ReactNode;
     isTyping?: boolean;
+    showTypeSelection?: boolean;
 }
 
 interface StageData {
     id: number;
     name: string;
-    file: File | null;
+    files: File[];
 }
 
 // --- High-Fidelity Animated Robot (Image Based) ---
 const RobotAvatar = ({ compact = false }: { compact?: boolean }) => {
-    // NOTE: Place your 'gernas-robot.png' file in the /public folder of your project
-    const ROBOT_IMAGE_SRC = "/public/folder/gernas-robot.png"; 
+    const ROBOT_IMAGE_SRC = "/gernas-robot.png"; 
 
     return (
         <div className={`relative ${compact ? 'w-12 h-12' : 'w-72 h-72'} flex items-center justify-center pointer-events-none`}>
@@ -89,30 +90,57 @@ const RobotAvatar = ({ compact = false }: { compact?: boolean }) => {
 };
 
 // --- Google Style Message Bubble ---
-const MessageBubble = ({ role, content, isTyping }: { role: 'system' | 'user', content: React.ReactNode, isTyping?: boolean }) => {
+const MessageBubble = ({ role, content, isTyping, showTypeSelection, onTypeSelect }: { 
+    role: 'system' | 'user', 
+    content: React.ReactNode, 
+    isTyping?: boolean,
+    showTypeSelection?: boolean,
+    onTypeSelect?: (type: string) => void
+}) => {
     const isSystem = role === 'system';
     
     if (isSystem) {
         return (
-            <div className="flex gap-4 animate-in slide-in-from-bottom-2 fade-in duration-500 w-full max-w-4xl mx-auto mb-6">
-                <div className="shrink-0 mt-1">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-white to-blue-50 border border-blue-100 flex items-center justify-center shadow-sm overflow-hidden">
-                        {/* Use compact robot avatar as system icon */}
-                        <RobotAvatar compact />
+            <div className="flex flex-col gap-2 w-full max-w-4xl mx-auto mb-6">
+                <div className="flex gap-4 animate-in slide-in-from-bottom-2 fade-in duration-500">
+                    <div className="shrink-0 mt-1">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-white to-blue-50 border border-blue-100 flex items-center justify-center shadow-sm overflow-hidden">
+                            <RobotAvatar compact />
+                        </div>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                        <div className="text-sm font-bold text-slate-800">Process Architect</div>
+                        <div className="text-base text-slate-600 leading-relaxed font-normal">
+                            {isTyping ? (
+                                <div className="flex items-center gap-1 h-6">
+                                    <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></span>
+                                    <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-75"></span>
+                                    <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-150"></span>
+                                </div>
+                            ) : content}
+                        </div>
                     </div>
                 </div>
-                <div className="flex-1 space-y-2">
-                    <div className="text-sm font-bold text-slate-800">Process Architect</div>
-                    <div className="text-base text-slate-600 leading-relaxed font-normal">
-                        {isTyping ? (
-                            <div className="flex items-center gap-1 h-6">
-                                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></span>
-                                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-75"></span>
-                                <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-150"></span>
-                            </div>
-                        ) : content}
+                
+                {/* Type Selection Buttons */}
+                {!isTyping && showTypeSelection && onTypeSelect && (
+                    <div className="pl-14 flex gap-3 animate-in fade-in slide-in-from-top-2 duration-500">
+                        <button 
+                            onClick={() => onTypeSelect('Product')}
+                            className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-xl shadow-sm transition-all group"
+                        >
+                            <Boxes size={18} className="text-slate-400 group-hover:text-blue-500" />
+                            <span className="font-bold text-sm">Product</span>
+                        </button>
+                        <button 
+                            onClick={() => onTypeSelect('Policy')}
+                            className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 rounded-xl shadow-sm transition-all group"
+                        >
+                            <FileText size={18} className="text-slate-400 group-hover:text-indigo-500" />
+                            <span className="font-bold text-sm">Policy</span>
+                        </button>
                     </div>
-                </div>
+                )}
             </div>
         );
     }
@@ -126,7 +154,7 @@ const MessageBubble = ({ role, content, isTyping }: { role: 'system' | 'user', c
     );
 };
 
-// --- Material Style Stage Card ---
+// --- Updated Stage Card with specific summary text ---
 const StageCard = ({ stage, index, onDelete }: { stage: StageData, index: number, onDelete?: () => void }) => (
     <div className="group flex items-start gap-4 mb-4 w-full animate-in zoom-in-95 duration-300">
         <div className="flex flex-col items-center pt-2 gap-1">
@@ -137,14 +165,14 @@ const StageCard = ({ stage, index, onDelete }: { stage: StageData, index: number
         </div>
         
         <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group-hover:border-blue-200 flex justify-between items-start">
-            <div>
-                <h4 className="font-semibold text-slate-800 text-sm">{stage.name}</h4>
-                {stage.file && (
-                    <div className="mt-2 inline-flex items-center gap-2 text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
-                        <FileStack size={12} className="text-blue-500" /> 
-                        <span className="truncate max-w-[200px]">{stage.file.name}</span>
-                    </div>
-                )}
+            <div className="space-y-1">
+                <h4 className="font-bold text-slate-800 text-sm">Summary: <span className="text-blue-700">{stage.name}</span></h4>
+                <div className="text-xs text-slate-500 flex items-start gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <FileStack size={14} className="text-blue-500 mt-0.5 shrink-0" />
+                    <span className="leading-relaxed">
+                        This stage will be built with data uploaded: <strong className="text-slate-700">{stage.files.length > 0 ? stage.files.map(f => f.name).join(', ') : 'No document attached'}</strong>
+                    </span>
+                </div>
             </div>
             {onDelete && (
                 <button onClick={onDelete} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors opacity-0 group-hover:opacity-100">
@@ -155,18 +183,28 @@ const StageCard = ({ stage, index, onDelete }: { stage: StageData, index: number
     </div>
 );
 
-// --- Google Keep Style Input ---
-const StageInputForm = ({ onAdd }: { onAdd: (name: string, file: File | null) => void }) => {
+// --- Updated Stage Input Form with Multi-Upload ---
+const StageInputForm = ({ onAdd }: { onAdd: (name: string, files: File[]) => void }) => {
     const [name, setName] = useState('');
-    const [file, setFile] = useState<File | null>(null);
+    const [files, setFiles] = useState<File[]>([]);
     const fileRef = useRef<HTMLInputElement>(null);
 
     const handleSubmit = () => {
-        if (!name.trim() && !file) return;
-        onAdd(name, file);
+        if (!name.trim()) return;
+        onAdd(name, files);
         setName('');
-        setFile(null);
+        setFiles([]);
         if (fileRef.current) fileRef.current.value = '';
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            setFiles(prev => [...prev, ...Array.from(e.target.files || [])]);
+        }
+    };
+
+    const removeFile = (idx: number) => {
+        setFiles(prev => prev.filter((_, i) => i !== idx));
     };
 
     return (
@@ -191,30 +229,40 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, file: File | null) =>
                         />
                     </div>
                     
+                    {/* Files Display */}
+                    {files.length > 0 && (
+                        <div className="flex flex-wrap gap-2 px-2 pb-2">
+                            {files.map((f, i) => (
+                                <div key={i} className="flex items-center gap-1.5 bg-blue-50 border border-blue-100 px-2 py-1 rounded-md text-[10px] text-blue-700 font-medium">
+                                    <span className="truncate max-w-[100px]">{f.name}</span>
+                                    <button onClick={() => removeFile(i)} className="text-blue-400 hover:text-blue-700"><X size={10} /></button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    
                     <div className="flex items-center justify-between px-2 pb-1">
                         <div className="flex items-center gap-2">
                             <button 
                                 onClick={() => fileRef.current?.click()}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${
-                                    file 
-                                    ? 'bg-blue-50 text-blue-600 border border-blue-100' 
-                                    : 'text-slate-500 hover:bg-slate-100 border border-transparent'
-                                }`}
+                                className="px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-100 border border-transparent hover:border-slate-200"
                             >
                                 <Paperclip size={14} />
-                                {file ? <span className="max-w-[100px] truncate">{file.name}</span> : "Attach Doc"}
+                                Attach Docs
                             </button>
-                            {file && (
-                                <button onClick={() => { setFile(null); if(fileRef.current) fileRef.current.value=''; }} className="text-slate-400 hover:text-rose-500">
-                                    <X size={14} />
-                                </button>
-                            )}
-                            <input type="file" ref={fileRef} onChange={(e) => e.target.files && setFile(e.target.files[0])} className="hidden" accept=".pdf,.docx,.txt" />
+                            <input 
+                                type="file" 
+                                ref={fileRef} 
+                                onChange={handleFileChange} 
+                                className="hidden" 
+                                accept=".pdf,.docx,.txt,.xlsx" 
+                                multiple // Enable multiple files
+                            />
                         </div>
 
                         <button 
                             onClick={handleSubmit}
-                            disabled={!name.trim() && !file}
+                            disabled={!name.trim()}
                             className="bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:scale-95 transition-all shadow-md shadow-blue-200"
                         >
                             <ArrowUp size={18} strokeWidth={3} />
@@ -231,13 +279,12 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     const [currentStep, setCurrentStep] = useState<BuilderStep>('WELCOME');
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState('');
-    const [isTyping, setIsTyping] = useState(false); // Bot typing indicator
-    const [isLoading, setIsLoading] = useState(false); // API loading
+    const [isTyping, setIsTyping] = useState(false); 
+    const [isLoading, setIsLoading] = useState(false);
 
     // Data Store
-    const [productName, setProductName] = useState('');
-    const [startTrigger, setStartTrigger] = useState('');
-    const [endTrigger, setEndTrigger] = useState('');
+    const [processType, setProcessType] = useState<string>(''); // 'Product' or 'Policy'
+    const [itemName, setItemName] = useState('');
     const [stages, setStages] = useState<StageData[]>([]);
     
     // Table State
@@ -253,21 +300,15 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         scrollToBottom();
     }, [messages, isTyping, stages.length, currentStep]);
 
-    // Initial Welcome
-    useEffect(() => {
-        if (messages.length === 0 && currentStep === 'WELCOME') {
-            // No initial message in list, handled by renderWelcome
-        }
-    }, []);
-
     // Helper to add messages
-    const addSystemMessage = (text: string, delay = 600) => {
+    const addSystemMessage = (text: string, delay = 600, showTypeSelection = false) => {
         setIsTyping(true);
         setTimeout(() => {
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),
                 role: 'system',
-                content: formatText(text)
+                content: formatText(text),
+                showTypeSelection: showTypeSelection
             }]);
             setIsTyping(false);
         }, delay);
@@ -294,7 +335,33 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         );
     };
 
-    // Handlers
+    // --- HANDLERS ---
+
+    const handleStartBuilding = () => {
+        setCurrentStep('TYPE_SELECT');
+        setIsTyping(true);
+        setTimeout(() => {
+            setMessages([{
+                id: 'init',
+                role: 'system',
+                content: formatText("Welcome to the Process Architect.\n\nI will guide you through creating a structured workflow from your documents. To begin, please tell me what we are building."),
+                showTypeSelection: true // Trigger buttons
+            }]);
+            setIsTyping(false);
+        }, 600);
+    };
+
+    const handleTypeSelect = (type: string) => {
+        setProcessType(type);
+        setCurrentStep('NAME');
+        
+        // Remove the selection buttons from previous message (optional, but cleaner for UI state)
+        setMessages(prev => prev.map(m => ({ ...m, showTypeSelection: false })));
+
+        addUserMessage(type); // Show user choice
+        addSystemMessage(`Great. Please enter the **${type} Name**.`);
+    };
+
     const handleSendMessage = async () => {
         if (!inputValue.trim() && currentStep !== 'STAGES') return;
         
@@ -303,18 +370,17 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
         if (currentStep === 'NAME') {
             addUserMessage(text);
-            setProductName(text);
-            // Skip START/END triggers and go straight to STAGES to simplify flow
+            setItemName(text);
             setCurrentStep('STAGES');
-            addSystemMessage("Now, list the L2 process stages. You can add multiple stages.");
+            addSystemMessage(`Now, list the L2 process stages for **${text}**.\n\nYou can upload documents for each stage to generate specific logic.`);
         } 
     };
 
-    const handleAddStage = (name: string, file: File | null) => {
+    const handleAddStage = (name: string, files: File[]) => {
         const newStage: StageData = {
             id: Date.now(),
             name: name,
-            file: file
+            files: files
         };
         setStages(prev => [...prev, newStage]);
     };
@@ -331,9 +397,9 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
         try {
             const data = await apiService.generateTableFromBuilder({
-                productName,
-                startTrigger: startTrigger || 'Process Start',
-                endTrigger: endTrigger || 'Process End',
+                productName: itemName,
+                startTrigger: 'Process Start',
+                endTrigger: 'Process End',
                 stages: stages.map(s => ({ name: s.name }))
             });
             setTableData(data);
@@ -345,19 +411,6 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         }
     };
 
-    const handleStartBuilding = () => {
-        setCurrentStep('NAME');
-        setIsTyping(true);
-        setTimeout(() => {
-            setMessages([{
-                id: 'init',
-                role: 'system',
-                content: formatText("Let's design your new process. \n\nTo begin, please enter the **Product or Policy Name**.")
-            }]);
-            setIsTyping(false);
-        }, 600);
-    };
-
     const handleTableChange = (id: string, field: keyof ProcessDefinitionRow, value: string) => {
         setTableData(prev => prev.map(row => row.id === id ? { ...row, [field]: value } : row));
     };
@@ -366,16 +419,16 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         setIsLoading(true);
         try {
             const baseSop: SopResponse = {
-                startNode: { stepId: 'START', stepName: 'Start', description: startTrigger, actor: 'System', stepType: 'Start', nextStep: null },
-                endNode: { stepId: 'END', stepName: 'End', description: endTrigger, actor: 'System', stepType: 'End', nextStep: null },
-                processDefinition: { title: productName, version: '1.0', classification: 'Internal', documentLink: '#' },
+                startNode: { stepId: 'START', stepName: 'Start', description: 'Start', actor: 'System', stepType: 'Start', nextStep: null },
+                endNode: { stepId: 'END', stepName: 'End', description: 'End', actor: 'System', stepType: 'End', nextStep: null },
+                processDefinition: { title: itemName, version: '1.0', classification: 'Internal', documentLink: '#' },
                 processObjectives: [],
                 inherentRisks: [],
                 processFlow: { stages: stages.map((s, i) => ({ stageId: `S${i+1}`, stageName: s.name, description: s.name, steps: [] })) },
-                metadata: { product_name: productName }
+                metadata: { product_name: itemName }
             };
 
-            const flowData = await apiService.updateProcessFlowFromTable(productName, tableData, baseSop);
+            const flowData = await apiService.updateProcessFlowFromTable(itemName, tableData, baseSop);
             onFlowGenerated(flowData);
         } catch (e) {
             console.error(e);
@@ -546,24 +599,23 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                         <RobotAvatar compact />
                         <div>
                             <h2 className="text-base font-bold text-slate-800">Process Architect</h2>
-                            {productName && <p className="text-xs text-slate-500">Drafting: {productName}</p>}
+                            {itemName && <p className="text-xs text-slate-500">Drafting: {itemName}</p>}
                         </div>
                     </div>
                 </div>
                 
                 {/* Progress Indicators */}
                 <div className="hidden md:flex items-center gap-2">
-                    {['NAME', 'STAGES'].map((step, i) => {
-                        // Define logical order to handle 'REVIEW' state correctly (it implies previous steps done)
-                        const logicalOrder = ['NAME', 'STAGES', 'REVIEW'];
+                    {['TYPE', 'NAME', 'STAGES'].map((step, i) => {
+                        const logicalOrder = ['TYPE_SELECT', 'NAME', 'STAGES', 'REVIEW'];
                         const currIdx = logicalOrder.indexOf(currentStep);
-                        const stepIdx = logicalOrder.indexOf(step);
-                        const isActive = stepIdx <= currIdx;
+                        // Map visual step to logical steps. i=0 is TYPE_SELECT, i=1 is NAME, i=2 is STAGES
+                        const isActive = i <= currIdx;
                         
                         return (
                             <div key={step} className="flex items-center gap-2">
                                 <div className={`w-2.5 h-2.5 rounded-full transition-colors ${isActive ? 'bg-blue-600' : 'bg-slate-300'}`}></div>
-                                {i < 1 && <div className={`w-8 h-0.5 rounded-full ${isActive && stepIdx < currIdx ? 'bg-blue-600' : 'bg-slate-200'}`}></div>}
+                                {i < 2 && <div className={`w-8 h-0.5 rounded-full ${isActive && (i+1) <= currIdx ? 'bg-blue-600' : 'bg-slate-200'}`}></div>}
                             </div>
                         );
                     })}
@@ -573,7 +625,14 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
             {/* Chat Area */}
             <div className="flex-1 overflow-y-auto p-4 pb-32 scroll-smooth">
                 {messages.map((msg) => (
-                    <MessageBubble key={msg.id} role={msg.role} content={msg.content} isTyping={msg.isTyping} />
+                    <MessageBubble 
+                        key={msg.id} 
+                        role={msg.role} 
+                        content={msg.content} 
+                        isTyping={msg.isTyping} 
+                        showTypeSelection={msg.showTypeSelection}
+                        onTypeSelect={handleTypeSelect}
+                    />
                 ))}
                 
                 {/* Stages List */}
@@ -601,8 +660,8 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Floating Input Bar (Only show if NOT in stages mode) */}
-            {currentStep !== 'STAGES' && (
+            {/* Floating Input Bar (Only show if NOT in stages mode and NOT in type selection mode) */}
+            {currentStep !== 'STAGES' && currentStep !== 'TYPE_SELECT' && (
                 <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent z-20">
                     <div className="max-w-3xl mx-auto relative">
                         <div className="bg-white border border-slate-200 shadow-xl shadow-slate-200/50 rounded-full p-2 pl-6 flex items-center gap-4 transition-all focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400">
