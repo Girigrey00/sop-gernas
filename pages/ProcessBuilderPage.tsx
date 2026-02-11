@@ -6,7 +6,7 @@ import {
     Sparkles, ArrowUp, TableProperties, Hammer, Zap,
     Workflow, Layers, Network, 
     Boxes, FileStack, ArrowRightCircle,
-    Bot, Rocket, Send, Edit2, Trash2, Cpu, File
+    Bot, Rocket, Send, Edit2, Trash2, Cpu, File, List
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { apiService } from '../services/apiService';
@@ -17,15 +17,14 @@ interface ProcessBuilderPageProps {
     onFlowGenerated: (data: SopResponse) => void;
 }
 
-// Simplified Flow: Welcome -> Type Selection -> Name -> Stages -> Review
-type BuilderStep = 'WELCOME' | 'TYPE_SELECT' | 'NAME' | 'STAGES' | 'REVIEW';
+// Simplified Flow: Welcome -> Name -> Stages -> Review
+type BuilderStep = 'WELCOME' | 'NAME' | 'STAGES' | 'REVIEW';
 
 interface Message {
     id: string;
     role: 'system' | 'user';
     content: React.ReactNode;
     isTyping?: boolean;
-    showTypeSelection?: boolean;
 }
 
 interface StageData {
@@ -90,12 +89,10 @@ const RobotAvatar = ({ compact = false }: { compact?: boolean }) => {
 };
 
 // --- Google Style Message Bubble ---
-const MessageBubble = ({ role, content, isTyping, showTypeSelection, onTypeSelect }: { 
+const MessageBubble = ({ role, content, isTyping }: { 
     role: 'system' | 'user', 
     content: React.ReactNode, 
-    isTyping?: boolean,
-    showTypeSelection?: boolean,
-    onTypeSelect?: (type: string) => void
+    isTyping?: boolean
 }) => {
     const isSystem = role === 'system';
     
@@ -109,7 +106,7 @@ const MessageBubble = ({ role, content, isTyping, showTypeSelection, onTypeSelec
                         </div>
                     </div>
                     <div className="flex-1 space-y-2">
-                        <div className="text-sm font-bold text-slate-800">Process Architect</div>
+                        <div className="text-sm font-bold text-slate-800">Process Builder</div>
                         <div className="text-base text-slate-600 leading-relaxed font-normal">
                             {isTyping ? (
                                 <div className="flex items-center gap-1 h-6">
@@ -121,26 +118,6 @@ const MessageBubble = ({ role, content, isTyping, showTypeSelection, onTypeSelec
                         </div>
                     </div>
                 </div>
-                
-                {/* Type Selection Buttons */}
-                {!isTyping && showTypeSelection && onTypeSelect && (
-                    <div className="pl-14 flex gap-3 animate-in fade-in slide-in-from-top-2 duration-500">
-                        <button 
-                            onClick={() => onTypeSelect('Product')}
-                            className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-xl shadow-sm transition-all group"
-                        >
-                            <Boxes size={18} className="text-slate-400 group-hover:text-blue-500" />
-                            <span className="font-bold text-sm">Product</span>
-                        </button>
-                        <button 
-                            onClick={() => onTypeSelect('Policy')}
-                            className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 rounded-xl shadow-sm transition-all group"
-                        >
-                            <FileText size={18} className="text-slate-400 group-hover:text-indigo-500" />
-                            <span className="font-bold text-sm">Policy</span>
-                        </button>
-                    </div>
-                )}
             </div>
         );
     }
@@ -154,7 +131,7 @@ const MessageBubble = ({ role, content, isTyping, showTypeSelection, onTypeSelec
     );
 };
 
-// --- Updated Stage Card with specific summary text ---
+// --- Updated Stage Card ---
 const StageCard = ({ stage, index, onDelete }: { stage: StageData, index: number, onDelete?: () => void }) => (
     <div className="group flex items-start gap-4 mb-4 w-full animate-in zoom-in-95 duration-300">
         <div className="flex flex-col items-center pt-2 gap-1">
@@ -166,11 +143,12 @@ const StageCard = ({ stage, index, onDelete }: { stage: StageData, index: number
         
         <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group-hover:border-blue-200 flex justify-between items-start">
             <div className="space-y-1">
-                <h4 className="font-bold text-slate-800 text-sm">Summary: <span className="text-blue-700">{stage.name}</span></h4>
+                {/* Larger Name, No Summary Prefix */}
+                <h4 className="font-extrabold text-slate-800 text-lg mb-1">{stage.name}</h4>
                 <div className="text-xs text-slate-500 flex items-start gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
                     <FileStack size={14} className="text-blue-500 mt-0.5 shrink-0" />
                     <span className="leading-relaxed">
-                        This stage will be built with data uploaded: <strong className="text-slate-700">{stage.files.length > 0 ? stage.files.map(f => f.name).join(', ') : 'No document attached'}</strong>
+                        Data uploaded: <strong className="text-slate-700">{stage.files.length > 0 ? stage.files.map(f => f.name).join(', ') : 'No document attached'}</strong>
                     </span>
                 </div>
             </div>
@@ -183,14 +161,15 @@ const StageCard = ({ stage, index, onDelete }: { stage: StageData, index: number
     </div>
 );
 
-// --- Updated Stage Input Form with Multi-Upload ---
+// --- Updated Stage Input Form with Mandatory Upload ---
 const StageInputForm = ({ onAdd }: { onAdd: (name: string, files: File[]) => void }) => {
     const [name, setName] = useState('');
     const [files, setFiles] = useState<File[]>([]);
     const fileRef = useRef<HTMLInputElement>(null);
 
     const handleSubmit = () => {
-        if (!name.trim()) return;
+        // Enforce File Upload
+        if (!name.trim() || files.length === 0) return;
         onAdd(name, files);
         setName('');
         setFiles([]);
@@ -245,10 +224,14 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, files: File[]) => voi
                         <div className="flex items-center gap-2">
                             <button 
                                 onClick={() => fileRef.current?.click()}
-                                className="px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-100 border border-transparent hover:border-slate-200"
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 border ${
+                                    files.length === 0 
+                                    ? 'text-rose-500 bg-rose-50 border-rose-200 animate-pulse' 
+                                    : 'text-slate-500 hover:bg-slate-100 border-transparent hover:border-slate-200'
+                                }`}
                             >
                                 <Paperclip size={14} />
-                                Attach Docs
+                                {files.length === 0 ? "Upload Required" : "Add More Docs"}
                             </button>
                             <input 
                                 type="file" 
@@ -256,14 +239,15 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, files: File[]) => voi
                                 onChange={handleFileChange} 
                                 className="hidden" 
                                 accept=".pdf,.docx,.txt,.xlsx" 
-                                multiple // Enable multiple files
+                                multiple 
                             />
                         </div>
 
                         <button 
                             onClick={handleSubmit}
-                            disabled={!name.trim()}
+                            disabled={!name.trim() || files.length === 0}
                             className="bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:scale-95 transition-all shadow-md shadow-blue-200"
+                            title={files.length === 0 ? "Document upload is mandatory" : "Add Stage"}
                         >
                             <ArrowUp size={18} strokeWidth={3} />
                         </button>
@@ -283,7 +267,6 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     const [isLoading, setIsLoading] = useState(false);
 
     // Data Store
-    const [processType, setProcessType] = useState<string>(''); // 'Product' or 'Policy'
     const [itemName, setItemName] = useState('');
     const [stages, setStages] = useState<StageData[]>([]);
     
@@ -301,14 +284,13 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     }, [messages, isTyping, stages.length, currentStep]);
 
     // Helper to add messages
-    const addSystemMessage = (text: string, delay = 600, showTypeSelection = false) => {
+    const addSystemMessage = (text: string, delay = 600) => {
         setIsTyping(true);
         setTimeout(() => {
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),
                 role: 'system',
-                content: formatText(text),
-                showTypeSelection: showTypeSelection
+                content: formatText(text)
             }]);
             setIsTyping(false);
         }, delay);
@@ -338,28 +320,46 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     // --- HANDLERS ---
 
     const handleStartBuilding = () => {
-        setCurrentStep('TYPE_SELECT');
+        setCurrentStep('NAME');
         setIsTyping(true);
+        
+        // Static Bulletin Instruction + Name Request
+        const instructions = 
+`**Create New Process**
+
+Follow these steps to build your Standard Operating Procedure (SOP):
+
+1. **Input Name**: Provide a unique name for the process.
+2. **Define Stages**: List the L2 process stages one by one.
+3. **Upload Evidence**: **Mandatory** document upload for each stage to ground the AI.
+4. **Generate**: Review the structured table and generate the diagram.
+
+Please enter the **Process Name** to begin.`;
+
         setTimeout(() => {
             setMessages([{
                 id: 'init',
                 role: 'system',
-                content: formatText("Welcome to the Process Architect.\n\nI will guide you through creating a structured workflow from your documents. To begin, please tell me what we are building."),
-                showTypeSelection: true // Trigger buttons
+                content: (
+                    <div className="space-y-4">
+                        <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                            <List size={20} className="text-blue-600 mt-1 shrink-0" />
+                            <div className="space-y-2 text-sm text-slate-700">
+                                <h4 className="font-bold text-blue-900">Create New Process</h4>
+                                <ul className="list-disc pl-4 space-y-1 marker:text-blue-400">
+                                    <li><strong>Input Name</strong>: Provide a unique name for the process.</li>
+                                    <li><strong>Define Stages</strong>: List the L2 process stages one by one.</li>
+                                    <li><strong>Upload Evidence</strong>: <span className="text-rose-600 font-bold">Mandatory</span> document upload for each stage.</li>
+                                    <li><strong>Generate</strong>: Review the structured table and generate the diagram.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <p>Please enter the **Process Name** to begin.</p>
+                    </div>
+                )
             }]);
             setIsTyping(false);
         }, 600);
-    };
-
-    const handleTypeSelect = (type: string) => {
-        setProcessType(type);
-        setCurrentStep('NAME');
-        
-        // Remove the selection buttons from previous message (optional, but cleaner for UI state)
-        setMessages(prev => prev.map(m => ({ ...m, showTypeSelection: false })));
-
-        addUserMessage(type); // Show user choice
-        addSystemMessage(`Great. Please enter the **${type} Name**.`);
     };
 
     const handleSendMessage = async () => {
@@ -372,7 +372,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
             addUserMessage(text);
             setItemName(text);
             setCurrentStep('STAGES');
-            addSystemMessage(`Now, list the L2 process stages for **${text}**.\n\nYou can upload documents for each stage to generate specific logic.`);
+            addSystemMessage(`Now, list the L2 process stages for **${text}**.\n\nYou must upload documents for each stage to generate specific logic.`);
         } 
     };
 
@@ -598,7 +598,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                     <div className="flex items-center gap-2">
                         <RobotAvatar compact />
                         <div>
-                            <h2 className="text-base font-bold text-slate-800">Process Architect</h2>
+                            <h2 className="text-base font-bold text-slate-800">Process Builder</h2>
                             {itemName && <p className="text-xs text-slate-500">Drafting: {itemName}</p>}
                         </div>
                     </div>
@@ -606,16 +606,15 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 
                 {/* Progress Indicators */}
                 <div className="hidden md:flex items-center gap-2">
-                    {['TYPE', 'NAME', 'STAGES'].map((step, i) => {
-                        const logicalOrder = ['TYPE_SELECT', 'NAME', 'STAGES', 'REVIEW'];
+                    {['NAME', 'STAGES'].map((step, i) => {
+                        const logicalOrder = ['NAME', 'STAGES', 'REVIEW'];
                         const currIdx = logicalOrder.indexOf(currentStep);
-                        // Map visual step to logical steps. i=0 is TYPE_SELECT, i=1 is NAME, i=2 is STAGES
                         const isActive = i <= currIdx;
                         
                         return (
                             <div key={step} className="flex items-center gap-2">
                                 <div className={`w-2.5 h-2.5 rounded-full transition-colors ${isActive ? 'bg-blue-600' : 'bg-slate-300'}`}></div>
-                                {i < 2 && <div className={`w-8 h-0.5 rounded-full ${isActive && (i+1) <= currIdx ? 'bg-blue-600' : 'bg-slate-200'}`}></div>}
+                                {i < 1 && <div className={`w-8 h-0.5 rounded-full ${isActive && (i+1) <= currIdx ? 'bg-blue-600' : 'bg-slate-200'}`}></div>}
                             </div>
                         );
                     })}
@@ -630,8 +629,6 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                         role={msg.role} 
                         content={msg.content} 
                         isTyping={msg.isTyping} 
-                        showTypeSelection={msg.showTypeSelection}
-                        onTypeSelect={handleTypeSelect}
                     />
                 ))}
                 
@@ -660,8 +657,8 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Floating Input Bar (Only show if NOT in stages mode and NOT in type selection mode) */}
-            {currentStep !== 'STAGES' && currentStep !== 'TYPE_SELECT' && (
+            {/* Floating Input Bar (Only show if NOT in stages mode) */}
+            {currentStep !== 'STAGES' && (
                 <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent z-20">
                     <div className="max-w-3xl mx-auto relative">
                         <div className="bg-white border border-slate-200 shadow-xl shadow-slate-200/50 rounded-full p-2 pl-6 flex items-center gap-4 transition-all focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400">
