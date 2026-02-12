@@ -811,17 +811,35 @@ export const apiService: ApiServiceInterface = {
         await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate generation
 
         const rows: ProcessDefinitionRow[] = [
-            { id: 'S1-1', l2Process: 'Customer application', stepName: 'Explain Product Features', stepDescription: 'CSO explains terms and provides KFS', actor: 'CSO', stepType: 'Interaction', system: 'N/A', processingTime: '5m', risks: 'Mis-selling' },
-            { id: 'S1-2', l2Process: 'Customer application', stepName: 'Collect Documents', stepDescription: 'Collect KYC, FATCA, CRS documents', actor: 'CSO', stepType: 'Activity', system: 'N/A', processingTime: '10m', risks: 'Incomplete Docs' },
-            { id: 'S2-1', l2Process: 'Identification', stepName: 'Verify Identity', stepDescription: 'Verify Emirates ID and Passport', actor: 'CSO', stepType: 'Control', system: 'EFR', processingTime: '3m', risks: 'Identity Fraud' },
-            { id: 'S3-1', l2Process: 'Screening', stepName: 'Name Screening', stepDescription: 'Screen against watchlists', actor: 'System', stepType: 'System', system: 'Fircosoft', processingTime: '1m', risks: 'Sanctions Breach' }
+            // 1. Customer application completion
+            { id: 'S1-1', l2Process: 'Customer application', stepName: 'Explain Product Features & Provide KFS', stepDescription: 'CSO explains all account terms, features, charges, and provides the Key Fact Statement', actor: 'CSO', stepType: 'Interaction', system: 'N/A', processingTime: '5m', risks: 'Mis-selling' },
+            { id: 'S1-2', l2Process: 'Customer application', stepName: 'Receive Completed Application & KFS', stepDescription: 'CSO receives signed KFS and AOF, ensuring fields are complete', actor: 'CSO', stepType: 'Activity', system: 'N/A', processingTime: '5m', risks: 'Incomplete Docs' },
+            { id: 'S1-3', l2Process: 'Customer application', stepName: 'Collect Customer Documents', stepDescription: 'CSO collects KYC, FATCA, CRS, income proof as per checklist', actor: 'CSO', stepType: 'Activity', system: 'N/A', processingTime: '10m', risks: 'Incomplete Docs' },
+            { id: 'S1-4', l2Process: 'Customer application', stepName: 'Verify Documents & Identity', stepDescription: 'CSO verifies originals against copies and stamps True copy', actor: 'CSO', stepType: 'Control', system: 'N/A', processingTime: '5m', risks: 'Identity Fraud' },
+            { id: 'S1-5', l2Process: 'Customer application', stepName: 'Initial Data Capture & Risk Rating', stepDescription: 'CSO inputs info into CRAM tool for risk rating', actor: 'CSO', stepType: 'Assessment', system: 'CRAM tool', processingTime: '10m', risks: 'Incorrect Data' },
+            { id: 'S1-6', l2Process: 'Customer application', stepName: 'Special Handling for Customer Categories', stepDescription: 'CSO applies extra procedures for minors, illiterate, POA, etc.', actor: 'CSO', stepType: 'Special Handling', system: 'N/A', processingTime: '15m', risks: 'Compliance' },
+            { id: 'S1-7', l2Process: 'Customer application', stepName: 'Rectify Application Discrepancies', stepDescription: 'CSO requests customer to rectify if issues found', actor: 'CSO', stepType: 'Activity', system: 'N/A', processingTime: 'Varies', risks: 'Delay' },
+            { id: 'S1-8', l2Process: 'Customer application', stepName: 'Obtain Approver Signature on Risk Rating', stepDescription: 'CSO obtains signature on risk rating form', actor: 'CSO', stepType: 'Authorization', system: 'CRAM tool', processingTime: '5m', risks: 'Unauthorized' },
+            
+            // 2. Customer identification (Sample of next stage)
+            { id: 'S2-1', l2Process: 'Identification', stepName: 'Collect and Verify Identity Documents', stepDescription: 'Verify Emirates ID, Passport authenticity', actor: 'CSO', stepType: 'Activity', system: 'N/A', processingTime: '5m', risks: 'Identity Fraud' },
+            { id: 'S2-2', l2Process: 'Identification', stepName: 'Validate Address and Communication Details', stepDescription: 'Ensure valid address and PO Box', actor: 'CSO', stepType: 'Activity', system: 'N/A', processingTime: '3m', risks: 'Contact Failure' }
         ];
 
         return {
             objectives: [
-                { id: 'obj1', key: 'Speed', value: 'Provide PIL full approval within 15 mins in Full STP scenario.', editable: true },
-                { id: 'obj2', key: 'Validation', value: 'Use government data sources to validate identity, salary, and employer.', editable: true },
-                { id: 'obj3', key: 'Risk Management', value: 'Manage attendant risks and scalability requirements.', editable: true }
+                { id: 'meta1', key: 'Process Name', value: 'PIL onboarding', editable: true },
+                { id: 'meta2', key: 'Process Owner', value: 'Head of Personal Banking', editable: true },
+                { id: 'meta3', key: 'Process Trigger', value: 'Customer initiates a Personal Instalment Loan (PIL) application', editable: true },
+                { id: 'meta4', key: 'Process End', value: '- Customer receives access to loan funds in their account = successful application\n- Customer receives notification that their application is unsuccesful = unsuccessful application', editable: true },
+                { id: 'meta5', key: 'Channels', value: 'Digital (mobile app + staff tablets)\nManual (paper forms)', editable: true },
+                { id: 'meta6', key: 'Customer Segments', value: 'This journey covers new to bank (NTB) and existing to bank (ETB) onboarding for any consumer customer', editable: true },
+                { id: 'meta7', key: 'Associated Product', value: 'Personal Loan PPG', editable: true },
+                { id: 'obj1', key: 'Objective: Speed', value: 'Provide PIL full approval to individual customers within 15 mins in Full STP best scenario, followed by STP Loan funds disbursal process leading to the shortest possible time.', editable: true },
+                { id: 'obj2', key: 'Objective: Validation', value: 'Use government data sources to validate customer identity, salary, and employer to strengthen controls and minimize reliance on customer submitted documents.', editable: true },
+                { id: 'obj3', key: 'Objective: Risk', value: 'Manage attendant risks and scalability requirements.', editable: true },
+                { id: 'cons1', key: 'Process Considerations', value: 'The PIL onboarding process is in a state of transition with the new digital journey being developed and rolled to specific customer cohorts over the course of 2026. Whilst this is happening the process needs to accommodate both manual and digitally initiated PIL applications. Once the digital journey is available to all customer types, the manual applciation form will be retired from use.', editable: true },
+                { id: 'qa1', key: 'Quality Assurance', value: 'The Credit QA process assures the full PIL onboarding journey and the included sub-processes. The Credit QA process is managed and delivered by the Credit QA team, it is governed by the Credit QA SOP.\nThe CASA KYC QA process assures the CASA onboarding journey in line with EDD / CDD requirements. The CASA KYC QA process is managed and delivered by the KYC team and is governed by the KYC QA SOP.', editable: true }
             ],
             definition: rows,
             risks: [
