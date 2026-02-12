@@ -1,5 +1,5 @@
 
-import { LibraryDocument, SopResponse, Product, ChatSession, FeedbackPayload, ChatSessionDetail, ProcessDefinitionRow } from '../types';
+import { LibraryDocument, SopResponse, Product, ChatSession, FeedbackPayload, ChatSessionDetail, ProcessDefinitionRow, BuilderResponse } from '../types';
 
 // CHANGED: Use relative path to leverage Vite Proxy configured in vite.config.ts
 // This resolves CORS issues by routing requests through the local dev server
@@ -313,7 +313,7 @@ export interface ApiServiceInterface {
     getProcessFlow(productName: string): Promise<SopResponse>;
     getProcessTable(productName: string, sopData?: SopResponse): Promise<ProcessDefinitionRow[]>;
     updateProcessFlowFromTable(productName: string, tableData: ProcessDefinitionRow[], originalSop: SopResponse): Promise<SopResponse>;
-    generateTableFromBuilder(inputs: { productName: string, startTrigger: string, endTrigger: string, stages: { name: string }[] }): Promise<ProcessDefinitionRow[]>;
+    generateTableFromBuilder(inputs: { productName: string, startTrigger: string, endTrigger: string, stages: { name: string }[] }): Promise<BuilderResponse>;
 }
 
 export const apiService: ApiServiceInterface = {
@@ -806,13 +806,12 @@ export const apiService: ApiServiceInterface = {
         return newSop;
     },
 
-    // New Helper: Generate initial table from wizard inputs
-    generateTableFromBuilder: async (inputs: { productName: string, startTrigger: string, endTrigger: string, stages: { name: string }[] }): Promise<ProcessDefinitionRow[]> => {
+    // New Helper: Generate initial table and metadata from builder inputs
+    generateTableFromBuilder: async (inputs: { productName: string, startTrigger: string, endTrigger: string, stages: { name: string }[] }): Promise<BuilderResponse> => {
         await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate generation
 
         const rows: ProcessDefinitionRow[] = [];
-        let stepCounter = 1;
-
+        
         // Start Row
         rows.push({
             id: 'START',
@@ -857,6 +856,17 @@ export const apiService: ApiServiceInterface = {
             risks: ''
         });
 
-        return rows;
+        return {
+            objectives: [
+                { id: 'obj1', key: 'Operational Efficiency', value: 'Reduce processing time by 15%', editable: true },
+                { id: 'obj2', key: 'Compliance', value: 'Ensure 100% adherence to KYC norms', editable: true }
+            ],
+            definition: rows,
+            risks: [
+                { id: 'r1', key: 'Data Integrity', value: 'Potential for manual data entry errors in Stage 1', editable: true },
+                { id: 'r2', key: 'System Availability', value: 'Dependency on core banking uptime during operational hours', editable: true },
+                { id: 'r3', key: 'Regulatory', value: 'Non-compliance with local data residency laws if external cloud used', editable: false }
+            ]
+        };
     }
 };

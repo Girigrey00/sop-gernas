@@ -244,6 +244,20 @@ export interface ProcessDefinitionRow {
     risks: string;
 }
 
+// --- Builder Response Types ---
+export interface KeyValueItem {
+    id: string;
+    key: string;
+    value: string;
+    editable: boolean;
+}
+
+export interface BuilderResponse {
+    objectives: KeyValueItem[];
+    definition: ProcessDefinitionRow[];
+    risks: KeyValueItem[];
+}
+
 // Layout types
 export type LayoutType = 'SWIMLANE' | 'TREE' | 'HORIZONTAL';
 

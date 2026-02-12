@@ -6,11 +6,12 @@ import {
     Sparkles, ArrowUp, TableProperties, Hammer, Zap,
     Workflow, Layers, Network, 
     Boxes, FileStack, ArrowRightCircle,
-    Bot, Rocket, Send, Edit2, Trash2, Cpu, File, List
+    Bot, Rocket, Send, Edit2, Trash2, Cpu, File, List,
+    Target, ShieldAlert, LayoutList, Lock, Unlock
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { apiService } from '../services/apiService';
-import { ProcessDefinitionRow, SopResponse } from '../types';
+import { ProcessDefinitionRow, SopResponse, BuilderResponse, KeyValueItem } from '../types';
 
 interface ProcessBuilderPageProps {
     onBack: () => void;
@@ -19,6 +20,7 @@ interface ProcessBuilderPageProps {
 
 // Simplified Flow: Welcome -> Name -> Stages -> Review
 type BuilderStep = 'WELCOME' | 'NAME' | 'STAGES' | 'REVIEW';
+type ReviewTab = 'OBJECTIVES' | 'DEFINITION' | 'RISKS';
 
 interface Message {
     id: string;
@@ -270,8 +272,10 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     const [itemName, setItemName] = useState('');
     const [stages, setStages] = useState<StageData[]>([]);
     
-    // Table State
-    const [tableData, setTableData] = useState<ProcessDefinitionRow[]>([]);
+    // Review Tab State
+    const [activeReviewTab, setActiveReviewTab] = useState<ReviewTab>('OBJECTIVES');
+    const [builderData, setBuilderData] = useState<BuilderResponse | null>(null);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Scroll to bottom
@@ -381,6 +385,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
         setIsLoading(true);
         setCurrentStep('REVIEW'); 
+        setActiveReviewTab('OBJECTIVES'); // Reset to first tab
 
         try {
             const data = await apiService.generateTableFromBuilder({
@@ -389,7 +394,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 endTrigger: 'Process End',
                 stages: stages.map(s => ({ name: s.name }))
             });
-            setTableData(data);
+            setBuilderData(data);
         } catch (e) {
             console.error("Failed", e);
             setCurrentStep('STAGES'); 
@@ -398,24 +403,42 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         }
     };
 
+    // Generic handler for Key/Value pair updates (Objectives/Risks)
+    const handleKeyValueChange = (section: 'objectives' | 'risks', id: string, field: 'key' | 'value', val: string) => {
+        setBuilderData(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                [section]: prev[section].map(item => item.id === id ? { ...item, [field]: val } : item)
+            };
+        });
+    };
+
     const handleTableChange = (id: string, field: keyof ProcessDefinitionRow, value: string) => {
-        setTableData(prev => prev.map(row => row.id === id ? { ...row, [field]: value } : row));
+        setBuilderData(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                definition: prev.definition.map(row => row.id === id ? { ...row, [field]: value } : row)
+            };
+        });
     };
 
     const handleFinalGenerate = async () => {
+        if (!builderData) return;
         setIsLoading(true);
         try {
             const baseSop: SopResponse = {
                 startNode: { stepId: 'START', stepName: 'Start', description: 'Start', actor: 'System', stepType: 'Start', nextStep: null },
                 endNode: { stepId: 'END', stepName: 'End', description: 'End', actor: 'System', stepType: 'End', nextStep: null },
                 processDefinition: { title: itemName, version: '1.0', classification: 'Internal', documentLink: '#' },
-                processObjectives: [],
-                inherentRisks: [],
+                processObjectives: builderData.objectives.map(o => ({ description: `${o.key}: ${o.value}` })),
+                inherentRisks: builderData.risks.map(r => ({ riskId: r.id, riskType: r.key, description: r.value, category: 'Operational' })),
                 processFlow: { stages: stages.map((s, i) => ({ stageId: `S${i+1}`, stageName: s.name, description: s.name, steps: [] })) },
                 metadata: { product_name: itemName }
             };
 
-            const flowData = await apiService.updateProcessFlowFromTable(itemName, tableData, baseSop);
+            const flowData = await apiService.updateProcessFlowFromTable(itemName, builderData.definition, baseSop);
             onFlowGenerated(flowData);
         } catch (e) {
             console.error(e);
@@ -492,7 +515,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                             <TableProperties size={20} className="text-blue-600" />
                             Review Process Definition
                         </h2>
-                        <p className="text-sm text-slate-500 mt-1">Refine step details before generating the final diagram.</p>
+                        <p className="text-sm text-slate-500 mt-1">Refine objectives, steps, and risks before generating the final diagram.</p>
                     </div>
                     <div className="flex gap-3">
                         <button 
@@ -512,61 +535,195 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="flex-1 overflow-auto p-8">
-                    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden ring-1 ring-black/5">
-                        <table className="w-full text-left border-collapse text-sm">
-                            <thead className="bg-slate-50 border-b border-slate-200">
-                                <tr>
-                                    <th className="p-4 font-bold text-slate-500 w-20">ID</th>
-                                    <th className="p-4 font-bold text-slate-500 w-48">L2 Process</th>
-                                    <th className="p-4 font-bold text-slate-500 w-64">Step Name</th>
-                                    <th className="p-4 font-bold text-slate-500">Description</th>
-                                    <th className="p-4 font-bold text-slate-500 w-32">Actor</th>
-                                    <th className="p-4 font-bold text-slate-500 w-32">Type</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {tableData.map((row) => (
-                                    <tr key={row.id} className="hover:bg-blue-50/30 transition-colors group">
-                                        <td className="p-4 font-mono text-xs font-medium text-slate-400">{row.id}</td>
-                                        <td className="p-4 text-slate-600 font-medium">{row.l2Process}</td>
-                                        <td className="p-4">
-                                            <input 
-                                                type="text" 
-                                                value={row.stepName} 
-                                                onChange={(e) => handleTableChange(row.id, 'stepName', e.target.value)}
-                                                className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none font-bold text-slate-800 transition-all"
-                                            />
-                                        </td>
-                                        <td className="p-4">
-                                            <textarea 
-                                                value={row.stepDescription} 
-                                                onChange={(e) => handleTableChange(row.id, 'stepDescription', e.target.value)}
-                                                className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none resize-none h-10 focus:h-20 text-slate-600 leading-snug transition-all"
-                                            />
-                                        </td>
-                                        <td className="p-4">
-                                            <input 
-                                                type="text" 
-                                                value={row.actor} 
-                                                onChange={(e) => handleTableChange(row.id, 'actor', e.target.value)}
-                                                className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none text-slate-700 font-medium transition-all"
-                                            />
-                                        </td>
-                                        <td className="p-4">
-                                            <input 
-                                                type="text" 
-                                                value={row.stepType} 
-                                                onChange={(e) => handleTableChange(row.id, 'stepType', e.target.value)}
-                                                className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none text-slate-500 font-medium transition-all"
-                                            />
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                {/* Tab Navigation */}
+                <div className="px-8 pt-4 pb-0 bg-white border-b border-slate-200 sticky top-[88px] z-10">
+                    <div className="flex gap-6">
+                        {[
+                            { id: 'OBJECTIVES', label: 'Process Objective', icon: Target },
+                            { id: 'DEFINITION', label: 'Process Definition', icon: LayoutList },
+                            { id: 'RISKS', label: 'Process Risks', icon: ShieldAlert }
+                        ].map(tab => {
+                            const Icon = tab.icon;
+                            const isActive = activeReviewTab === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveReviewTab(tab.id as ReviewTab)}
+                                    className={`flex items-center gap-2 pb-4 text-sm font-bold border-b-2 transition-all ${
+                                        isActive 
+                                        ? 'text-blue-600 border-blue-600' 
+                                        : 'text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300'
+                                    }`}
+                                >
+                                    <Icon size={16} />
+                                    {tab.label}
+                                </button>
+                            );
+                        })}
                     </div>
+                </div>
+
+                {/* Content Area */}
+                <div className="flex-1 overflow-auto p-8 bg-slate-50/50">
+                    {builderData ? (
+                        <>
+                            {/* OBJECTIVES TAB */}
+                            {activeReviewTab === 'OBJECTIVES' && (
+                                <div className="max-w-4xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4 flex items-center gap-3">
+                                        <Target size={20} className="text-blue-600" />
+                                        <p className="text-sm text-blue-900 font-medium">Define the core goals and success criteria for this process.</p>
+                                    </div>
+                                    {builderData.objectives.map((obj) => (
+                                        <div key={obj.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                                            <div className="flex gap-4">
+                                                <div className="w-1/3">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Objective Type</label>
+                                                    <div className="relative">
+                                                        <input 
+                                                            type="text" 
+                                                            value={obj.key}
+                                                            onChange={(e) => handleKeyValueChange('objectives', obj.id, 'key', e.target.value)}
+                                                            disabled={!obj.editable}
+                                                            className={`w-full p-2.5 rounded-lg border text-sm font-bold ${
+                                                                obj.editable 
+                                                                ? 'bg-white border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100' 
+                                                                : 'bg-slate-50 border-transparent text-slate-600'
+                                                            }`}
+                                                        />
+                                                        {!obj.editable && <Lock size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />}
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Description</label>
+                                                    <textarea 
+                                                        value={obj.value}
+                                                        onChange={(e) => handleKeyValueChange('objectives', obj.id, 'value', e.target.value)}
+                                                        disabled={!obj.editable}
+                                                        rows={2}
+                                                        className={`w-full p-2.5 rounded-lg border text-sm resize-none ${
+                                                            obj.editable 
+                                                            ? 'bg-white border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100' 
+                                                            : 'bg-slate-50 border-transparent text-slate-600'
+                                                        }`}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* DEFINITION TAB (Table) */}
+                            {activeReviewTab === 'DEFINITION' && (
+                                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden ring-1 ring-black/5 animate-in fade-in slide-in-from-bottom-2">
+                                    <table className="w-full text-left border-collapse text-sm">
+                                        <thead className="bg-slate-50 border-b border-slate-200">
+                                            <tr>
+                                                <th className="p-4 font-bold text-slate-500 w-20">ID</th>
+                                                <th className="p-4 font-bold text-slate-500 w-48">L2 Process</th>
+                                                <th className="p-4 font-bold text-slate-500 w-64">Step Name</th>
+                                                <th className="p-4 font-bold text-slate-500">Description</th>
+                                                <th className="p-4 font-bold text-slate-500 w-32">Actor</th>
+                                                <th className="p-4 font-bold text-slate-500 w-32">Type</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {builderData.definition.map((row) => (
+                                                <tr key={row.id} className="hover:bg-blue-50/30 transition-colors group">
+                                                    <td className="p-4 font-mono text-xs font-medium text-slate-400">{row.id}</td>
+                                                    <td className="p-4 text-slate-600 font-medium">{row.l2Process}</td>
+                                                    <td className="p-4">
+                                                        <input 
+                                                            type="text" 
+                                                            value={row.stepName} 
+                                                            onChange={(e) => handleTableChange(row.id, 'stepName', e.target.value)}
+                                                            className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none font-bold text-slate-800 transition-all"
+                                                        />
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <textarea 
+                                                            value={row.stepDescription} 
+                                                            onChange={(e) => handleTableChange(row.id, 'stepDescription', e.target.value)}
+                                                            className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none resize-none h-10 focus:h-20 text-slate-600 leading-snug transition-all"
+                                                        />
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <input 
+                                                            type="text" 
+                                                            value={row.actor} 
+                                                            onChange={(e) => handleTableChange(row.id, 'actor', e.target.value)}
+                                                            className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none text-slate-700 font-medium transition-all"
+                                                        />
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <input 
+                                                            type="text" 
+                                                            value={row.stepType} 
+                                                            onChange={(e) => handleTableChange(row.id, 'stepType', e.target.value)}
+                                                            className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none text-slate-500 font-medium transition-all"
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            {/* RISKS TAB */}
+                            {activeReviewTab === 'RISKS' && (
+                                <div className="max-w-4xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                                    <div className="bg-rose-50 border border-rose-100 rounded-lg p-4 mb-4 flex items-center gap-3">
+                                        <ShieldAlert size={20} className="text-rose-600" />
+                                        <p className="text-sm text-rose-900 font-medium">Identify potential operational, financial, or regulatory risks.</p>
+                                    </div>
+                                    {builderData.risks.map((risk) => (
+                                        <div key={risk.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group">
+                                            <div className="flex gap-4">
+                                                <div className="w-1/3">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Risk Category</label>
+                                                    <div className="relative">
+                                                        <input 
+                                                            type="text" 
+                                                            value={risk.key}
+                                                            onChange={(e) => handleKeyValueChange('risks', risk.id, 'key', e.target.value)}
+                                                            disabled={!risk.editable}
+                                                            className={`w-full p-2.5 rounded-lg border text-sm font-bold text-rose-700 ${
+                                                                risk.editable 
+                                                                ? 'bg-white border-slate-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-100' 
+                                                                : 'bg-slate-50 border-transparent'
+                                                            }`}
+                                                        />
+                                                        {!risk.editable && <Lock size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />}
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Risk Description</label>
+                                                    <textarea 
+                                                        value={risk.value}
+                                                        onChange={(e) => handleKeyValueChange('risks', risk.id, 'value', e.target.value)}
+                                                        disabled={!risk.editable}
+                                                        rows={2}
+                                                        className={`w-full p-2.5 rounded-lg border text-sm resize-none ${
+                                                            risk.editable 
+                                                            ? 'bg-white border-slate-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-100' 
+                                                            : 'bg-slate-50 border-transparent text-slate-600'
+                                                        }`}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-64 text-slate-400">
+                            <Loader2 size={32} className="animate-spin mb-4" />
+                            <p>Loading process details...</p>
+                        </div>
+                    )}
                 </div>
             </div>
         );
