@@ -780,27 +780,70 @@ export const apiService: ApiServiceInterface = {
     },
 
     updateProcessFlowFromTable: async (productName: string, tableData: ProcessDefinitionRow[], originalSop: SopResponse): Promise<SopResponse> => {
-        // In a real app, this would POST the table data to backend which re-runs the LLM/Algorithm
         await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate processing
 
-        // Create a deep copy to modify
         const newSop = JSON.parse(JSON.stringify(originalSop)) as SopResponse;
         
-        // Naive update logic: Iterate through stages and update steps that match IDs
-        if (newSop.processFlow && newSop.processFlow.stages) {
-            newSop.processFlow.stages.forEach(stage => {
-                stage.steps.forEach(step => {
-                    const row = tableData.find(r => r.id === step.stepId);
-                    if (row) {
-                        step.stepName = row.stepName;
-                        step.description = row.stepDescription;
-                        step.actor = row.actor;
-                        step.stepType = row.stepType;
-                        step.processingTime = row.processingTime;
-                        // We could update more fields here
-                    }
+        // 1. Map Table Rows to Steps
+        const stagesMap = new Map<string, any>();
+        
+        // Ensure stages exist for all L2 processes in table
+        tableData.forEach(row => {
+            if (!stagesMap.has(row.l2Process)) {
+                // Check if stage exists in originalSop to preserve metadata if possible
+                const existingStage = newSop.processFlow.stages.find(s => s.stageName === row.l2Process);
+                stagesMap.set(row.l2Process, existingStage || {
+                    stageId: `S${stagesMap.size + 1}`,
+                    stageName: row.l2Process,
+                    description: row.l2Process,
+                    steps: []
                 });
-            });
+            }
+        });
+
+        // 2. Clear steps in mapped stages to rebuild
+        stagesMap.forEach(stage => stage.steps = []);
+
+        // 3. Build Steps and Assign to Stages
+        const allSteps: any[] = [];
+        
+        tableData.forEach((row, index) => {
+            const stage = stagesMap.get(row.l2Process);
+            
+            // Basic Step Construction
+            const step: any = {
+                stepId: row.id || `ST-${index + 1}`,
+                stepName: row.stepName,
+                description: row.stepDescription,
+                actor: row.actor,
+                stepType: row.stepType,
+                processingTime: row.processingTime,
+                risksMitigated: row.risks ? row.risks.split(',').map(r => r.trim()) : [],
+                controls: [],
+                policies: [],
+                standards: [],
+                // Default linking logic
+                nextStep: null 
+            };
+            
+            stage.steps.push(step);
+            allSteps.push(step);
+        });
+
+        // 4. Link Steps Sequentially
+        for (let i = 0; i < allSteps.length; i++) {
+            if (i < allSteps.length - 1) {
+                allSteps[i].nextStep = allSteps[i+1].stepId;
+            } else {
+                allSteps[i].nextStep = 'END'; // Link last step to End
+            }
+        }
+
+        // 5. Update SOP Structure
+        newSop.processFlow.stages = Array.from(stagesMap.values());
+        
+        if (allSteps.length > 0 && newSop.startNode) {
+            newSop.startNode.nextStep = allSteps[0].stepId;
         }
 
         return newSop;
