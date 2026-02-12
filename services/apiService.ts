@@ -810,62 +810,33 @@ export const apiService: ApiServiceInterface = {
     generateTableFromBuilder: async (inputs: { productName: string, startTrigger: string, endTrigger: string, stages: { name: string }[] }): Promise<BuilderResponse> => {
         await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate generation
 
-        const rows: ProcessDefinitionRow[] = [];
-        
-        // Start Row
-        rows.push({
-            id: 'START',
-            l2Process: 'Initiation',
-            stepName: 'Start Process',
-            stepDescription: `Trigger: ${inputs.startTrigger}`,
-            stepType: 'Start',
-            system: 'N/A',
-            actor: 'System',
-            processingTime: '0',
-            risks: ''
-        });
-
-        // Stage Rows (Generate placeholders)
-        inputs.stages.forEach((stage, idx) => {
-            // Generate 2 dummy steps per stage to allow editing
-            for(let i = 1; i <= 2; i++) {
-                rows.push({
-                    id: `S${idx + 1}-${i}`,
-                    l2Process: stage.name,
-                    stepName: `${stage.name} - Step ${i}`,
-                    stepDescription: `Description for step ${i} of ${stage.name}`,
-                    stepType: i === 1 ? 'Manual' : 'System',
-                    system: 'Core Banking',
-                    actor: i === 1 ? 'Officer' : 'System',
-                    processingTime: '300',
-                    risks: ''
-                });
-            }
-        });
-
-        // End Row
-        rows.push({
-            id: 'END',
-            l2Process: 'Completion',
-            stepName: 'End Process',
-            stepDescription: `Outcome: ${inputs.endTrigger}`,
-            stepType: 'End',
-            system: 'N/A',
-            actor: 'System',
-            processingTime: '0',
-            risks: ''
-        });
+        const rows: ProcessDefinitionRow[] = [
+            { id: 'S1-1', l2Process: 'Customer application', stepName: 'Explain Product Features', stepDescription: 'CSO explains terms and provides KFS', actor: 'CSO', stepType: 'Interaction', system: 'N/A', processingTime: '5m', risks: 'Mis-selling' },
+            { id: 'S1-2', l2Process: 'Customer application', stepName: 'Collect Documents', stepDescription: 'Collect KYC, FATCA, CRS documents', actor: 'CSO', stepType: 'Activity', system: 'N/A', processingTime: '10m', risks: 'Incomplete Docs' },
+            { id: 'S2-1', l2Process: 'Identification', stepName: 'Verify Identity', stepDescription: 'Verify Emirates ID and Passport', actor: 'CSO', stepType: 'Control', system: 'EFR', processingTime: '3m', risks: 'Identity Fraud' },
+            { id: 'S3-1', l2Process: 'Screening', stepName: 'Name Screening', stepDescription: 'Screen against watchlists', actor: 'System', stepType: 'System', system: 'Fircosoft', processingTime: '1m', risks: 'Sanctions Breach' }
+        ];
 
         return {
             objectives: [
-                { id: 'obj1', key: 'Operational Efficiency', value: 'Reduce processing time by 15%', editable: true },
-                { id: 'obj2', key: 'Compliance', value: 'Ensure 100% adherence to KYC norms', editable: true }
+                { id: 'obj1', key: 'Speed', value: 'Provide PIL full approval within 15 mins in Full STP scenario.', editable: true },
+                { id: 'obj2', key: 'Validation', value: 'Use government data sources to validate identity, salary, and employer.', editable: true },
+                { id: 'obj3', key: 'Risk Management', value: 'Manage attendant risks and scalability requirements.', editable: true }
             ],
             definition: rows,
             risks: [
-                { id: 'r1', key: 'Data Integrity', value: 'Potential for manual data entry errors in Stage 1', editable: true },
-                { id: 'r2', key: 'System Availability', value: 'Dependency on core banking uptime during operational hours', editable: true },
-                { id: 'r3', key: 'Regulatory', value: 'Non-compliance with local data residency laws if external cloud used', editable: false }
+                { id: 'r1', key: 'R1', value: 'Customer provides invalid or forged documents.', editable: true },
+                { id: 'r2', key: 'R2', value: 'Incomplete application forms leading to rejection.', editable: true },
+                { id: 'r3', key: 'R3', value: 'PEP/Sanction screening failure not detected.', editable: true },
+                { id: 'r4', key: 'R4', value: 'Fraudulent employer details.', editable: true },
+                { id: 'r5', key: 'R5', value: 'Banking Statement manipulation.', editable: true },
+                { id: 'r6', key: 'R6', value: 'Incorrect Risk Rating assignment.', editable: true },
+                { id: 'r7', key: 'R7', value: 'Address validation failure.', editable: true },
+                { id: 'r8', key: 'R8', value: 'Eligibility criteria assessment error.', editable: true },
+                { id: 'r9', key: 'R9', value: 'Data entry errors in T24.', editable: true },
+                { id: 'r10', key: 'R10', value: 'Unresolved exception flags.', editable: true },
+                { id: 'r11', key: 'R11', value: 'Duplicate Customer ID creation.', editable: true },
+                { id: 'r12', key: 'R12', value: 'Post-onboarding control failure.', editable: true }
             ]
         };
     }
