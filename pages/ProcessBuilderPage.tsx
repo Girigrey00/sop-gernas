@@ -640,9 +640,12 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                                 <th className="p-4 font-bold text-slate-500 w-20">ID</th>
                                                 <th className="p-4 font-bold text-slate-500 w-48">L2 Process</th>
                                                 <th className="p-4 font-bold text-slate-500 w-64">Step Name</th>
-                                                <th className="p-4 font-bold text-slate-500">Description</th>
+                                                <th className="p-4 font-bold text-slate-500 min-w-[200px]">Description</th>
                                                 <th className="p-4 font-bold text-slate-500 w-32">Actor</th>
-                                                <th className="p-4 font-bold text-slate-500 w-32">Type</th>
+                                                <th className="p-4 font-bold text-slate-500 w-24">Type</th>
+                                                <th className="p-4 font-bold text-slate-500 w-24">System</th>
+                                                <th className="p-4 font-bold text-slate-500 w-24">Time</th>
+                                                <th className="p-4 font-bold text-slate-500 w-48">Risks</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
@@ -679,6 +682,30 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                                             value={row.stepType} 
                                                             onChange={(e) => handleTableChange(row.id, 'stepType', e.target.value)}
                                                             className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none text-slate-500 font-medium transition-all"
+                                                        />
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <input 
+                                                            type="text" 
+                                                            value={row.system} 
+                                                            onChange={(e) => handleTableChange(row.id, 'system', e.target.value)}
+                                                            className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none text-slate-500 transition-all"
+                                                        />
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <input 
+                                                            type="text" 
+                                                            value={row.processingTime} 
+                                                            onChange={(e) => handleTableChange(row.id, 'processingTime', e.target.value)}
+                                                            className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none text-slate-500 transition-all"
+                                                        />
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <input 
+                                                            type="text" 
+                                                            value={row.risks} 
+                                                            onChange={(e) => handleTableChange(row.id, 'risks', e.target.value)}
+                                                            className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none text-rose-500 font-medium transition-all"
                                                         />
                                                     </td>
                                                 </tr>
