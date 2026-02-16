@@ -1,5 +1,6 @@
 
-import { LibraryDocument, SopResponse, Product, ChatSession, FeedbackPayload, ChatSessionDetail, ProcessDefinitionRow, BuilderResponse } from '../types';
+
+import { LibraryDocument, SopResponse, Product, ChatSession, FeedbackPayload, ChatSessionDetail, ProcessDefinitionRow, BuilderResponse, CreateProcessRequest, CreateProcessResponse, ProcessStatusResponse, ProcessResultData, KeyValueItem } from '../types';
 
 // CHANGED: Use relative path to leverage Vite Proxy configured in vite.config.ts
 // This resolves CORS issues by routing requests through the local dev server
@@ -17,6 +18,7 @@ const handleResponse = async (response: Response) => {
     return response.json();
 };
 
+// ... [Keep existing mockChatStream and JsonStreamParser classes] ...
 // Mock Chat Logic for Demo/Fallback
 const mockChatStream = async (payload: any) => {
     const question = payload.question.toLowerCase();
@@ -313,7 +315,14 @@ export interface ApiServiceInterface {
     getProcessFlow(productName: string): Promise<SopResponse>;
     getProcessTable(productName: string, sopData?: SopResponse): Promise<ProcessDefinitionRow[]>;
     updateProcessFlowFromTable(productName: string, tableData: ProcessDefinitionRow[], originalSop: SopResponse): Promise<SopResponse>;
-    generateTableFromBuilder(inputs: { productName: string, startTrigger: string, endTrigger: string, stages: { name: string }[] }): Promise<BuilderResponse>;
+    generateTableFromBuilder(inputs: { 
+        productName: string, 
+        stages: { id: number, name: string, files: File[] }[],
+        onLog?: (message: string, progress: number) => void 
+    }): Promise<BuilderResponse>;
+    createProcess(payload: CreateProcessRequest): Promise<CreateProcessResponse>;
+    getProcessStatus(processId: string): Promise<ProcessStatusResponse>;
+    mapProcessResultToBuilder(data: ProcessResultData): BuilderResponse;
 }
 
 export const apiService: ApiServiceInterface = {
@@ -849,92 +858,131 @@ export const apiService: ApiServiceInterface = {
         return newSop;
     },
 
-    // New Helper: Generate initial table and metadata from builder inputs
-    generateTableFromBuilder: async (inputs: { productName: string, startTrigger: string, endTrigger: string, stages: { name: string }[] }): Promise<BuilderResponse> => {
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate generation
+    // --- Create Process API Methods ---
 
-        const rows: ProcessDefinitionRow[] = [
-            // Stage 1: Customer application completion
-            { id: 'S1-1', l2Process: 'Customer application completion', stepName: 'Explain Product Features & Provide KFS', stepDescription: 'CSO explains all account terms, features, charges, and provides the Key Fact Statement', actor: 'CSO', stepType: 'Interaction', system: 'N/A', processingTime: '10m', risks: 'Mis-selling' },
-            { id: 'S1-2', l2Process: 'Customer application completion', stepName: 'Receive Completed Application & KFS', stepDescription: 'CSO receives the signed KFS and duly filled Account Opening Form from the customer, ensuring all required fields are completed.', actor: 'CSO', stepType: 'Activity', system: 'N/A', processingTime: '5m', risks: 'Incomplete Docs' },
-            { id: 'S1-3', l2Process: 'Customer application completion', stepName: 'Collect Customer Documents', stepDescription: 'CSO provides and collects all required documentation (KYC, FATCA, CRS, income proof, etc.) from the customer as per the account opening checklist.', actor: 'CSO', stepType: 'Activity', system: 'N/A', processingTime: '15m', risks: 'Incomplete Docs' },
-            { id: 'S1-4', l2Process: 'Customer application completion', stepName: 'Verify Documents & Identity', stepDescription: 'CSO verifies originals against copies, checks document validity, matches photos, and stamps True copy of original with employee ID and date.', actor: 'CSO', stepType: 'Control', system: 'N/A', processingTime: '10m', risks: 'Identity Fraud' },
-            { id: 'S1-5', l2Process: 'Customer application completion', stepName: 'Initial Data Capture & Risk Rating', stepDescription: 'CSO inputs customer information from AOF into the CRAM tool to perform risk rating as per Group CDD Procedure.', actor: 'CSO', stepType: 'Assessment', system: 'CRAM tool', processingTime: '20m', risks: 'Incorrect Data' },
-            { id: 'S1-6', l2Process: 'Customer application completion', stepName: 'Special Handling for Customer Categories', stepDescription: 'CSO applies additional procedures for minors, illiterate customers, POA holders, veiled ladies, and legal heirs as per policy, including extra documentation and approvals.', actor: 'CSO', stepType: 'Special Handling', system: 'N/A', processingTime: '15m', risks: 'Compliance' },
-            { id: 'S1-7', l2Process: 'Customer application completion', stepName: 'Rectify Application Discrepancies', stepDescription: 'If any discrepancies or missing information are found in the application or documents, CSO requests customer to rectify and resubmit before proceeding.', actor: 'CSO', stepType: 'Activity', system: 'N/A', processingTime: '10m', risks: 'Delay' },
-            { id: 'S1-8', l2Process: 'Customer application completion', stepName: 'Obtain Approver Signature on Risk Rating', stepDescription: 'CSO prints the risk rating and obtains approvers signature as per authority matrix or via email approval.', actor: 'CSO', stepType: 'Authorization', system: 'CRAM tool', processingTime: '5m', risks: 'Unauthorized' },
+    createProcess: async (payload: CreateProcessRequest): Promise<CreateProcessResponse> => {
+        return handleResponse(await fetch(`${API_BASE_URL}/createprocess`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }));
+    },
 
-            // Stage 2: Customer identification, validation and eligibility check
-            { id: 'S2-1', l2Process: 'Customer identification, validation and eligibility check', stepName: 'Collect and Verify Identity Documents', stepDescription: 'Collect original Emirates ID, Passport, and other required documents from the customer and verify their authenticity, validity, and match with the physical person. Scrutinize photos and spellings for consistency and refer any suspicions to Fraud Risk Investigation.', actor: 'CSO', stepType: 'Activity', system: 'N/A', processingTime: '10m', risks: 'Identity Fraud' },
-            { id: 'S2-2', l2Process: 'Customer identification, validation and eligibility check', stepName: 'Validate Address and Communication Details', stepDescription: 'Ensure customer provides valid residential or business address, and verify the address against supporting documents. For physical statements, P.O. Box is mandatory.', actor: 'CSO', stepType: 'Activity', system: 'N/A', processingTime: '5m', risks: 'Contact Failure' },
-            { id: 'S2-3', l2Process: 'Customer identification, validation and eligibility check', stepName: 'Eligibility Criteria Assessment', stepDescription: 'Assess customer eligibility for account opening based on income proof, risk rating, age, employment status, and product-specific requirements. Refer Elite segment and special categories as per policy.', actor: 'CSO', stepType: 'Assessment', system: 'N/A', processingTime: '10m', risks: 'Eligibility Error' },
-            { id: 'S2-4', l2Process: 'Customer identification, validation and eligibility check', stepName: 'Perform Risk Rating via CRAM Tool', stepDescription: 'Input customer information into the CRAM tool to generate risk rating as per Group CDD Procedure. Print and retain risk rating form for approval.', actor: 'CSO', stepType: 'Assessment', system: 'CRAM Tool', processingTime: '15m', risks: 'Incorrect Rating' },
-            { id: 'S2-5', l2Process: 'Customer identification, validation and eligibility check', stepName: 'Document Authenticity and OSV Certification', stepDescription: 'Compare photocopies with originals, stamp True copy of original, and certify validity, genuineness, and issuance by competent authorities. Annotate and sign with staff ID and date.', actor: 'CSO', stepType: 'Control', system: 'N/A', processingTime: '5m', risks: 'Forgery' },
-            { id: 'S2-6', l2Process: 'Customer identification, validation and eligibility check', stepName: 'Special Handling for Category Customers', stepDescription: 'Apply additional identification and verification procedures for minors, illiterate persons, veiled ladies, POA holders, and legal heirs as per policy. Obtain necessary approvals and attestations.', actor: 'CSO', stepType: 'Special Handling', system: 'N/A', processingTime: '10m', risks: 'Compliance' },
-            { id: 'S2-7', l2Process: 'Customer identification, validation and eligibility check', stepName: 'Eligibility Decision and Exception Handling', stepDescription: 'Decide on customer eligibility for account opening. If not eligible, inform customer and end process; if eligible, proceed. Handle exceptions and escalate as required.', actor: 'CSO', stepType: 'Decision', system: 'N/A', processingTime: '5m', risks: 'Incorrect Decision' },
+    getProcessStatus: async (processId: string): Promise<ProcessStatusResponse> => {
+        return handleResponse(await fetch(`${API_BASE_URL}/createprocess/${processId}`));
+    },
 
-            // Stage 3: AML, KYC compliance screening
-            { id: 'S3-1', l2Process: 'AML, KYC compliance screening', stepName: 'Perform Name Screening', stepDescription: 'Screen the customer and all relevant connected parties against internal and external watchlists (FSK/BBL) to identify PEPs, sanctions, and adverse media risks.', actor: 'KYC Team', stepType: 'AML/Screening', system: 'Fircosoft', processingTime: '5m', risks: 'Sanctions Breach' },
-            { id: 'S3-2', l2Process: 'AML, KYC compliance screening', stepName: 'Conduct Sanctions Screening', stepDescription: 'Check all parties against global and local sanctions lists to ensure no prohibited relationships are onboarded.', actor: 'KYC Team', stepType: 'AML/Screening', system: 'Fircosoft', processingTime: '5m', risks: 'Sanctions Breach' },
-            { id: 'S3-3', l2Process: 'AML, KYC compliance screening', stepName: 'PEP Identification and Assessment', stepDescription: 'Identify Politically Exposed Persons (PEPs) among customers and connected parties, and assess associated risks.', actor: 'KYC Team', stepType: 'AML/Screening', system: 'Fircosoft', processingTime: '10m', risks: 'PEP Risk' },
-            { id: 'S3-4', l2Process: 'AML, KYC compliance screening', stepName: 'Risk Rating via CRAM', stepDescription: 'Assess the customer\'s risk profile using the Customer Risk Assessment Methodology (CRAM) portal, considering all relevant risk factors.', actor: 'KYC Team', stepType: 'Assessment', system: 'CRAM Portal', processingTime: '15m', risks: 'Incorrect Risk' },
-            { id: 'S3-5', l2Process: 'AML, KYC compliance screening', stepName: 'Determine EDD Requirement', stepDescription: 'Evaluate if Enhanced Due Diligence (EDD) is required based on risk rating, PEP status, adverse media, or complex ownership structures.', actor: 'KYC Team', stepType: 'Decision', system: 'BPMS', processingTime: '5m', risks: 'EDD Missed' },
-            { id: 'S3-6', l2Process: 'AML, KYC compliance screening', stepName: 'FATCA/CRS Compliance Check', stepDescription: 'Verify customer’s FATCA and CRS status and ensure required self-certification forms are collected and validated.', actor: 'KYC Team', stepType: 'Compliance', system: 'BPMS', processingTime: '5m', risks: 'Regulatory Fine' },
-            { id: 'S3-7', l2Process: 'AML, KYC compliance screening', stepName: 'Escalate Positive Hits for Approval', stepDescription: 'Escalate any positive/true hits from screening (PEP, sanctions, adverse media) to Compliance, Sanctions Advisory, or FCC for review and approval.', actor: 'KYC Team', stepType: 'Escalation', system: 'BPMS', processingTime: '10m', risks: 'Delay' },
-            { id: 'S3-8', l2Process: 'AML, KYC compliance screening', stepName: 'Record Screening Results and Rationale', stepDescription: 'Save all screening results, including rationale for discounting false hits, in the client’s mandate file for audit and compliance purposes.', actor: 'KYC Team', stepType: 'Record Mgmt', system: 'BPMS', processingTime: '5m', risks: 'Audit Fail' },
+    // New Helper: Generate table using the Create Process Flow
+    generateTableFromBuilder: async (inputs: { 
+        productName: string, 
+        stages: { id: number, name: string, files: File[] }[], 
+        onLog?: (message: string, progress: number) => void 
+    }): Promise<BuilderResponse> => {
+        
+        // 1. Upload Files for each stage
+        const stagePayloads = [];
+        for (const stage of inputs.stages) {
+            if (inputs.onLog) inputs.onLog(`Uploading documents for stage: ${stage.name}...`, 10);
+            
+            const docUrls = [];
+            for (const file of stage.files) {
+                const url = await apiService.uploadToAzure(file);
+                docUrls.push(url);
+            }
+            
+            stagePayloads.push({
+                id: stage.id,
+                stageName: stage.name,
+                documents: docUrls
+            });
+        }
 
-            // Stage 4: Exception handling
-            { id: 'S4-1', l2Process: 'Exception handling', stepName: 'Access Exception Flags in IBM BPM', stepDescription: 'Access IBM BPM system to identify and review exception flags for failed account opening cases, including reasons for failure.', actor: 'BDO', stepType: 'Activity', system: 'IBM BPM', processingTime: '5m', risks: 'Missed Exception' },
-            { id: 'S4-2', l2Process: 'Exception handling', stepName: 'Investigate Failure Reasons', stepDescription: 'Investigate the reasons for account opening failure using relevant systems and attempt resolution based on set conditions.', actor: 'BDO', stepType: 'Activity', system: 'IBM BPM', processingTime: '20m', risks: 'Unresolved Issue' },
-            { id: 'S4-3', l2Process: 'Exception handling', stepName: 'True Hit Screening & Compliance Escalation', stepDescription: 'Check for true name screening hits via FSK and BBL; escalate unresolved matches to Compliance for review and confirmation before proceeding.', actor: 'BDO', stepType: 'AML/Screening', system: 'FSK/BBL', processingTime: '15m', risks: 'Compliance Breach' },
-            { id: 'S4-4', l2Process: 'Exception handling', stepName: 'Decline Case and Arrange Account Closure', stepDescription: 'Decline the case in IBM BPM and initiate account closure for cases with unresolved exceptions or compliance/fraud concerns.', actor: 'BDO', stepType: 'Activity', system: 'IBM BPM', processingTime: '10m', risks: 'Operational Error' },
-            { id: 'S4-5', l2Process: 'Exception handling', stepName: 'Request Additional Information/Documents', stepDescription: 'Review the case for missing or additional information/documents and contact the customer to obtain required items via registered email or direct visit if needed.', actor: 'BDO', stepType: 'Interaction', system: 'IBM BPM', processingTime: '15m', risks: 'Delay' },
-            { id: 'S4-6', l2Process: 'Exception handling', stepName: 'Arrange Direct Customer Verification', stepDescription: 'For failed liveness tests or special category cases (POA, Minor, Illiterate), arrange direct customer verification and document collection via runner or sales agent.', actor: 'BDO', stepType: 'Special Handling', system: 'IBM BPM', processingTime: '20m', risks: 'Fraud' },
-            { id: 'S4-7', l2Process: 'Exception handling', stepName: 'Maker-Checker Review and Rectification', stepDescription: 'BDU Manager reviews the case in IBM BPM against account opening conditions; if discrepancies are found, return to maker for rectification and resubmission.', actor: 'BDU Manager', stepType: 'Review', system: 'IBM BPM', processingTime: '15m', risks: 'Error Oversight' },
-            { id: 'S4-8', l2Process: 'Exception handling', stepName: 'FCC/Compliance Review for High Risk/EDD Cases', stepDescription: 'Verify risk rating and compliance check results; for high/very high risk or EDD required cases, ensure ECDD form is completed and escalate to PB Onboarding & KYC team for further review.', actor: 'BDU Manager', stepType: 'Compliance', system: 'IBM BPM', processingTime: '20m', risks: 'Compliance Breach' },
-            { id: 'S4-9', l2Process: 'Exception handling', stepName: 'Account Closure if Exception Not Cleared in 30 Days', stepDescription: 'Initiate account closure via IBM BPM if exception handling is not completed within 30 days of initiation; inform customer as per protocol.', actor: 'BDO', stepType: 'Control', system: 'IBM BPM', processingTime: '5m', risks: 'SLA Breach' },
+        // 2. Initiate Process Creation
+        if (inputs.onLog) inputs.onLog("Initiating process generation...", 20);
+        
+        const createRes = await apiService.createProcess({
+            productName: inputs.productName,
+            stages: stagePayloads
+        });
+        
+        const processId = createRes.processId;
 
-            // Stage 5: Account Completion
-            { id: 'S5-1', l2Process: 'Account Completion', stepName: 'Enter Customer Data in T24', stepDescription: 'AMO enters all mandatory customer and account details into T24, ensuring fields such as Emirates ID, passport, visa, account type, and segment are accurately updated.', actor: 'AMO', stepType: 'Activity', system: 'T24', processingTime: '10m', risks: 'Data Entry Error' },
-            { id: 'S5-2', l2Process: 'Account Completion', stepName: 'Perform Dedupe Check in T24', stepDescription: 'AMO conducts deduplication checks in T24 to ensure no duplicate Customer Identification Number (CIN) is created for the customer.', actor: 'AMO', stepType: 'Control', system: 'T24', processingTime: '5m', risks: 'Duplicate Customer' },
-            { id: 'S5-3', l2Process: 'Account Completion', stepName: 'Authorize Account in T24', stepDescription: 'AMO authorizer reviews and authorizes the newly created account in T24, confirming all data and documentation are complete and compliant.', actor: 'AMO Authorizer', stepType: 'Authorization', system: 'T24', processingTime: '10m', risks: 'Unauthorized Account' },
-            { id: 'S5-4', l2Process: 'Account Completion', stepName: 'Issue Debit Card and Cheque Book', stepDescription: 'Eligible customers are automatically issued a debit card and first cheque book (10 leaves) upon account opening in T24, if requested.', actor: 'System', stepType: 'Automated', system: 'T24', processingTime: '0m', risks: 'Issuance Error' },
-            { id: 'S5-5', l2Process: 'Account Completion', stepName: 'Notify Customer of Account Details', stepDescription: 'AMO sends account details including IBAN and welcome kit to the customer via the designated communication channel.', actor: 'AMO', stepType: 'Notification', system: 'BPMS', processingTime: '5m', risks: 'Communication Failure' },
-            { id: 'S5-6', l2Process: 'Account Completion', stepName: 'Archive Account Opening Documents', stepDescription: 'AMO ensures all original documents are sent to RMT for archival and digital copies are stored as per bank policy.', actor: 'AMO', stepType: 'Record Mgmt', system: 'BPMS', processingTime: '10m', risks: 'Lost Documents' },
-            { id: 'S5-7', l2Process: 'Account Completion', stepName: 'Conduct Post-Onboarding Controls', stepDescription: 'AMO performs post-onboarding checks such as fraud referrals, segment validation, and ensures any pending documentation is tracked and followed up.', actor: 'AMO', stepType: 'Control', system: 'T24', processingTime: '15m', risks: 'Control Failure' },
-            { id: 'S5-8', l2Process: 'Account Completion', stepName: 'Update Segment, Industry, and Sector Codes', stepDescription: 'AMO updates the customer’s segment, industry, and sector codes in T24 as per the account type and customer profile.', actor: 'AMO', stepType: 'Activity', system: 'T24', processingTime: '5m', risks: 'Misclassification' }
+        // 3. Poll for Completion
+        let statusRes: ProcessStatusResponse;
+        while (true) {
+            await new Promise(r => setTimeout(r, 2000)); // 2s polling delay
+            
+            statusRes = await apiService.getProcessStatus(processId);
+            
+            // Send log updates
+            if (inputs.onLog && statusRes.logs && statusRes.logs.length > 0) {
+                const lastLog = statusRes.logs[statusRes.logs.length - 1];
+                // Use backend progress or calculate distinct steps? Backend progress is good.
+                inputs.onLog(lastLog.message, statusRes.progress);
+            } else if (inputs.onLog) {
+                inputs.onLog(`Processing... ${statusRes.current_step}`, statusRes.progress);
+            }
+
+            if (statusRes.status === 'completed' || statusRes.status === 'failed') break;
+        }
+
+        if (statusRes.status === 'failed') {
+            throw new Error(statusRes.error_message || "Process generation failed.");
+        }
+
+        // 4. Map Result to BuilderResponse
+        if (!statusRes.result_data) throw new Error("No result data returned.");
+        
+        return apiService.mapProcessResultToBuilder(statusRes.result_data);
+    },
+
+    // Helper to map backend result format to frontend table format
+    mapProcessResultToBuilder: (data: ProcessResultData): BuilderResponse => {
+        const definitions: ProcessDefinitionRow[] = [];
+        const risks: KeyValueItem[] = [];
+        const riskSet = new Set<string>(); // To deduplicate risks if needed
+
+        // Flatten steps into definitions
+        data.stages.forEach(stage => {
+            stage.steps.forEach(step => {
+                definitions.push({
+                    id: step.stepId,
+                    l2Process: stage.stageName,
+                    stepName: step.stepName,
+                    stepDescription: step.description,
+                    stepType: step.stepType,
+                    system: step.systemInUse || 'N/A',
+                    actor: step.actor,
+                    processingTime: step.processingTime || '',
+                    risks: (step.risksMitigated || []).join(', ')
+                });
+
+                // Extract risks for the Risks tab
+                if (step.risksMitigated) {
+                    step.risksMitigated.forEach(r => {
+                        if (!riskSet.has(r)) {
+                            riskSet.add(r);
+                            risks.push({
+                                id: `risk-${riskSet.size}`,
+                                key: r,
+                                value: `Risk identified in step ${step.stepId}`, // Description might need enrichment
+                                editable: true
+                            });
+                        }
+                    });
+                }
+            });
+        });
+
+        // Initialize empty objectives or defaults
+        const objectives: KeyValueItem[] = [
+            { id: 'obj1', key: 'Process Goal', value: 'Generated from process documents.', editable: true }
         ];
 
         return {
-            objectives: [
-                { id: 'meta1', key: 'Process Name', value: 'PIL onboarding', editable: true },
-                { id: 'meta2', key: 'Process Owner', value: 'Head of Personal Banking', editable: true },
-                { id: 'meta3', key: 'Process Trigger', value: 'Customer initiates a Personal Instalment Loan (PIL) application', editable: true },
-                { id: 'meta4', key: 'Process End', value: '- Customer receives access to loan funds in their account = successful application\n- Customer receives notification that their application is unsuccesful = unsuccessful application', editable: true },
-                { id: 'meta5', key: 'Channels', value: 'Digital (mobile app + staff tablets)\nManual (paper forms)', editable: true },
-                { id: 'meta6', key: 'Customer Segments', value: 'This journey covers new to bank (NTB) and existing to bank (ETB) onboarding for any consumer customer', editable: true },
-                { id: 'meta7', key: 'Associated Product', value: 'Personal Loan PPG', editable: true },
-                { id: 'obj1', key: 'Objective: Speed', value: 'Provide PIL full approval to individual customers within 15 mins in Full STP best scenario, followed by STP Loan funds disbursal process leading to the shortest possible time.', editable: true },
-                { id: 'obj2', key: 'Objective: Validation', value: 'Use government data sources to validate customer identity, salary, and employer to strengthen controls and minimize reliance on customer submitted documents.', editable: true },
-                { id: 'obj3', key: 'Objective: Risk', value: 'Manage attendant risks and scalability requirements.', editable: true },
-                { id: 'cons1', key: 'Process Considerations', value: 'The PIL onboarding process is in a state of transition with the new digital journey being developed and rolled to specific customer cohorts over the course of 2026. Whilst this is happening the process needs to accommodate both manual and digitally initiated PIL applications. Once the digital journey is available to all customer types, the manual applciation form will be retired from use.', editable: true },
-                { id: 'qa1', key: 'Quality Assurance', value: 'The Credit QA process assures the full PIL onboarding journey and the included sub-processes. The Credit QA process is managed and delivered by the Credit QA team, it is governed by the Credit QA SOP.\nThe CASA KYC QA process assures the CASA onboarding journey in line with EDD / CDD requirements. The CASA KYC QA process is managed and delivered by the KYC team and is governed by the KYC QA SOP.', editable: true }
-            ],
-            definition: rows,
-            risks: [
-                { id: 'r1', key: 'R1', value: 'Customer provides invalid or forged documents.', editable: true },
-                { id: 'r2', key: 'R2', value: 'Incomplete application forms leading to rejection.', editable: true },
-                { id: 'r3', key: 'R3', value: 'PEP/Sanction screening failure not detected.', editable: true },
-                { id: 'r4', key: 'R4', value: 'Fraudulent employer details.', editable: true },
-                { id: 'r5', key: 'R5', value: 'Banking Statement manipulation.', editable: true },
-                { id: 'r6', key: 'R6', value: 'Incorrect Risk Rating assignment.', editable: true },
-                { id: 'r7', key: 'R7', value: 'Address validation failure.', editable: true },
-                { id: 'r8', key: 'R8', value: 'Eligibility criteria assessment error.', editable: true },
-                { id: 'r9', key: 'R9', value: 'Data entry errors in T24.', editable: true },
-                { id: 'r10', key: 'R10', value: 'Unresolved exception flags.', editable: true },
-                { id: 'r11', key: 'R11', value: 'Duplicate Customer ID creation.', editable: true },
-                { id: 'r12', key: 'R12', value: 'Post-onboarding control failure.', editable: true }
-            ]
+            objectives,
+            definition: definitions,
+            risks
         };
     }
 };

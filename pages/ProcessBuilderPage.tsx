@@ -267,6 +267,10 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false); 
     const [isLoading, setIsLoading] = useState(false);
+    
+    // Loading Status State
+    const [loadingMessage, setLoadingMessage] = useState('Generating process...');
+    const [loadingProgress, setLoadingProgress] = useState(0);
 
     // Data Store
     const [itemName, setItemName] = useState('');
@@ -384,19 +388,28 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         if (stages.length === 0) return;
 
         setIsLoading(true);
-        setCurrentStep('REVIEW'); 
-        setActiveReviewTab('OBJECTIVES'); // Reset to first tab
-
+        setLoadingMessage('Initializing upload...');
+        setLoadingProgress(0);
+        
+        // Don't switch step immediately to allow showing loading overlay or message
+        
         try {
+            // Updated to use the new API flow in apiService which polls status
             const data = await apiService.generateTableFromBuilder({
                 productName: itemName,
-                startTrigger: 'Process Start',
-                endTrigger: 'Process End',
-                stages: stages.map(s => ({ name: s.name }))
+                stages: stages, // Pass the stages with File objects
+                onLog: (msg, progress) => {
+                    setLoadingMessage(msg);
+                    setLoadingProgress(progress);
+                }
             });
+            
             setBuilderData(data);
-        } catch (e) {
+            setCurrentStep('REVIEW'); 
+            setActiveReviewTab('OBJECTIVES'); 
+        } catch (e: any) {
             console.error("Failed", e);
+            addSystemMessage(`Error: ${e.message || "Process creation failed."}`);
             setCurrentStep('STAGES'); 
         } finally {
             setIsLoading(false);
@@ -574,7 +587,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                         <Target size={20} className="text-blue-600" />
                                         <p className="text-sm text-blue-900 font-medium">Define the core goals and success criteria for this process.</p>
                                     </div>
-                                    {builderData.objectives.map((obj) => (
+                                    {builderData.objectives.length > 0 ? builderData.objectives.map((obj) => (
                                         <div key={obj.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
                                             <div className="flex gap-4">
                                                 <div className="w-1/3">
@@ -610,7 +623,11 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                                 </div>
                                             </div>
                                         </div>
-                                    ))}
+                                    )) : (
+                                        <div className="text-center p-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl">
+                                            No objectives extracted yet.
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -678,7 +695,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                         <ShieldAlert size={20} className="text-rose-600" />
                                         <p className="text-sm text-rose-900 font-medium">Identify potential operational, financial, or regulatory risks.</p>
                                     </div>
-                                    {builderData.risks.map((risk) => (
+                                    {builderData.risks.length > 0 ? builderData.risks.map((risk) => (
                                         <div key={risk.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group">
                                             <div className="flex gap-4">
                                                 <div className="w-1/3">
@@ -714,7 +731,11 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                                 </div>
                                             </div>
                                         </div>
-                                    ))}
+                                    )) : (
+                                        <div className="text-center p-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl">
+                                            No risks extracted yet.
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </>
@@ -731,8 +752,30 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
     // --- MAIN CHAT / BUILDER VIEW ---
     return (
-        <div className="flex flex-col h-full bg-slate-50 font-sans">
+        <div className="flex flex-col h-full bg-slate-50 font-sans relative">
             
+            {/* Loading Overlay for Process Generation */}
+            {isLoading && (
+                <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in">
+                    <div className="relative">
+                        <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <Bot size={24} className="text-blue-600 animate-pulse" />
+                        </div>
+                    </div>
+                    <h3 className="mt-6 text-xl font-bold text-slate-800">{loadingMessage}</h3>
+                    
+                    {/* Progress Bar */}
+                    <div className="w-64 h-2 bg-slate-100 rounded-full mt-4 overflow-hidden">
+                        <div 
+                            className="h-full bg-blue-600 transition-all duration-500 ease-out" 
+                            style={{ width: `${loadingProgress}%` }}
+                        ></div>
+                    </div>
+                    <p className="text-sm font-mono text-slate-500 mt-2">{loadingProgress}% Complete</p>
+                </div>
+            )}
+
             {/* Header */}
             <div className="px-6 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-20 flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -788,7 +831,8 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                             <div className="flex justify-end pt-4 border-t border-slate-200 mt-8">
                                 <button 
                                     onClick={handleFinishStages}
-                                    className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full font-bold shadow-xl shadow-blue-200 hover:shadow-2xl hover:scale-105 transition-all flex items-center gap-2"
+                                    disabled={isLoading}
+                                    className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full font-bold shadow-xl shadow-blue-200 hover:shadow-2xl hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-70 disabled:scale-100"
                                 >
                                     {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
                                     Generate Process Table

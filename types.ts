@@ -258,6 +258,83 @@ export interface BuilderResponse {
     risks: KeyValueItem[];
 }
 
+// --- Create Process API Types ---
+export interface CreateProcessRequest {
+  productName: string;
+  stages: {
+    id: number;
+    stageName: string;
+    documents: string[]; // Blob URLs
+  }[];
+  jwt_token?: string;
+}
+
+export interface CreateProcessResponse {
+  message: string;
+  processId: string;
+  productName: string;
+  status: string;
+  stages: any;
+  stats: {
+    stagesCount: number;
+    totalDocuments: number;
+  };
+}
+
+export interface ProcessLog {
+  timestamp: string;
+  step: string;
+  message: string;
+  progress: number;
+}
+
+export interface ProcessStepResult {
+  stepId: string;
+  stepName: string;
+  description: string;
+  actor: string;
+  stepType: string;
+  controls?: { controlId: string, name: string, type: string }[];
+  policies?: string[];
+  risksMitigated?: string[];
+  systemInUse?: string;
+  relatedDocuments?: string;
+  sourceDocument?: string;
+  processingTime?: string;
+}
+
+export interface ProcessStageResult {
+  stageId: string;
+  stageName: string;
+  description: string;
+  steps: ProcessStepResult[];
+  documentsSummary?: any[];
+}
+
+export interface ProcessResultData {
+  processId: string;
+  productName: string;
+  generatedAt: string;
+  stages: ProcessStageResult[];
+  stats: any;
+  excelDownloadUrl?: string;
+  jsonUrl?: string;
+}
+
+export interface ProcessStatusResponse {
+  _id: string;
+  product_name: string;
+  status: 'processing' | 'completed' | 'failed';
+  progress: number;
+  current_step: string;
+  stages_count?: number;
+  result_data?: ProcessResultData;
+  error_message?: string | null;
+  logs?: ProcessLog[];
+  created_at?: string;
+  last_updated?: string;
+}
+
 // Layout types
 export type LayoutType = 'SWIMLANE' | 'TREE' | 'HORIZONTAL';
 
