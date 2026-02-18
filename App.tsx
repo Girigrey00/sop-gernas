@@ -84,16 +84,33 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
                 <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-2xl shadow-black/50 relative overflow-hidden">
                     
                     <div className="flex flex-col items-center gap-4 mb-10 relative z-10">
-                        <div className="w-24 h-24 bg-gradient-to-br from-fab-navy via-fab-royal to-fab-blue rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-black/40 mb-2 ring-1 ring-white/10 transform hover:scale-105 transition-all duration-500 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 blur-xl rounded-full transform translate-x-4 -translate-y-4"></div>
-                            <div className="absolute bottom-0 left-0 w-12 h-12 bg-fab-sky/20 blur-lg rounded-full transform -translate-x-2 translate-y-2"></div>
-                            
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-14 h-14 drop-shadow-md relative z-10">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10H12v3h7.6C18.9 17.5 15.8 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8c2.04 0 3.89.78 5.31 2.05l2.25-2.25C17.2 1.9 14.76 0 12 0z" />
-                            </svg>
+                        {/* New G Logo for Login */}
+                        <div className="w-24 h-24 flex items-center justify-center mb-2 group">
+                            <div className="relative w-full h-full">
+                                <div className="absolute inset-0 bg-fab-sky/20 blur-xl rounded-full transform scale-75 group-hover:scale-100 transition-transform duration-700"></div>
+                                <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl animate-[spin_10s_linear_infinite] group-hover:animate-none transition-all">
+                                    <defs>
+                                        <linearGradient id="login-g-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="#FFFFFF" />
+                                            <stop offset="100%" stopColor="#A6E1FA" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M 50 10 A 40 40 0 0 1 90 50" fill="none" stroke="url(#login-g-gradient)" strokeWidth="4" strokeLinecap="round" className="opacity-60" />
+                                    <path 
+                                        d="M 60 45 L 50 45 L 50 55 L 75 55 A 25 25 0 1 1 50 25" 
+                                        fill="none" 
+                                        stroke="white" 
+                                        strokeWidth="8" 
+                                        strokeLinecap="round"
+                                        className="drop-shadow-[0_0_10px_rgba(166,225,250,0.5)]"
+                                    />
+                                    <circle cx="50" cy="50" r="6" fill="#0A2472" className="drop-shadow-md" />
+                                </svg>
+                            </div>
                         </div>
                         <div className="text-center">
-                            <h1 className="text-3xl font-bold text-white tracking-tight">GERNAS</h1>
+                            <h1 className="text-3xl font-black text-white tracking-tight">GERNAS</h1>
+                            <p className="text-xs text-fab-sky/80 font-bold tracking-[0.3em] uppercase mt-1">IOP System</p>
                         </div>
                     </div>
 
