@@ -384,16 +384,16 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                         <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-100 rounded-xl">
                             <List size={20} className="text-blue-600 mt-1 shrink-0" />
                             <div className="space-y-2 text-sm text-slate-700">
-                                <h4 className="font-bold text-blue-900">Create New Process</h4>
+                                <h4 className="font-bold text-blue-900">Create a new Procedure</h4>
                                 <ul className="list-disc pl-4 space-y-1 marker:text-blue-400">
-                                    <li><strong>Input Name</strong>: Provide a unique name for the process.</li>
+                                    <li><strong>Procedure Name</strong>: What is the name of the Service (refer to the Enterprise Service Architecture)</li>
                                     <li><strong>Define Stages</strong>: List the L2 process stages one by one.</li>
-                                    <li><strong>Upload Evidence</strong>: <span className="text-rose-600 font-bold">Mandatory</span> document upload for each stage.</li>
-                                    <li><strong>Generate</strong>: Review the structured table and generate the diagram.</li>
+                                    <li><strong>Supporting Documents</strong>: Which of the associated documents are relevant at each state. This does not have to be a 1:1 relationship (e.g. an existing SOP might cover 2-3 of the sub-processes, a checklist may only be relevant in one of the sub-processes etc)</li>
+                                    <li><strong>Generate</strong>: The IOP builder will generate a procedures table that includes the detailed process steps using what you have provided</li>
                                 </ul>
                             </div>
                         </div>
-                        <p>Please enter the <strong className="text-blue-600">Process Name</strong> to begin.</p>
+                        <p>Please enter the <strong className="text-blue-600">Procedure Name</strong> to begin.</p>
                     </div>
                 )
             }]);
