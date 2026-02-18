@@ -48,9 +48,9 @@ const Sidebar = ({
   }, [currentView, productContext]); // Refresh when view changes or product context changes
 
   const navItems = [
-    { id: 'HOME', label: 'Procedure', icon: FileText },
+    { id: 'HOME', label: 'Procedure Discovery', icon: FileText },
     { id: 'PROCESS_LINEAGE', label: 'Policy Standards', icon: ShieldCheck },
-    { id: 'PROCESS_BUILDER', label: 'Process Builder', icon: FilePlus },
+    { id: 'PROCESS_BUILDER', label: 'Procedure Builder', icon: FilePlus },
     { id: 'PROCESS_ANALYSIS', label: 'Process Lineage', icon: GitMerge },
     { id: 'IMPACT_ASSESSMENT', label: 'Impact Assessment', icon: AlertOctagon, badge: 'Coming Soon' },
     // Only show Library/History if a product context is selected
@@ -66,17 +66,20 @@ const Sidebar = ({
       {/* Branding - Vertical Stack */}
       <div className={`p-6 flex flex-col items-center gap-3 border-b border-fab-royal/50 flex-shrink-0 transition-all duration-300`}>
         <div className="w-10 h-10 bg-gradient-to-br from-fab-navy via-fab-royal to-fab-blue rounded-xl flex items-center justify-center text-white shadow-lg shadow-black/20 relative group shrink-0 overflow-hidden ring-1 ring-white/10">
-           {/* Inner Shine */}
-           <div className="absolute top-0 right-0 w-6 h-6 bg-white/10 blur-md rounded-full transform translate-x-2 -translate-y-2"></div>
-           {/* SVG Logo */}
-           <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 relative z-10">
-               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10H12v3h7.6C18.9 17.5 15.8 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8c2.04 0 3.89.78 5.31 2.05l2.25-2.25C17.2 1.9 14.76 0 12 0z" />
+           {/* Animated Background Effect */}
+           <div className="absolute top-0 right-0 w-8 h-8 bg-fab-sky/20 blur-xl rounded-full mix-blend-overlay group-hover:scale-150 transition-transform duration-700 animate-pulse"></div>
+           
+           {/* New Logo SVG - Shield/Structure with Pulsing Core */}
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 relative z-10 text-white drop-shadow-md">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" className="fill-fab-royal/50 stroke-fab-sky" />
+                <path d="M8 11h8" className="stroke-white animate-[pulse_2s_ease-in-out_infinite]" />
+                <path d="M12 7v8" className="stroke-white" />
            </svg>
         </div>
         {!isCollapsed && (
             <div className="animate-in fade-in duration-300 text-center">
               <h1 className="text-white font-bold text-sm tracking-wide leading-none">GERNAS</h1>
-              <p className="text-[10px] text-fab-sky/60 font-medium tracking-wide mt-1">ISOP</p>
+              <p className="text-[10px] text-fab-sky/60 font-medium tracking-wide mt-1">IOP</p>
             </div>
         )}
       </div>
