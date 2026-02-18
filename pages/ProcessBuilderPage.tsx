@@ -8,7 +8,7 @@ import {
     Boxes, FileStack, ArrowRightCircle,
     Bot, Rocket, Send, Edit2, Trash2, Cpu, File, List,
     Target, ShieldAlert, LayoutList, Lock, Unlock, Users,
-    Download, Save
+    Download, Save, ArrowRight
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { apiService } from '../services/apiService';
@@ -162,7 +162,7 @@ const StageCard = ({ stage, index, onDelete }: { stage: StageData, index: number
     </div>
 );
 
-// --- Updated Stage Input Form with Mandatory Upload & Optional RACI ---
+// --- Redesigned Stage Input Form ---
 const StageInputForm = ({ onAdd }: { onAdd: (name: string, files: File[], raci?: string) => void }) => {
     const [name, setName] = useState('');
     const [raci, setRaci] = useState('');
@@ -189,81 +189,87 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, files: File[], raci?:
     };
 
     return (
-        <div className="flex items-start gap-4 mb-8 w-full animate-in fade-in">
+        <div className="flex items-start gap-4 mb-16 w-full animate-in fade-in">
             <div className="pt-3">
-                <div className="w-6 h-6 rounded-full border-2 border-slate-300 border-dashed flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full border-2 border-slate-300 border-dashed flex items-center justify-center bg-white">
                     <Plus size={12} className="text-slate-400" />
                 </div>
             </div>
             
             <div className="flex-1">
-                <div className="bg-white border border-slate-200 shadow-lg shadow-slate-100/50 rounded-2xl p-2 flex flex-col gap-2 transition-shadow focus-within:shadow-xl focus-within:border-blue-300">
-                    {/* Stage Name */}
-                    <div className="flex items-center px-2">
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Add a process stage name..."
-                            className="flex-1 py-3 px-2 bg-transparent outline-none text-sm text-slate-800 placeholder:text-slate-400 font-medium"
-                            autoFocus
-                        />
-                    </div>
-
-                    {/* RACI Input */}
-                    <div className="flex items-center px-2 border-t border-slate-100">
-                        <Users size={14} className="text-slate-400 mr-2" />
-                        <input
-                            type="text"
-                            value={raci}
-                            onChange={(e) => setRaci(e.target.value)}
-                            placeholder="RACI (Optional, e.g. R=Sales, A=Product)"
-                            className="flex-1 py-2 bg-transparent outline-none text-xs text-slate-600 placeholder:text-slate-300"
-                        />
-                    </div>
-                    
-                    {/* Files Display */}
-                    {files.length > 0 && (
-                        <div className="flex flex-wrap gap-2 px-2 pb-2 mt-1">
-                            {files.map((f, i) => (
-                                <div key={i} className="flex items-center gap-1.5 bg-blue-50 border border-blue-100 px-2 py-1 rounded-md text-[10px] text-blue-700 font-medium">
-                                    <span className="truncate max-w-[100px]">{f.name}</span>
-                                    <button onClick={() => removeFile(i)} className="text-blue-400 hover:text-blue-700"><X size={10} /></button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    
-                    <div className="flex items-center justify-between px-2 pb-1 pt-1">
-                        <div className="flex items-center gap-2">
-                            <button 
-                                onClick={() => fileRef.current?.click()}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 border ${
-                                    files.length === 0 
-                                    ? 'text-rose-500 bg-rose-50 border-rose-200 animate-pulse' 
-                                    : 'text-slate-500 hover:bg-slate-100 border-transparent hover:border-slate-200'
-                                }`}
-                            >
-                                <Paperclip size={14} />
-                                {files.length === 0 ? "Upload Required" : "Add More Docs"}
-                            </button>
-                            <input 
-                                type="file" 
-                                ref={fileRef} 
-                                onChange={handleFileChange} 
-                                className="hidden" 
-                                accept=".pdf,.docx,.txt,.xlsx" 
-                                multiple 
+                <div className="bg-white border border-slate-200 shadow-lg shadow-slate-100/50 rounded-2xl p-4 flex flex-col gap-4 transition-all focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300">
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Stage Name <span className="text-rose-500">*</span></label>
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="E.g., Customer Onboarding"
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm text-slate-800 placeholder:text-slate-400 font-medium focus:bg-white focus:border-blue-400 transition-colors"
+                                autoFocus
                             />
                         </div>
 
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">RACI <span className="text-slate-400 font-normal normal-case">(Optional)</span></label>
+                            <div className="relative">
+                                <Users size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    value={raci}
+                                    onChange={(e) => setRaci(e.target.value)}
+                                    placeholder="R=Sales, A=Product, C=Risk, I=Ops"
+                                    className="w-full pl-9 p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm text-slate-600 placeholder:text-slate-400 focus:bg-white focus:border-blue-400 transition-colors"
+                                />
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Documents <span className="text-rose-500">*</span></label>
+                            {files.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                    {files.map((f, i) => (
+                                        <div key={i} className="flex items-center gap-1.5 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg text-xs text-blue-700 font-medium">
+                                            <span className="truncate max-w-[150px]">{f.name}</span>
+                                            <button onClick={() => removeFile(i)} className="text-blue-400 hover:text-blue-700 p-0.5 rounded-md hover:bg-blue-100"><X size={12} /></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={() => fileRef.current?.click()}
+                                    className={`flex-1 py-2.5 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all ${
+                                        files.length === 0 
+                                        ? 'border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50' 
+                                        : 'border-blue-200 bg-blue-50/50 text-blue-600 hover:bg-blue-100'
+                                    }`}
+                                >
+                                    <Paperclip size={16} />
+                                    {files.length === 0 ? "Upload Documents (Required)" : "Attach More Files"}
+                                </button>
+                                <input 
+                                    type="file" 
+                                    ref={fileRef} 
+                                    onChange={handleFileChange} 
+                                    className="hidden" 
+                                    accept=".pdf,.docx,.txt,.xlsx" 
+                                    multiple 
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex justify-end">
                         <button 
                             onClick={handleSubmit}
                             disabled={!name.trim() || files.length === 0}
-                            className="bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:scale-95 transition-all shadow-md shadow-blue-200"
-                            title={files.length === 0 ? "Document upload is mandatory" : "Add Stage"}
+                            className="bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md flex items-center gap-2 text-sm font-bold"
                         >
-                            <ArrowUp size={18} strokeWidth={3} />
+                            <Plus size={16} />
+                            Add Stage to List
                         </button>
                     </div>
                 </div>
@@ -938,29 +944,34 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 
                 {/* Stages List */}
                 {currentStep === 'STAGES' && (
-                    <div className="w-full max-w-4xl mx-auto pl-12 animate-in fade-in">
+                    <div className="w-full max-w-4xl mx-auto pl-12 animate-in fade-in pb-20">
                         {stages.map((stage, idx) => (
                             <StageCard key={stage.id} stage={stage} index={idx} onDelete={() => handleDeleteStage(stage.id)} />
                         ))}
                         <StageInputForm onAdd={handleAddStage} />
-                        
-                        {stages.length > 0 && (
-                            <div className="flex justify-end pt-4 border-t border-slate-200 mt-8">
-                                <button 
-                                    onClick={handleFinishStages}
-                                    disabled={isLoading}
-                                    className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full font-bold shadow-xl shadow-blue-200 hover:shadow-2xl hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-70 disabled:scale-100"
-                                >
-                                    {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
-                                    Generate Procedure Table
-                                </button>
-                            </div>
-                        )}
                     </div>
                 )}
                 
                 <div ref={messagesEndRef} />
             </div>
+
+            {/* Sticky Action Footer for Generating Table */}
+            {currentStep === 'STAGES' && stages.length > 0 && (
+                <div className="absolute bottom-0 left-0 w-full p-6 bg-white/90 backdrop-blur-md border-t border-slate-200 z-30 flex justify-end items-center gap-4 animate-in slide-in-from-bottom-2">
+                    <div className="text-sm font-medium text-slate-500 mr-auto pl-4">
+                        {stages.length} Stage{stages.length !== 1 ? 's' : ''} added so far.
+                    </div>
+                    <button 
+                        onClick={handleFinishStages}
+                        disabled={isLoading}
+                        className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-70 disabled:scale-100"
+                    >
+                        {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+                        Generate Procedure Table
+                        <ArrowRight size={18} />
+                    </button>
+                </div>
+            )}
 
             {/* Floating Input Bar (Only show if NOT in stages mode) */}
             {currentStep !== 'STAGES' && (
