@@ -251,6 +251,11 @@ export interface ProcessDefinitionRow {
     actor: string;
     processingTime: string;
     risks: string;
+    // Expanded fields
+    controls: string;
+    policies: string;
+    relatedDocuments: string;
+    sourceDocument: string;
 }
 
 // --- Builder Response Types ---

@@ -7,7 +7,8 @@ import {
     Workflow, Layers, Network, 
     Boxes, FileStack, ArrowRightCircle,
     Bot, Rocket, Send, Edit2, Trash2, Cpu, File, List,
-    Target, ShieldAlert, LayoutList, Lock, Unlock, Users
+    Target, ShieldAlert, LayoutList, Lock, Unlock, Users,
+    Download, Save
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { apiService } from '../services/apiService';
@@ -446,10 +447,10 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         });
     };
 
-    const handleFinalGenerate = async () => {
+    const handleSaveChanges = async () => {
         if (!builderData) return;
         setIsLoading(true);
-        setLoadingMessage('Updating Process Flow...');
+        setLoadingMessage('Saving changes...');
         
         try {
             const baseSop: SopResponse = {
@@ -462,14 +463,46 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 metadata: { product_name: itemName }
             };
 
-            // Call the updated API service which handles the PUT request
+            await apiService.updateProcessFlowFromTable(
+                itemName, 
+                builderData.definition, 
+                baseSop, 
+                builderData.objectives, 
+                builderData.risks,
+                builderData.processId 
+            );
+            addSystemMessage("**Success:** Changes saved to process definition.");
+        } catch (e) {
+            console.error(e);
+            addSystemMessage(`Save Error: ${e}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleFinalGenerate = async () => {
+        if (!builderData) return;
+        setIsLoading(true);
+        setLoadingMessage('Generating Process Flow...');
+        
+        try {
+            const baseSop: SopResponse = {
+                startNode: { stepId: 'START', stepName: 'Start', description: 'Start', actor: 'System', stepType: 'Start', nextStep: null },
+                endNode: { stepId: 'END', stepName: 'End', description: 'End', actor: 'System', stepType: 'End', nextStep: null },
+                processDefinition: { title: itemName, version: '1.0', classification: 'Internal', documentLink: '#' },
+                processObjectives: [],
+                inherentRisks: [],
+                processFlow: { stages: [] },
+                metadata: { product_name: itemName }
+            };
+
             const flowData = await apiService.updateProcessFlowFromTable(
                 itemName, 
                 builderData.definition, 
                 baseSop, 
                 builderData.objectives, 
                 builderData.risks,
-                builderData.processId // Pass the processId to enable PUT
+                builderData.processId 
             );
             
             onFlowGenerated(flowData);
@@ -482,7 +515,6 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     };
 
     // --- VIEW RENDERERS ---
-    // (Render logic mostly same as before, StageCard updated above)
 
     if (currentStep === 'WELCOME') {
         return (
@@ -541,6 +573,8 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     }
 
     if (currentStep === 'REVIEW') {
+        const excelUrl = builderData?.rawResultData?.excelDownloadUrl;
+
         return (
             <div className="flex flex-col h-full bg-slate-50 relative overflow-hidden font-sans">
                 {/* Header */}
@@ -559,6 +593,26 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                         >
                             Back
                         </button>
+                        
+                        {excelUrl && (
+                            <a 
+                                href={excelUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-5 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-xl font-bold text-sm transition-all flex items-center gap-2"
+                            >
+                                <Download size={16} /> Excel Export
+                            </a>
+                        )}
+
+                        <button 
+                            onClick={handleSaveChanges}
+                            disabled={isLoading}
+                            className="px-5 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl font-bold text-sm transition-all flex items-center gap-2 disabled:opacity-70"
+                        >
+                            <Save size={16} /> Save Changes
+                        </button>
+
                         <button 
                             onClick={handleFinalGenerate}
                             disabled={isLoading}
@@ -655,19 +709,22 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
                             {/* DEFINITION TAB (Table) */}
                             {activeReviewTab === 'DEFINITION' && (
-                                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden ring-1 ring-black/5 animate-in fade-in slide-in-from-bottom-2">
-                                    <table className="w-full text-left border-collapse text-sm">
+                                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto ring-1 ring-black/5 animate-in fade-in slide-in-from-bottom-2">
+                                    <table className="w-full text-left border-collapse text-sm min-w-[1200px]">
                                         <thead className="bg-slate-50 border-b border-slate-200">
                                             <tr>
                                                 <th className="p-4 font-bold text-slate-500 w-20">ID</th>
                                                 <th className="p-4 font-bold text-slate-500 w-48">L2 Process</th>
-                                                <th className="p-4 font-bold text-slate-500 w-64">Step Name</th>
+                                                <th className="p-4 font-bold text-slate-500 w-48">Step Name</th>
                                                 <th className="p-4 font-bold text-slate-500 min-w-[200px]">Description</th>
-                                                <th className="p-4 font-bold text-slate-500 w-32">Actor</th>
+                                                <th className="p-4 font-bold text-slate-500 w-28">Actor</th>
                                                 <th className="p-4 font-bold text-slate-500 w-24">Type</th>
                                                 <th className="p-4 font-bold text-slate-500 w-24">System</th>
-                                                <th className="p-4 font-bold text-slate-500 w-24">Time</th>
+                                                <th className="p-4 font-bold text-slate-500 w-20">Time</th>
+                                                <th className="p-4 font-bold text-slate-500 w-48">Controls</th>
+                                                <th className="p-4 font-bold text-slate-500 w-48">Policies</th>
                                                 <th className="p-4 font-bold text-slate-500 w-48">Risks</th>
+                                                <th className="p-4 font-bold text-slate-500 w-48">Documents</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
@@ -687,7 +744,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                                         <textarea 
                                                             value={row.stepDescription} 
                                                             onChange={(e) => handleTableChange(row.id, 'stepDescription', e.target.value)}
-                                                            className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none resize-none h-10 focus:h-20 text-slate-600 leading-snug transition-all"
+                                                            className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none resize-none h-16 focus:h-24 text-slate-600 leading-snug transition-all"
                                                         />
                                                     </td>
                                                     <td className="p-4">
@@ -723,11 +780,35 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                                         />
                                                     </td>
                                                     <td className="p-4">
-                                                        <input 
-                                                            type="text" 
+                                                        <textarea 
+                                                            value={row.controls} 
+                                                            onChange={(e) => handleTableChange(row.id, 'controls', e.target.value)}
+                                                            className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none resize-none h-16 text-emerald-700 text-xs transition-all"
+                                                            placeholder="Comma separated"
+                                                        />
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <textarea 
+                                                            value={row.policies} 
+                                                            onChange={(e) => handleTableChange(row.id, 'policies', e.target.value)}
+                                                            className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none resize-none h-16 text-indigo-600 text-xs transition-all"
+                                                            placeholder="Comma separated"
+                                                        />
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <textarea 
                                                             value={row.risks} 
                                                             onChange={(e) => handleTableChange(row.id, 'risks', e.target.value)}
-                                                            className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none text-rose-500 font-medium transition-all"
+                                                            className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none resize-none h-16 text-rose-600 text-xs font-medium transition-all"
+                                                            placeholder="Comma separated"
+                                                        />
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <textarea 
+                                                            value={row.relatedDocuments} 
+                                                            onChange={(e) => handleTableChange(row.id, 'relatedDocuments', e.target.value)}
+                                                            className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none resize-none h-16 text-slate-500 text-xs transition-all"
+                                                            placeholder="Comma separated"
                                                         />
                                                     </td>
                                                 </tr>

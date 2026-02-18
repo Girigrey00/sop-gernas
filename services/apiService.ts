@@ -542,6 +542,10 @@ export const apiService: ApiServiceInterface = {
         const rows: ProcessDefinitionRow[] = [];
         sopData.processFlow.stages.forEach(stage => {
             stage.steps.forEach(step => {
+                const controlsStr = (step.controls || []).map(c => c.name).join(', ');
+                const policiesStr = (step.policies || []).join(', ');
+                // Need to map these from the SOP object structure if they exist there, currently not part of standard sopResponse but might be added
+                // Assuming simple mapping for now
                 rows.push({
                     id: step.stepId,
                     l2Process: stage.stageName,
@@ -551,7 +555,11 @@ export const apiService: ApiServiceInterface = {
                     system: step.systemInUse || 'System',
                     actor: step.actor,
                     processingTime: step.processingTime || '10', 
-                    risks: step.risksMitigated ? step.risksMitigated.join(', ') : ''
+                    risks: step.risksMitigated ? step.risksMitigated.join(', ') : '',
+                    controls: controlsStr,
+                    policies: policiesStr,
+                    relatedDocuments: '', // Not in standard SopResponse yet
+                    sourceDocument: '' // Not in standard SopResponse yet
                 });
             });
         });
@@ -586,6 +594,15 @@ export const apiService: ApiServiceInterface = {
                     // Try to preserve original step details (controls, policies)
                     const originalStep = originalStage?.steps.find(s => s.stepId === row.id);
                     
+                    // Parse comma-separated strings back to arrays
+                    const controlsList = row.controls ? row.controls.split(',').map((c, i) => ({
+                        controlId: originalStep?.controls?.[i]?.controlId || `CTRL-${Math.random().toString(36).substr(2, 5)}`,
+                        name: c.trim(),
+                        type: originalStep?.controls?.[i]?.type || 'M'
+                    })) : [];
+
+                    const policiesList = row.policies ? row.policies.split(',').map(p => p.trim()) : [];
+                    
                     return {
                         stepId: row.id,
                         stepName: row.stepName,
@@ -595,11 +612,10 @@ export const apiService: ApiServiceInterface = {
                         systemInUse: row.system,
                         processingTime: row.processingTime,
                         risksMitigated: row.risks ? row.risks.split(',').map(r => r.trim()) : [],
-                        // Preserve complex objects if they exist, otherwise empty
-                        controls: originalStep?.controls || [],
-                        policies: originalStep?.policies || [],
-                        relatedDocuments: (originalStep as any)?.relatedDocuments || "",
-                        sourceDocument: (originalStep as any)?.sourceDocument || ""
+                        controls: controlsList,
+                        policies: policiesList,
+                        relatedDocuments: row.relatedDocuments || "",
+                        sourceDocument: row.sourceDocument || ""
                     };
                 });
 
@@ -634,18 +650,6 @@ export const apiService: ApiServiceInterface = {
             const mapped = apiService.mapProcessResultToBuilder(updateResponse.result_data);
             
             // We need to convert BuilderResponse back to SopResponse structure for the Canvas
-            // This logic is duplicated in getProcessFlow map, let's simplify for now:
-            // Since mapProcessResultToBuilder returns flattened tables, we need the *raw* result_data to build full SOP.
-            // We will trust the backend returned `result_data` matches the GET structure.
-            
-            // Hack: Create a temporary SopResponse from the raw API result
-            // Ideally we should extract a common `mapApiToSop` utility.
-            // For now, we return a mock-ish updated SOP using the helper we already have logic for in getProcessFlow
-            
-            // To properly refresh the canvas, we often need the full computed structure (nodes, edges).
-            // The `updateProcess` endpoint returns `result_data` which has `stages`. 
-            // We need to transform this `result_data` into `SopResponse`.
-            
             const core = updateResponse.result_data;
             const stages = core.stages.map((s: any) => ({
                 stageId: s.stageId,
@@ -660,6 +664,7 @@ export const apiService: ApiServiceInterface = {
                     nextStep: null, // Backend should ideally provide nextStep or we infer it
                     risksMitigated: st.risksMitigated,
                     controls: st.controls,
+                    policies: st.policies,
                     systemInUse: st.systemInUse,
                     processingTime: st.processingTime
                 }))
@@ -839,6 +844,12 @@ export const apiService: ApiServiceInterface = {
 
         data.stages.forEach(stage => {
             stage.steps.forEach(step => {
+                // Flatten Arrays to Strings for Table Display
+                const controlsStr = (step.controls || []).map(c => c.name).join(', ');
+                const policiesStr = (step.policies || []).join(', ');
+                const relatedDocsStr = step.relatedDocuments || '';
+                const sourceDocStr = step.sourceDocument || '';
+
                 definitions.push({
                     id: step.stepId,
                     l2Process: stage.stageName,
@@ -848,7 +859,12 @@ export const apiService: ApiServiceInterface = {
                     system: step.systemInUse || 'None',
                     actor: step.actor,
                     processingTime: step.processingTime || '',
-                    risks: (step.risksMitigated || []).join(', ')
+                    risks: (step.risksMitigated || []).join(', '),
+                    // New Mapped Fields
+                    controls: controlsStr,
+                    policies: policiesStr,
+                    relatedDocuments: relatedDocsStr,
+                    sourceDocument: sourceDocStr
                 });
 
                 if (step.risksMitigated) {
