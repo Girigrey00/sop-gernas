@@ -281,7 +281,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     const [isLoading, setIsLoading] = useState(false);
     
     // Loading Status State
-    const [loadingMessage, setLoadingMessage] = useState('Generating process...');
+    const [loadingMessage, setLoadingMessage] = useState('Generating procedure...');
     const [loadingProgress, setLoadingProgress] = useState(0);
 
     // Data Store
@@ -451,7 +451,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
             setActiveReviewTab('OBJECTIVES'); 
         } catch (e: any) {
             console.error("Failed", e);
-            addSystemMessage(`Error: ${e.message || "Process creation failed."}`);
+            addSystemMessage(`Error: ${e.message || "Procedure creation failed."}`);
             setCurrentStep('STAGES'); 
         } finally {
             setIsLoading(false);
@@ -503,7 +503,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 builderData.risks,
                 builderData.processId 
             );
-            addSystemMessage("**Success:** Changes saved to process definition.");
+            addSystemMessage("**Success:** Changes saved to procedure definition.");
         } catch (e) {
             console.error(e);
             addSystemMessage(`Save Error: ${e}`);
@@ -515,7 +515,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     const handleFinalGenerate = async () => {
         if (!builderData) return;
         setIsLoading(true);
-        setLoadingMessage('Generating Process Flow...');
+        setLoadingMessage('Generating Procedure Flow...');
         
         try {
             const baseSop: SopResponse = {
@@ -710,7 +710,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                 <div className="max-w-4xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-2">
                                     <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4 flex items-center gap-3">
                                         <Target size={20} className="text-blue-600" />
-                                        <p className="text-sm text-blue-900 font-medium">Define the core goals and success criteria for this process.</p>
+                                        <p className="text-sm text-blue-900 font-medium">Define the core goals and success criteria for this procedure.</p>
                                     </div>
                                     {builderData.objectives.length > 0 ? builderData.objectives.map((obj) => (
                                         <div key={obj.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">

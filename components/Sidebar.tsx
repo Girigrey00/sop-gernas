@@ -63,26 +63,47 @@ const Sidebar = ({
   return (
     <div className="h-full w-full bg-fab-navy text-fab-sky/70 flex flex-col shadow-2xl border-r border-fab-royal/50 relative">
       
-      {/* Branding - Vertical Stack */}
-      <div className={`p-6 flex flex-col items-center gap-3 border-b border-fab-royal/50 flex-shrink-0 transition-all duration-300`}>
-        <div className="w-10 h-10 bg-gradient-to-br from-white to-fab-sky rounded-xl flex items-center justify-center shadow-lg shadow-fab-royal/40 relative group shrink-0 overflow-hidden ring-2 ring-fab-royal ring-offset-2 ring-offset-fab-navy transition-all duration-500 hover:scale-110">
-           {/* Animated Background Effect */}
-           <div className="absolute inset-0 bg-gradient-to-tr from-fab-royal/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      {/* Branding Section - Updated for Side-by-Side Larger Text */}
+      <div className={`p-5 flex ${isCollapsed ? 'justify-center' : 'items-center gap-3 pl-5'} border-b border-fab-royal/50 flex-shrink-0 transition-all duration-300 h-24`}>
+        
+        {/* Logo Icon */}
+        <div className="relative group cursor-pointer shrink-0">
+           {/* Glow Effect */}
+           <div className="absolute inset-0 bg-fab-sky/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
            
-           {/* New Animated "G" Logo */}
-           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 relative z-10 text-fab-navy drop-shadow-sm group-hover:text-fab-royal transition-colors duration-300">
-                {/* The 'G' Shape */}
-                <path d="M12 21a9 9 0 1 1 6.13-15.63" className="origin-center transition-all duration-700 ease-out group-hover:rotate-[360deg] group-hover:scale-90" />
-                {/* The Horizontal Bar of G */}
-                <path d="M12 12h9" className="origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 delay-100" />
-                {/* Center Dot */}
-                <circle cx="12" cy="12" r="2" className="fill-current stroke-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-200" />
-           </svg>
+           <div className="w-10 h-10 flex items-center justify-center relative z-10 transition-transform duration-300 group-hover:scale-110">
+              {/* New "G" SVG */}
+              <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] text-white fill-current">
+                  <defs>
+                      <linearGradient id="g-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#FFFFFF" />
+                          <stop offset="100%" stopColor="#A6E1FA" />
+                      </linearGradient>
+                  </defs>
+                  {/* Outer Ring */}
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="url(#g-gradient)" strokeWidth="8" strokeLinecap="round" strokeDasharray="200" strokeDashoffset="0" className="opacity-20" />
+                  {/* The G Shape */}
+                  <path 
+                    d="M 50 20 A 30 30 0 0 0 20 50 A 30 30 0 0 0 80 50 L 80 45 L 50 45 L 50 55 L 70 55 A 20 20 0 0 1 50 70 A 20 20 0 0 1 30 50 A 20 20 0 0 1 50 30 L 50 20 Z" 
+                    fill="url(#g-gradient)" 
+                    className="origin-center group-hover:rotate-[360deg] transition-transform duration-[1.5s] ease-in-out"
+                  />
+                  {/* Center Dot */}
+                  <circle cx="50" cy="50" r="4" fill="#0A2472" className="animate-pulse" />
+              </svg>
+           </div>
         </div>
+
+        {/* Text Branding (Visible only when expanded) */}
         {!isCollapsed && (
-            <div className="animate-in fade-in duration-300 text-center">
-              <h1 className="text-white font-bold text-sm tracking-wide leading-none">GERNAS</h1>
-              <p className="text-[10px] text-fab-sky/60 font-medium tracking-wide mt-1">IOP</p>
+            <div className="flex flex-col animate-in fade-in slide-in-from-left-2 duration-300">
+              <h1 className="text-white font-black text-2xl tracking-tighter leading-none drop-shadow-sm font-sans">
+                GERNAS
+              </h1>
+              <div className="flex items-center gap-1.5 mt-1">
+                  <span className="h-0.5 w-4 bg-fab-sky rounded-full opacity-50"></span>
+                  <p className="text-[10px] text-fab-sky font-bold tracking-[0.3em] uppercase leading-none">IOP</p>
+              </div>
             </div>
         )}
       </div>
