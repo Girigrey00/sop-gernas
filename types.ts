@@ -51,6 +51,9 @@ export interface ProcessStep {
   sla?: string;            // New field
   kpi?: string;            // New field
   systemInUse?: string;    // Added mapping
+  relatedDocuments?: string;
+  sourceDocument?: string;
+  [key: string]: any;      // Allow dynamic fields
 }
 
 export interface ProcessStage {
@@ -65,6 +68,7 @@ export interface ProcessStage {
   inputs?: string[];
   outputs?: string[];
   steps: ProcessStep[];
+  [key: string]: any;
 }
 
 export interface ProcessDefinition {
@@ -241,21 +245,16 @@ export interface FeedbackPayload {
 }
 
 // --- Process Table Interface ---
+// CHANGED: Made dynamic to support all keys from API response
 export interface ProcessDefinitionRow {
     id: string;
     l2Process: string;
     stepName: string;
-    stepDescription: string;
+    description: string; // Changed from stepDescription to match JSON
     stepType: string;
-    system: string;
     actor: string;
-    processingTime: string;
-    risks: string;
-    // Expanded fields
-    controls: string;
-    policies: string;
-    relatedDocuments: string;
-    sourceDocument: string;
+    // Allow any other key from the API response
+    [key: string]: any;
 }
 
 // --- Builder Response Types ---

@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
     ChevronLeft, Paperclip, Plus, X, 
     FileText, PlayCircle, Loader2, CheckCircle2,
@@ -294,6 +294,38 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    // Dynamic Columns State
+    const tableColumns = useMemo(() => {
+        if (!builderData || !builderData.definition || builderData.definition.length === 0) return [];
+        
+        // Get all unique keys from all rows
+        const allKeys = new Set<string>();
+        builderData.definition.forEach(row => {
+            Object.keys(row).forEach(key => allKeys.add(key));
+        });
+
+        // Filter out internal/system keys
+        const ignoredKeys = new Set(['originalStageId', 'stageId', 'steps', 'documentsSummary']);
+        const availableKeys = Array.from(allKeys).filter(k => !ignoredKeys.has(k));
+
+        // Define preferred order
+        const order = ['id', 'l2Process', 'stepName', 'description', 'actor', 'stepType', 'controls', 'risksMitigated', 'policies', 'systemInUse', 'processingTime'];
+        
+        return availableKeys.sort((a, b) => {
+            const idxA = order.indexOf(a);
+            const idxB = order.indexOf(b);
+            
+            // If both are in the order list, sort by index
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            // If only A is in list, A comes first
+            if (idxA !== -1) return -1;
+            // If only B is in list, B comes first
+            if (idxB !== -1) return 1;
+            // Otherwise sort alphabetically
+            return a.localeCompare(b);
+        });
+    }, [builderData?.definition]);
+
     // Scroll to bottom
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -437,7 +469,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         });
     };
 
-    const handleTableChange = (id: string, field: keyof ProcessDefinitionRow, value: string) => {
+    const handleTableChange = (id: string, field: string, value: string) => {
         setBuilderData(prev => {
             if (!prev) return null;
             return {
@@ -512,6 +544,23 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         } finally {
             setIsLoading(false);
         }
+    };
+
+    // Helper: Determine if column should use textarea
+    const isLongTextColumn = (key: string) => {
+        const lower = key.toLowerCase();
+        return lower.includes('description') || 
+               lower.includes('control') || 
+               lower.includes('risk') || 
+               lower.includes('polic') ||
+               lower.includes('doc');
+    };
+
+    // Helper: Label formatter
+    const formatLabel = (key: string) => {
+        // Handle camelCase to Title Case
+        const spaced = key.replace(/([A-Z])/g, ' $1').trim();
+        return spaced.charAt(0).toUpperCase() + spaced.slice(1);
     };
 
     // --- VIEW RENDERERS ---
@@ -707,110 +756,48 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                 </div>
                             )}
 
-                            {/* DEFINITION TAB (Table) */}
+                            {/* DEFINITION TAB (Dynamic Table) */}
                             {activeReviewTab === 'DEFINITION' && (
                                 <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto ring-1 ring-black/5 animate-in fade-in slide-in-from-bottom-2">
                                     <table className="w-full text-left border-collapse text-sm min-w-[1200px]">
                                         <thead className="bg-slate-50 border-b border-slate-200">
                                             <tr>
-                                                <th className="p-4 font-bold text-slate-500 w-20">ID</th>
-                                                <th className="p-4 font-bold text-slate-500 w-48">L2 Process</th>
-                                                <th className="p-4 font-bold text-slate-500 w-48">Step Name</th>
-                                                <th className="p-4 font-bold text-slate-500 min-w-[200px]">Description</th>
-                                                <th className="p-4 font-bold text-slate-500 w-28">Actor</th>
-                                                <th className="p-4 font-bold text-slate-500 w-24">Type</th>
-                                                <th className="p-4 font-bold text-slate-500 w-24">System</th>
-                                                <th className="p-4 font-bold text-slate-500 w-20">Time</th>
-                                                <th className="p-4 font-bold text-slate-500 w-48">Controls</th>
-                                                <th className="p-4 font-bold text-slate-500 w-48">Policies</th>
-                                                <th className="p-4 font-bold text-slate-500 w-48">Risks</th>
-                                                <th className="p-4 font-bold text-slate-500 w-48">Documents</th>
+                                                {tableColumns.map(key => (
+                                                    <th key={key} className="p-4 font-bold text-slate-500 min-w-[120px] whitespace-nowrap uppercase text-xs tracking-wide">
+                                                        {formatLabel(key)}
+                                                    </th>
+                                                ))}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
                                             {builderData.definition.map((row) => (
                                                 <tr key={row.id} className="hover:bg-blue-50/30 transition-colors group">
-                                                    <td className="p-4 font-mono text-xs font-medium text-slate-400">{row.id}</td>
-                                                    <td className="p-4 text-slate-600 font-medium">{row.l2Process}</td>
-                                                    <td className="p-4">
-                                                        <input 
-                                                            type="text" 
-                                                            value={row.stepName} 
-                                                            onChange={(e) => handleTableChange(row.id, 'stepName', e.target.value)}
-                                                            className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none font-bold text-slate-800 transition-all"
-                                                        />
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <textarea 
-                                                            value={row.stepDescription} 
-                                                            onChange={(e) => handleTableChange(row.id, 'stepDescription', e.target.value)}
-                                                            className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none resize-none h-16 focus:h-24 text-slate-600 leading-snug transition-all"
-                                                        />
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <input 
-                                                            type="text" 
-                                                            value={row.actor} 
-                                                            onChange={(e) => handleTableChange(row.id, 'actor', e.target.value)}
-                                                            className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none text-slate-700 font-medium transition-all"
-                                                        />
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <input 
-                                                            type="text" 
-                                                            value={row.stepType} 
-                                                            onChange={(e) => handleTableChange(row.id, 'stepType', e.target.value)}
-                                                            className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none text-slate-500 font-medium transition-all"
-                                                        />
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <input 
-                                                            type="text" 
-                                                            value={row.system} 
-                                                            onChange={(e) => handleTableChange(row.id, 'system', e.target.value)}
-                                                            className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none text-slate-500 transition-all"
-                                                        />
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <input 
-                                                            type="text" 
-                                                            value={row.processingTime} 
-                                                            onChange={(e) => handleTableChange(row.id, 'processingTime', e.target.value)}
-                                                            className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none text-slate-500 transition-all"
-                                                        />
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <textarea 
-                                                            value={row.controls} 
-                                                            onChange={(e) => handleTableChange(row.id, 'controls', e.target.value)}
-                                                            className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none resize-none h-16 text-emerald-700 text-xs transition-all"
-                                                            placeholder="Comma separated"
-                                                        />
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <textarea 
-                                                            value={row.policies} 
-                                                            onChange={(e) => handleTableChange(row.id, 'policies', e.target.value)}
-                                                            className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none resize-none h-16 text-indigo-600 text-xs transition-all"
-                                                            placeholder="Comma separated"
-                                                        />
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <textarea 
-                                                            value={row.risks} 
-                                                            onChange={(e) => handleTableChange(row.id, 'risks', e.target.value)}
-                                                            className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none resize-none h-16 text-rose-600 text-xs font-medium transition-all"
-                                                            placeholder="Comma separated"
-                                                        />
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <textarea 
-                                                            value={row.relatedDocuments} 
-                                                            onChange={(e) => handleTableChange(row.id, 'relatedDocuments', e.target.value)}
-                                                            className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none resize-none h-16 text-slate-500 text-xs transition-all"
-                                                            placeholder="Comma separated"
-                                                        />
-                                                    </td>
+                                                    {tableColumns.map(key => {
+                                                        const isLong = isLongTextColumn(key);
+                                                        const val = row[key];
+                                                        return (
+                                                            <td key={key} className="p-4 align-top">
+                                                                {key === 'id' ? (
+                                                                    <span className="font-mono text-xs font-medium text-slate-400">{val}</span>
+                                                                ) : key === 'l2Process' ? (
+                                                                    <span className="text-slate-600 font-medium">{val}</span>
+                                                                ) : isLong ? (
+                                                                    <textarea 
+                                                                        value={val || ''} 
+                                                                        onChange={(e) => handleTableChange(row.id, key, e.target.value)}
+                                                                        className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none resize-none h-16 focus:h-24 text-slate-600 leading-snug transition-all text-xs"
+                                                                    />
+                                                                ) : (
+                                                                    <input 
+                                                                        type="text" 
+                                                                        value={val || ''} 
+                                                                        onChange={(e) => handleTableChange(row.id, key, e.target.value)}
+                                                                        className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all"
+                                                                    />
+                                                                )}
+                                                            </td>
+                                                        );
+                                                    })}
                                                 </tr>
                                             ))}
                                         </tbody>

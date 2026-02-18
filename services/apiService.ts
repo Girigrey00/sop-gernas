@@ -542,25 +542,37 @@ export const apiService: ApiServiceInterface = {
         const rows: ProcessDefinitionRow[] = [];
         sopData.processFlow.stages.forEach(stage => {
             stage.steps.forEach(step => {
-                const controlsStr = (step.controls || []).map(c => c.name).join(', ');
-                const policiesStr = (step.policies || []).join(', ');
-                // Need to map these from the SOP object structure if they exist there, currently not part of standard sopResponse but might be added
-                // Assuming simple mapping for now
-                rows.push({
+                const row: ProcessDefinitionRow = {
                     id: step.stepId,
                     l2Process: stage.stageName,
                     stepName: step.stepName,
-                    stepDescription: step.description,
+                    description: step.description,
                     stepType: step.stepType,
-                    system: step.systemInUse || 'System',
                     actor: step.actor,
-                    processingTime: step.processingTime || '10', 
-                    risks: step.risksMitigated ? step.risksMitigated.join(', ') : '',
-                    controls: controlsStr,
-                    policies: policiesStr,
-                    relatedDocuments: '', // Not in standard SopResponse yet
-                    sourceDocument: '' // Not in standard SopResponse yet
+                };
+                
+                // Copy all other fields dynamically
+                Object.keys(step).forEach(key => {
+                    if (!['stepId', 'stepName', 'description', 'stepType', 'actor', 'decisionBranches', 'nextStep'].includes(key)) {
+                        const val = (step as any)[key];
+                        // Flatten arrays to strings for table view
+                        if (Array.isArray(val)) {
+                            if (val.length > 0 && typeof val[0] === 'object' && val[0].name) {
+                                // Handle Controls: array of objects
+                                row[key] = val.map((v: any) => v.name).join(', ');
+                            } else {
+                                // Handle array of strings (Policies, Risks)
+                                row[key] = val.join(', ');
+                            }
+                        } else if (typeof val === 'object' && val !== null) {
+                             row[key] = JSON.stringify(val);
+                        } else {
+                             row[key] = val;
+                        }
+                    }
                 });
+                
+                rows.push(row);
             });
         });
         return rows;
@@ -583,7 +595,6 @@ export const apiService: ApiServiceInterface = {
             let sCounter = 1;
             
             // We iterate stage groups to build payload
-            // Ideally we should try to match with original stage IDs if possible
             const originalStages = originalSop?.processFlow?.stages || [];
 
             stageGroups.forEach((rows, stageName) => {
@@ -591,32 +602,38 @@ export const apiService: ApiServiceInterface = {
                 const stageId = originalStage?.stageId || `S${sCounter++}`;
                 
                 const stepsPayload = rows.map(row => {
-                    // Try to preserve original step details (controls, policies)
                     const originalStep = originalStage?.steps.find(s => s.stepId === row.id);
                     
-                    // Parse comma-separated strings back to arrays
-                    const controlsList = row.controls ? row.controls.split(',').map((c, i) => ({
-                        controlId: originalStep?.controls?.[i]?.controlId || `CTRL-${Math.random().toString(36).substr(2, 5)}`,
-                        name: c.trim(),
-                        type: originalStep?.controls?.[i]?.type || 'M'
-                    })) : [];
-
-                    const policiesList = row.policies ? row.policies.split(',').map(p => p.trim()) : [];
-                    
-                    return {
+                    const newStep: any = {
                         stepId: row.id,
                         stepName: row.stepName,
-                        description: row.stepDescription,
+                        description: row.description,
                         actor: row.actor,
                         stepType: row.stepType,
-                        systemInUse: row.system,
-                        processingTime: row.processingTime,
-                        risksMitigated: row.risks ? row.risks.split(',').map(r => r.trim()) : [],
-                        controls: controlsList,
-                        policies: policiesList,
-                        relatedDocuments: row.relatedDocuments || "",
-                        sourceDocument: row.sourceDocument || ""
                     };
+
+                    // Reconstruct dynamic fields
+                    Object.keys(row).forEach(key => {
+                        if (['id', 'l2Process', 'stepName', 'description', 'actor', 'stepType'].includes(key)) return;
+                        
+                        let val = row[key];
+                        
+                        // Parse known array fields
+                        if (key === 'controls') {
+                            newStep[key] = val ? val.split(',').map((c: string, i: number) => ({
+                                controlId: originalStep?.controls?.[i]?.controlId || `CTRL-${Math.random().toString(36).substr(2, 5)}`,
+                                name: c.trim(),
+                                type: originalStep?.controls?.[i]?.type || 'M'
+                            })) : [];
+                        } else if (key === 'policies' || key === 'risksMitigated' || key === 'risks') {
+                            newStep[key] = val ? val.split(',').map((s: string) => s.trim()) : [];
+                        } else {
+                            // Copy other fields as is (strings, numbers)
+                            newStep[key] = val;
+                        }
+                    });
+                    
+                    return newStep;
                 });
 
                 stagePayloads.push({
@@ -656,23 +673,19 @@ export const apiService: ApiServiceInterface = {
                 stageName: s.stageName,
                 description: s.description,
                 steps: s.steps.map((st: any) => ({
+                    ...st, // Copy all properties including dynamic ones
                     stepId: st.stepId,
                     stepName: st.stepName,
                     description: st.description,
                     actor: st.actor,
                     stepType: st.stepType,
                     nextStep: null, // Backend should ideally provide nextStep or we infer it
-                    risksMitigated: st.risksMitigated,
-                    controls: st.controls,
-                    policies: st.policies,
-                    systemInUse: st.systemInUse,
-                    processingTime: st.processingTime
                 }))
             }));
 
             // Auto-link next steps sequentially for visualization
             stages.forEach(stage => {
-                stage.steps.forEach((step, idx) => {
+                stage.steps.forEach((step: any, idx: number) => {
                     if (idx < stage.steps.length - 1) {
                         step.nextStep = stage.steps[idx + 1].stepId;
                     } else {
@@ -727,16 +740,19 @@ export const apiService: ApiServiceInterface = {
                 const step: any = {
                     stepId: row.id || `ST-${index + 1}`,
                     stepName: row.stepName,
-                    description: row.stepDescription,
+                    description: row.description,
                     actor: row.actor,
                     stepType: row.stepType,
-                    processingTime: row.processingTime,
-                    risksMitigated: row.risks ? row.risks.split(',').map(r => r.trim()) : [],
-                    systemInUse: row.system,
-                    controls: [],
-                    policies: [],
                     nextStep: null 
                 };
+                
+                // Copy extra fields back
+                Object.keys(row).forEach(key => {
+                    if (!['id', 'l2Process', 'stepName', 'description', 'actor', 'stepType'].includes(key)) {
+                        step[key] = row[key];
+                    }
+                });
+
                 stage.steps.push(step);
                 allSteps.push(step);
             });
@@ -844,28 +860,41 @@ export const apiService: ApiServiceInterface = {
 
         data.stages.forEach(stage => {
             stage.steps.forEach(step => {
-                // Flatten Arrays to Strings for Table Display
-                const controlsStr = (step.controls || []).map(c => c.name).join(', ');
-                const policiesStr = (step.policies || []).join(', ');
-                const relatedDocsStr = step.relatedDocuments || '';
-                const sourceDocStr = step.sourceDocument || '';
-
-                definitions.push({
+                // Base structure
+                const row: ProcessDefinitionRow = {
                     id: step.stepId,
                     l2Process: stage.stageName,
                     stepName: step.stepName,
-                    stepDescription: step.description,
+                    description: step.description,
                     stepType: step.stepType,
-                    system: step.systemInUse || 'None',
                     actor: step.actor,
-                    processingTime: step.processingTime || '',
-                    risks: (step.risksMitigated || []).join(', '),
-                    // New Mapped Fields
-                    controls: controlsStr,
-                    policies: policiesStr,
-                    relatedDocuments: relatedDocsStr,
-                    sourceDocument: sourceDocStr
+                };
+
+                // DYNAMICALLY MAP ALL OTHER PROPERTIES
+                // This ensures any new field from API automatically appears in the row object
+                Object.keys(step).forEach(key => {
+                    // Skip keys already mapped manually above
+                    if (['stepId', 'stepName', 'description', 'stepType', 'actor', 'decisionBranches'].includes(key)) return;
+                    
+                    const val = (step as any)[key];
+                    
+                    // Flatten Arrays to Strings for Table Display
+                    if (Array.isArray(val)) {
+                        if (val.length > 0 && typeof val[0] === 'object' && val[0].name) {
+                            // Special case for Controls array of objects
+                            row[key] = val.map((v: any) => v.name).join(', ');
+                        } else {
+                            // General array of strings
+                            row[key] = val.join(', ');
+                        }
+                    } else if (typeof val === 'object' && val !== null) {
+                        row[key] = JSON.stringify(val);
+                    } else {
+                        row[key] = val;
+                    }
                 });
+
+                definitions.push(row);
 
                 if (step.risksMitigated) {
                     step.risksMitigated.forEach(r => {
