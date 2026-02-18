@@ -65,15 +65,18 @@ const Sidebar = ({
       
       {/* Branding - Vertical Stack */}
       <div className={`p-6 flex flex-col items-center gap-3 border-b border-fab-royal/50 flex-shrink-0 transition-all duration-300`}>
-        <div className="w-10 h-10 bg-gradient-to-br from-fab-navy via-fab-royal to-fab-blue rounded-xl flex items-center justify-center text-white shadow-lg shadow-black/20 relative group shrink-0 overflow-hidden ring-1 ring-white/10">
+        <div className="w-10 h-10 bg-gradient-to-br from-white to-fab-sky rounded-xl flex items-center justify-center shadow-lg shadow-fab-royal/40 relative group shrink-0 overflow-hidden ring-2 ring-fab-royal ring-offset-2 ring-offset-fab-navy transition-all duration-500 hover:scale-110">
            {/* Animated Background Effect */}
-           <div className="absolute top-0 right-0 w-8 h-8 bg-fab-sky/20 blur-xl rounded-full mix-blend-overlay group-hover:scale-150 transition-transform duration-700 animate-pulse"></div>
+           <div className="absolute inset-0 bg-gradient-to-tr from-fab-royal/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
            
-           {/* New Logo SVG - Shield/Structure with Pulsing Core */}
-           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 relative z-10 text-white drop-shadow-md">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" className="fill-fab-royal/50 stroke-fab-sky" />
-                <path d="M8 11h8" className="stroke-white animate-[pulse_2s_ease-in-out_infinite]" />
-                <path d="M12 7v8" className="stroke-white" />
+           {/* New Animated "G" Logo */}
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 relative z-10 text-fab-navy drop-shadow-sm group-hover:text-fab-royal transition-colors duration-300">
+                {/* The 'G' Shape */}
+                <path d="M12 21a9 9 0 1 1 6.13-15.63" className="origin-center transition-all duration-700 ease-out group-hover:rotate-[360deg] group-hover:scale-90" />
+                {/* The Horizontal Bar of G */}
+                <path d="M12 12h9" className="origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 delay-100" />
+                {/* Center Dot */}
+                <circle cx="12" cy="12" r="2" className="fill-current stroke-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-200" />
            </svg>
         </div>
         {!isCollapsed && (

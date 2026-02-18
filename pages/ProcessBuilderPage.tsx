@@ -100,7 +100,7 @@ const MessageBubble = ({ role, content, isTyping }: {
                         </div>
                     </div>
                     <div className="flex-1 space-y-2">
-                        <div className="text-sm font-bold text-slate-800">Process Builder</div>
+                        <div className="text-sm font-bold text-slate-800">Procedure Builder</div>
                         <div className="text-base text-slate-600 leading-relaxed font-normal">
                             {isTyping ? (
                                 <div className="flex items-center gap-1 h-6">
@@ -590,7 +590,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
                     {/* Typography */}
                     <h1 className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-800 via-blue-800 to-indigo-900 mb-6 tracking-tight leading-tight drop-shadow-sm">
-                        Design Your <br className="hidden md:block"/> Process Workflow
+                        Design Your <br className="hidden md:block"/> Procedure Workflow
                     </h1>
                     
                     <p className="text-lg md:text-xl text-slate-500 mb-10 leading-relaxed max-w-2xl font-medium">
@@ -631,7 +631,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                     <div>
                         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                             <TableProperties size={20} className="text-blue-600" />
-                            Review Process Definition
+                            Review Procedure Definition
                         </h2>
                         <p className="text-sm text-slate-500 mt-1">Refine objectives, steps, and risks before generating the final diagram.</p>
                     </div>
@@ -677,9 +677,9 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 <div className="px-8 pt-4 pb-0 bg-white border-b border-slate-200 sticky top-[88px] z-10">
                     <div className="flex gap-6">
                         {[
-                            { id: 'OBJECTIVES', label: 'Process Objective', icon: Target },
-                            { id: 'DEFINITION', label: 'Process Definition', icon: LayoutList },
-                            { id: 'RISKS', label: 'Process Risks', icon: ShieldAlert }
+                            { id: 'OBJECTIVES', label: 'Procedure Objective', icon: Target },
+                            { id: 'DEFINITION', label: 'Procedure Definition', icon: LayoutList },
+                            { id: 'RISKS', label: 'Procedure Risks', icon: ShieldAlert }
                         ].map(tab => {
                             const Icon = tab.icon;
                             const isActive = activeReviewTab === tab.id;
@@ -902,7 +902,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                     <div className="flex items-center gap-2">
                         <RobotAvatar compact />
                         <div>
-                            <h2 className="text-base font-bold text-slate-800">Process Builder</h2>
+                            <h2 className="text-base font-bold text-slate-800">Procedure Builder</h2>
                             {itemName && <p className="text-xs text-slate-500">Drafting: {itemName}</p>}
                         </div>
                     </div>
@@ -952,7 +952,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                     className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full font-bold shadow-xl shadow-blue-200 hover:shadow-2xl hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-70 disabled:scale-100"
                                 >
                                     {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
-                                    Generate Process Table
+                                    Generate Procedure Table
                                 </button>
                             </div>
                         )}
