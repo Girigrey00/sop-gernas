@@ -7,7 +7,9 @@ export enum StepType {
   System = 'System',
   Decision = 'Decision',
   Control = 'Control',
-  Manual = 'Manual'
+  Manual = 'Manual',
+  Activity = 'Activity',
+  Assessment = 'Assessment'
 }
 
 // Data structures matching the JSON provided
@@ -48,6 +50,7 @@ export interface ProcessStep {
   processingTime?: string;
   sla?: string;            // New field
   kpi?: string;            // New field
+  systemInUse?: string;    // Added mapping
 }
 
 export interface ProcessStage {
@@ -78,6 +81,12 @@ export interface Metric {
     target: string;
     unit: string;
     currentValue?: string | number; // Added for dashboard viz
+}
+
+export interface ProcessObjective {
+  id: string;
+  description: string;
+  type: string;
 }
 
 export interface SopResponse {
@@ -253,9 +262,11 @@ export interface KeyValueItem {
 }
 
 export interface BuilderResponse {
+    processId: string; // Link back to API ID
     objectives: KeyValueItem[];
     definition: ProcessDefinitionRow[];
     risks: KeyValueItem[];
+    rawResultData?: ProcessResultData; // Store source for PUT mapping
 }
 
 // --- Create Process API Types ---
@@ -265,8 +276,14 @@ export interface CreateProcessRequest {
     id: number;
     stageName: string;
     documents: string[]; // Blob URLs
+    raci?: string;       // Added field
   }[];
   jwt_token?: string;
+}
+
+export interface UpdateProcessRequest {
+    stages?: any[]; // Simplified structure for payload
+    processObjectives?: any[];
 }
 
 export interface CreateProcessResponse {
@@ -309,6 +326,7 @@ export interface ProcessStageResult {
   description: string;
   steps: ProcessStepResult[];
   documentsSummary?: any[];
+  originalStageId?: number | string;
 }
 
 export interface ProcessResultData {
@@ -316,6 +334,7 @@ export interface ProcessResultData {
   productName: string;
   generatedAt: string;
   stages: ProcessStageResult[];
+  processObjectives?: ProcessObjective[]; // Added field
   stats: any;
   excelDownloadUrl?: string;
   jsonUrl?: string;
@@ -333,6 +352,7 @@ export interface ProcessStatusResponse {
   logs?: ProcessLog[];
   created_at?: string;
   last_updated?: string;
+  completed_at?: string;
 }
 
 // Layout types

@@ -7,7 +7,7 @@ import {
     Workflow, Layers, Network, 
     Boxes, FileStack, ArrowRightCircle,
     Bot, Rocket, Send, Edit2, Trash2, Cpu, File, List,
-    Target, ShieldAlert, LayoutList, Lock, Unlock
+    Target, ShieldAlert, LayoutList, Lock, Unlock, Users
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { apiService } from '../services/apiService';
@@ -33,6 +33,7 @@ interface StageData {
     id: number;
     name: string;
     files: File[];
+    raci?: string;
 }
 
 // --- High-Fidelity Animated Robot (Image Based) ---
@@ -41,8 +42,6 @@ const RobotAvatar = ({ compact = false }: { compact?: boolean }) => {
 
     return (
         <div className={`relative ${compact ? 'w-12 h-12' : 'w-72 h-72'} flex items-center justify-center pointer-events-none`}>
-            
-            {/* Ambient Glows (Only in large mode) */}
             {!compact && (
                 <>
                     <motion.div 
@@ -57,32 +56,24 @@ const RobotAvatar = ({ compact = false }: { compact?: boolean }) => {
                     />
                 </>
             )}
-            
-            {/* The Robot Image with Floating Animation */}
             <motion.img
                 src={ROBOT_IMAGE_SRC}
                 alt="GERNAS AI Assistant"
                 className="w-full h-full object-contain relative z-10 drop-shadow-2xl"
-                
-                // Levitation Animation
                 animate={{ 
                     y: compact ? 0 : [0, -15, 0],
-                    scale: compact ? 1 : [1, 1.02, 1] // Subtle breathing effect
+                    scale: compact ? 1 : [1, 1.02, 1]
                 }}
                 transition={{ 
                     repeat: Infinity, 
                     duration: 4.5, 
                     ease: "easeInOut" 
                 }}
-                
-                // Fallback if image missing (renders a simple bot icon temporarily)
                 onError={(e) => {
                     e.currentTarget.style.display = 'none';
                     e.currentTarget.nextElementSibling?.classList.remove('hidden');
                 }}
             />
-
-            {/* Fallback SVG in case image is not found */}
             <div className="hidden absolute inset-0 flex items-center justify-center text-slate-300">
                 <Bot size={compact ? 24 : 100} />
             </div>
@@ -143,37 +134,45 @@ const StageCard = ({ stage, index, onDelete }: { stage: StageData, index: number
             <div className="w-0.5 h-full bg-slate-200 min-h-[20px] rounded-full group-last:hidden"></div>
         </div>
         
-        <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group-hover:border-blue-200 flex justify-between items-start">
-            <div className="space-y-1">
-                {/* Larger Name, No Summary Prefix */}
-                <h4 className="font-extrabold text-slate-800 text-lg mb-1">{stage.name}</h4>
-                <div className="text-xs text-slate-500 flex items-start gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                    <FileStack size={14} className="text-blue-500 mt-0.5 shrink-0" />
-                    <span className="leading-relaxed">
-                        This stage will use uploaded data to build process: <strong className="text-slate-700">{stage.files.length > 0 ? stage.files.map(f => f.name).join(', ') : 'No document attached'}</strong>
-                    </span>
+        <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group-hover:border-blue-200 flex flex-col gap-2">
+            <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                    <h4 className="font-extrabold text-slate-800 text-lg mb-1">{stage.name}</h4>
+                    <div className="text-xs text-slate-500 flex items-start gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        <FileStack size={14} className="text-blue-500 mt-0.5 shrink-0" />
+                        <span className="leading-relaxed">
+                            Documents: <strong className="text-slate-700">{stage.files.length > 0 ? stage.files.map(f => f.name).join(', ') : 'No document attached'}</strong>
+                        </span>
+                    </div>
                 </div>
+                {onDelete && (
+                    <button onClick={onDelete} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors opacity-0 group-hover:opacity-100">
+                        <Trash2 size={16} />
+                    </button>
+                )}
             </div>
-            {onDelete && (
-                <button onClick={onDelete} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors opacity-0 group-hover:opacity-100">
-                    <Trash2 size={16} />
-                </button>
+            {stage.raci && (
+                <div className="text-xs text-slate-500 flex items-start gap-2 px-1">
+                    <Users size={14} className="text-slate-400 mt-0.5 shrink-0" />
+                    <span className="leading-relaxed text-slate-600 italic">{stage.raci}</span>
+                </div>
             )}
         </div>
     </div>
 );
 
-// --- Updated Stage Input Form with Mandatory Upload ---
-const StageInputForm = ({ onAdd }: { onAdd: (name: string, files: File[]) => void }) => {
+// --- Updated Stage Input Form with Mandatory Upload & Optional RACI ---
+const StageInputForm = ({ onAdd }: { onAdd: (name: string, files: File[], raci?: string) => void }) => {
     const [name, setName] = useState('');
+    const [raci, setRaci] = useState('');
     const [files, setFiles] = useState<File[]>([]);
     const fileRef = useRef<HTMLInputElement>(null);
 
     const handleSubmit = () => {
-        // Enforce File Upload
         if (!name.trim() || files.length === 0) return;
-        onAdd(name, files);
+        onAdd(name, files, raci);
         setName('');
+        setRaci('');
         setFiles([]);
         if (fileRef.current) fileRef.current.value = '';
     };
@@ -198,21 +197,33 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, files: File[]) => voi
             
             <div className="flex-1">
                 <div className="bg-white border border-slate-200 shadow-lg shadow-slate-100/50 rounded-2xl p-2 flex flex-col gap-2 transition-shadow focus-within:shadow-xl focus-within:border-blue-300">
+                    {/* Stage Name */}
                     <div className="flex items-center px-2">
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                            placeholder="Add a process stage..."
+                            placeholder="Add a process stage name..."
                             className="flex-1 py-3 px-2 bg-transparent outline-none text-sm text-slate-800 placeholder:text-slate-400 font-medium"
                             autoFocus
+                        />
+                    </div>
+
+                    {/* RACI Input */}
+                    <div className="flex items-center px-2 border-t border-slate-100">
+                        <Users size={14} className="text-slate-400 mr-2" />
+                        <input
+                            type="text"
+                            value={raci}
+                            onChange={(e) => setRaci(e.target.value)}
+                            placeholder="RACI (Optional, e.g. R=Sales, A=Product)"
+                            className="flex-1 py-2 bg-transparent outline-none text-xs text-slate-600 placeholder:text-slate-300"
                         />
                     </div>
                     
                     {/* Files Display */}
                     {files.length > 0 && (
-                        <div className="flex flex-wrap gap-2 px-2 pb-2">
+                        <div className="flex flex-wrap gap-2 px-2 pb-2 mt-1">
                             {files.map((f, i) => (
                                 <div key={i} className="flex items-center gap-1.5 bg-blue-50 border border-blue-100 px-2 py-1 rounded-md text-[10px] text-blue-700 font-medium">
                                     <span className="truncate max-w-[100px]">{f.name}</span>
@@ -222,7 +233,7 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, files: File[]) => voi
                         </div>
                     )}
                     
-                    <div className="flex items-center justify-between px-2 pb-1">
+                    <div className="flex items-center justify-between px-2 pb-1 pt-1">
                         <div className="flex items-center gap-2">
                             <button 
                                 onClick={() => fileRef.current?.click()}
@@ -371,11 +382,12 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         } 
     };
 
-    const handleAddStage = (name: string, files: File[]) => {
+    const handleAddStage = (name: string, files: File[], raci?: string) => {
         const newStage: StageData = {
             id: Date.now(),
             name: name,
-            files: files
+            files: files,
+            raci: raci
         };
         setStages(prev => [...prev, newStage]);
     };
@@ -391,13 +403,10 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         setLoadingMessage('Initializing upload...');
         setLoadingProgress(0);
         
-        // Don't switch step immediately to allow showing loading overlay or message
-        
         try {
-            // Updated to use the new API flow in apiService which polls status
             const data = await apiService.generateTableFromBuilder({
                 productName: itemName,
-                stages: stages, // Pass the stages with File objects
+                stages: stages, 
                 onLog: (msg, progress) => {
                     setLoadingMessage(msg);
                     setLoadingProgress(progress);
@@ -440,27 +449,40 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     const handleFinalGenerate = async () => {
         if (!builderData) return;
         setIsLoading(true);
+        setLoadingMessage('Updating Process Flow...');
+        
         try {
             const baseSop: SopResponse = {
                 startNode: { stepId: 'START', stepName: 'Start', description: 'Start', actor: 'System', stepType: 'Start', nextStep: null },
                 endNode: { stepId: 'END', stepName: 'End', description: 'End', actor: 'System', stepType: 'End', nextStep: null },
                 processDefinition: { title: itemName, version: '1.0', classification: 'Internal', documentLink: '#' },
-                processObjectives: builderData.objectives.map(o => ({ description: `${o.key}: ${o.value}` })),
-                inherentRisks: builderData.risks.map(r => ({ riskId: r.id, riskType: r.key, description: r.value, category: 'Operational' })),
-                processFlow: { stages: stages.map((s, i) => ({ stageId: `S${i+1}`, stageName: s.name, description: s.name, steps: [] })) },
+                processObjectives: [],
+                inherentRisks: [],
+                processFlow: { stages: [] },
                 metadata: { product_name: itemName }
             };
 
-            const flowData = await apiService.updateProcessFlowFromTable(itemName, builderData.definition, baseSop);
+            // Call the updated API service which handles the PUT request
+            const flowData = await apiService.updateProcessFlowFromTable(
+                itemName, 
+                builderData.definition, 
+                baseSop, 
+                builderData.objectives, 
+                builderData.risks,
+                builderData.processId // Pass the processId to enable PUT
+            );
+            
             onFlowGenerated(flowData);
         } catch (e) {
             console.error(e);
+            addSystemMessage(`Flow Generation Error: ${e}`);
         } finally {
             setIsLoading(false);
         }
     };
 
     // --- VIEW RENDERERS ---
+    // (Render logic mostly same as before, StageCard updated above)
 
     if (currentStep === 'WELCOME') {
         return (

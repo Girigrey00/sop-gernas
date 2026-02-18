@@ -201,10 +201,33 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
         if (!sopData) return;
         setIsTableLoading(true);
         try {
+            // Get Objectives and Risks (Assuming no change in this modal yet)
+            // Ideally this modal should support editing those too, but for now we pass existing ones
+            // or pass undefined if we only want to update steps and rely on backend merge logic
+            
+            // Extract objectives from SOP to pass back if needed (or backend preserves them)
+            const currentObjectives = sopData.processObjectives?.map((o, i) => ({ 
+                id: o.id || `o${i}`, 
+                key: o.type || 'Type', 
+                value: o.description,
+                editable: true
+            }));
+
+            // Extract risks
+            const currentRisks = sopData.inherentRisks?.map((r, i) => ({
+                id: r.riskId,
+                key: r.riskType,
+                value: r.description,
+                editable: true
+            }));
+
             const newSop = await apiService.updateProcessFlowFromTable(
-                productContext?.product_name || 'demo',
+                productContext?.product_name || sopData.processDefinition.title,
                 processTable,
-                sopData
+                sopData,
+                currentObjectives,
+                currentRisks,
+                sopData.metadata?.processId // Pass Process ID for PUT logic
             );
             loadData(newSop);
             setIsEditModalOpen(false);
@@ -733,7 +756,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                         {/* Modal Footer */}
                         <div className="p-5 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
                             <p className="text-xs text-slate-500">
-                                Note: Updating the table will trigger a logic re-evaluation. Ensure all connected steps (Next Step logic) are consistent.
+                                Note: Updating the table will trigger a logic re-evaluation via the backend. Ensure all connected steps (Next Step logic) are consistent.
                             </p>
                             <div className="flex gap-3">
                                 <button 
