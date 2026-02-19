@@ -37,7 +37,9 @@ interface StageData {
     raci?: string;
 }
 
-// --- High-Fidelity Animated Robot (Image Based) ---
+// --- Helper Components ---
+
+// 1. High-Fidelity Animated Robot (Image Based)
 const RobotAvatar = ({ compact = false }: { compact?: boolean }) => {
     const ROBOT_IMAGE_SRC = "/gernas-robot.png"; 
 
@@ -82,7 +84,7 @@ const RobotAvatar = ({ compact = false }: { compact?: boolean }) => {
     );
 };
 
-// --- Google Style Message Bubble ---
+// 2. Google Style Message Bubble
 const MessageBubble = ({ role, content, isTyping }: { 
     role: 'system' | 'user', 
     content: React.ReactNode, 
@@ -122,6 +124,29 @@ const MessageBubble = ({ role, content, isTyping }: {
                 {content}
             </div>
         </div>
+    );
+};
+
+// 3. Auto-Resize Textarea for Table
+const AutoResizeTextarea = ({ value, onChange, className, placeholder }: any) => {
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+        }
+    }, [value]);
+
+    return (
+        <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            className={`${className} overflow-hidden`}
+            rows={1}
+        />
     );
 };
 
@@ -298,6 +323,10 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     const [activeReviewTab, setActiveReviewTab] = useState<ReviewTab>('OBJECTIVES');
     const [builderData, setBuilderData] = useState<BuilderResponse | null>(null);
 
+    // Column Resizing State
+    const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+    const resizingRef = useRef<{ key: string, startX: number, startWidth: number } | null>(null);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Dynamic Columns State
@@ -331,6 +360,64 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
             return a.localeCompare(b);
         });
     }, [builderData?.definition]);
+
+    // Initialize Column Widths
+    useEffect(() => {
+        if (tableColumns.length > 0) {
+             setColumnWidths(prev => {
+                 const next = { ...prev };
+                 let changed = false;
+                 tableColumns.forEach(key => {
+                     if (!next[key]) {
+                         const lower = key.toLowerCase();
+                         if (lower.includes('description') || lower.includes('policy') || lower.includes('risk') || lower.includes('control') || lower.includes('output') || lower.includes('input')) {
+                             next[key] = 300;
+                         } else if (lower.includes('id') || lower.includes('time') || lower.includes('type') || lower.includes('sla') || lower.includes('kpi')) {
+                             next[key] = 100;
+                         } else if (lower.includes('process') || lower.includes('name')) {
+                             next[key] = 220;
+                         } else {
+                             next[key] = 180;
+                         }
+                         changed = true;
+                     }
+                 });
+                 return changed ? next : prev;
+             });
+        }
+    }, [tableColumns]);
+
+    // Column Resize Logic
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!resizingRef.current) return;
+            const { key, startX, startWidth } = resizingRef.current;
+            const diff = e.clientX - startX;
+            const newWidth = Math.max(80, startWidth + diff);
+            setColumnWidths(prev => ({ ...prev, [key]: newWidth }));
+        };
+
+        const handleMouseUp = () => {
+            if (resizingRef.current) {
+                resizingRef.current = null;
+                document.body.style.cursor = 'default';
+            }
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, []);
+
+    const startResizing = (e: React.MouseEvent, key: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        resizingRef.current = { key, startX: e.clientX, startWidth: columnWidths[key] || 150 };
+        document.body.style.cursor = 'col-resize';
+    };
 
     // Scroll to bottom
     const scrollToBottom = () => {
@@ -552,16 +639,6 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         }
     };
 
-    // Helper: Determine if column should use textarea
-    const isLongTextColumn = (key: string) => {
-        const lower = key.toLowerCase();
-        return lower.includes('description') || 
-               lower.includes('control') || 
-               lower.includes('risk') || 
-               lower.includes('polic') ||
-               lower.includes('doc');
-    };
-
     // Helper: Label formatter
     const formatLabel = (key: string) => {
         // Handle camelCase to Title Case
@@ -762,15 +839,26 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                 </div>
                             )}
 
-                            {/* DEFINITION TAB (Dynamic Table) */}
+                            {/* DEFINITION TAB (Resizable Table) */}
                             {activeReviewTab === 'DEFINITION' && (
                                 <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto ring-1 ring-black/5 animate-in fade-in slide-in-from-bottom-2">
-                                    <table className="w-full text-left border-collapse text-sm min-w-[1200px]">
-                                        <thead className="bg-slate-50 border-b border-slate-200">
+                                    <table className="w-full text-left border-collapse text-sm" style={{ tableLayout: 'fixed' }}>
+                                        <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm">
                                             <tr>
                                                 {tableColumns.map(key => (
-                                                    <th key={key} className="p-4 font-bold text-slate-500 min-w-[120px] whitespace-nowrap uppercase text-xs tracking-wide">
-                                                        {formatLabel(key)}
+                                                    <th 
+                                                        key={key} 
+                                                        style={{ width: columnWidths[key], minWidth: columnWidths[key] }}
+                                                        className="p-3 font-bold text-slate-500 uppercase text-xs tracking-wide relative group select-none border-r border-slate-100 last:border-0"
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="truncate mr-2">{formatLabel(key)}</span>
+                                                        </div>
+                                                        {/* Resizer Handle */}
+                                                        <div 
+                                                            onMouseDown={(e) => startResizing(e, key)}
+                                                            className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 group-hover:bg-slate-300 transition-colors z-20"
+                                                        />
                                                     </th>
                                                 ))}
                                             </tr>
@@ -779,26 +867,18 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                             {builderData.definition.map((row) => (
                                                 <tr key={row.id} className="hover:bg-blue-50/30 transition-colors group">
                                                     {tableColumns.map(key => {
-                                                        const isLong = isLongTextColumn(key);
                                                         const val = row[key];
+                                                        const isId = key.toLowerCase() === 'id';
                                                         return (
-                                                            <td key={key} className="p-4 align-top">
-                                                                {key === 'id' ? (
-                                                                    <span className="font-mono text-xs font-medium text-slate-400">{val}</span>
-                                                                ) : key === 'l2Process' ? (
-                                                                    <span className="text-slate-600 font-medium">{val}</span>
-                                                                ) : isLong ? (
-                                                                    <textarea 
-                                                                        value={val || ''} 
-                                                                        onChange={(e) => handleTableChange(row.id, key, e.target.value)}
-                                                                        className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none resize-none h-16 focus:h-24 text-slate-600 leading-snug transition-all text-xs"
-                                                                    />
+                                                            <td key={key} className="p-3 align-top border-r border-slate-100 last:border-0">
+                                                                {isId ? (
+                                                                    <span className="font-mono text-xs font-medium text-slate-400 block mt-1">{val}</span>
                                                                 ) : (
-                                                                    <input 
-                                                                        type="text" 
-                                                                        value={val || ''} 
-                                                                        onChange={(e) => handleTableChange(row.id, key, e.target.value)}
-                                                                        className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all"
+                                                                    <AutoResizeTextarea
+                                                                        value={val || ''}
+                                                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleTableChange(row.id, key, e.target.value)}
+                                                                        className="w-full bg-transparent outline-none text-slate-700 text-xs resize-none transition-all placeholder:text-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-100 rounded p-1"
+                                                                        placeholder="..."
                                                                     />
                                                                 )}
                                                             </td>
