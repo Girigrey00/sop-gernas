@@ -4,7 +4,7 @@ import {
   Send, Loader2, X, BookOpen, Maximize2, Minimize2, 
   ChevronDown, ChevronUp, FileText, 
   ThumbsUp, ThumbsDown, Copy, Sparkles, Lightbulb, ChevronRight, ChevronLeft, Brain,
-  AlertOctagon, BarChart3, ArrowRightCircle, Map, 
+  AlertOctagon, BarChart3, ArrowRightCircle, 
   ShieldAlert, Info, AlertTriangle, Clock,  CheckCircle2, Circle, 
   ListTodo,  TrendingUp, User, LayoutDashboard,  PieChart,
   Paperclip, MapPin, Star, 

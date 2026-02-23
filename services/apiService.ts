@@ -192,6 +192,7 @@ export interface ApiServiceInterface {
     updateProcess(processId: string, payload: UpdateProcessRequest): Promise<ProcessStatusResponse>;
     getProcessStatus(processId: string): Promise<ProcessStatusResponse>;
     mapProcessResultToBuilder(data: ProcessResultData): BuilderResponse;
+    generateFlow(processId: string, jwtToken?: string): Promise<SopResponse>;
 }
 
 export const apiService: ApiServiceInterface = {
@@ -535,7 +536,7 @@ export const apiService: ApiServiceInterface = {
         } catch (e) { throw e; }
     },
 
-    getProcessTable: async (productName, sopData): Promise<ProcessDefinitionRow[]> => {
+    getProcessTable: async (_productName, sopData): Promise<ProcessDefinitionRow[]> => {
         await new Promise(resolve => setTimeout(resolve, 800));
         if (!sopData || !sopData.processFlow || !sopData.processFlow.stages) return [];
 
@@ -578,7 +579,7 @@ export const apiService: ApiServiceInterface = {
         return rows;
     },
 
-    updateProcessFlowFromTable: async (productName, tableData, originalSop, objectives, risks, processId): Promise<SopResponse> => {
+    updateProcessFlowFromTable: async (_productName, tableData, originalSop, objectives, _risks, processId): Promise<SopResponse> => {
         // If we have a processId, we use the PUT endpoint to perform a real update
         if (processId) {
             console.log("Updating Process via API...", processId);
@@ -664,7 +665,7 @@ export const apiService: ApiServiceInterface = {
             
             // Re-use getProcessFlow logic indirectly by mapping result_data to SopResponse manually here
             // (or ideally fetch getProcessFlow again, but let's use the response to avoid latency)
-            const mapped = apiService.mapProcessResultToBuilder(updateResponse.result_data);
+            // const mapped = apiService.mapProcessResultToBuilder(updateResponse.result_data);
             
             // We need to convert BuilderResponse back to SopResponse structure for the Canvas
             const core = updateResponse.result_data;
@@ -788,6 +789,18 @@ export const apiService: ApiServiceInterface = {
 
     getProcessStatus: async (processId: string): Promise<ProcessStatusResponse> => {
         return handleResponse(await fetch(`${API_BASE_URL}/createprocess/${processId}`));
+    },
+
+    generateFlow: async (processId: string, jwtToken?: string): Promise<SopResponse> => {
+        const body: any = {};
+        if (jwtToken) body.jwt_token = jwtToken;
+
+        const response = await fetch(`${API_BASE_URL}/createprocess/${processId}/generate-flow`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        return handleResponse(response);
     },
 
     // New Helper: Generate table using the Create Process Flow

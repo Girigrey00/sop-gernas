@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-    X, Shield, AlertOctagon, Activity, ArrowRight, 
-    CheckCircle2, Split, Target, BarChart3, Map,
+    X, Shield, AlertOctagon, ArrowRight, 
+    CheckCircle2, Split, Target,
     ChevronDown, ChevronUp, Book, ScrollText, Compass,
-    Download, FileText, User, Play, Layout, FileType,
-    Layers, ArrowRightCircle, ListChecks, FileInput, FileOutput, CheckCircle,
-    Clock, Users, Timer, AlertTriangle
+    Download, FileText, Play, FileType,
+    ListChecks, FileInput, FileOutput,
+    Clock, Users, Timer
 } from 'lucide-react';
 import { ProcessStep, SopResponse, ProcessStage } from '../types';
 import { getActorTheme } from '../utils/layoutUtils';

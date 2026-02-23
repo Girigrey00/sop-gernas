@@ -9,14 +9,13 @@ import ProcessBuilderPage from './pages/ProcessBuilderPage';
 import { View, SopResponse, Product, ChatSession } from './types';
 import { apiService } from './services/apiService';
 import { 
-    FileText, Clock, ChevronRight, Lock, User, ArrowRight, Search, ShieldAlert, 
+    FileText, Lock, User, ArrowRight, Search, ShieldAlert, 
     Briefcase, Menu, Plus, Loader2, CreditCard, Landmark, ShieldCheck, Wallet, 
     Banknote, Coins, FileSpreadsheet, Zap,
     PieChart, TrendingUp, Globe, Building2, Scale, FileSignature, Calculator, 
     Receipt, Gem, Key, Database, Smartphone, Award, Target, BarChart, Stamp, BadgeDollarSign, 
     Vault, ScrollText, Truck, ShoppingCart, Anchor, Gavel, FileCheck, Layers, Trash2,
-    X, CheckCircle, AlertTriangle, MessageSquareText, Calendar, Hash, MessageCircle, Filter, ArrowLeft,
-    AlertOctagon
+    X, CheckCircle, AlertTriangle, AlertOctagon
 } from 'lucide-react';
 
 // --- Icon Helper ---
@@ -389,7 +388,7 @@ const HomePage = ({
                             const isCompleted = item.flow_status === 'Completed';
                             const isProcessing = item.flow_status && item.flow_status !== 'Completed' && item.flow_status !== 'Failed';
                             const isFailed = item.flow_status === 'Failed';
-                            const isEmpty = !item.flow_status;
+                            // const isEmpty = !item.flow_status;
                             const DynamicIcon = getProductIcon(item.product_name);
 
                             const latestLog = item.flow_logs && item.flow_logs.length > 0 ? item.flow_logs[item.flow_logs.length - 1] : null;

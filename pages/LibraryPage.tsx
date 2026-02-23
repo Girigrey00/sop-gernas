@@ -15,7 +15,6 @@ interface LibraryPageProps {
     onCloseInitialUpload?: () => void;
     preselectedProduct?: Product | null;
     onBack?: () => void;
-    onViewFlow?: () => void;
     onNotification?: (msg: string, type: 'success' | 'error') => void;
 }
 
@@ -24,7 +23,6 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     onCloseInitialUpload,
     preselectedProduct,
     onBack,
-    onViewFlow,
     onNotification
 }) => {
     const [documents, setDocuments] = useState<LibraryDocument[]>([]);

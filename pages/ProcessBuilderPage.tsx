@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { apiService } from '../services/apiService';
-import { ProcessDefinitionRow, SopResponse, BuilderResponse, KeyValueItem } from '../types';
+import { SopResponse, BuilderResponse } from '../types';
 
 interface ProcessBuilderPageProps {
     onBack: () => void;
@@ -621,7 +621,8 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 metadata: { product_name: itemName }
             };
 
-            const flowData = await apiService.updateProcessFlowFromTable(
+            // 1. Save changes first
+            await apiService.updateProcessFlowFromTable(
                 itemName, 
                 builderData.definition, 
                 baseSop, 
@@ -629,11 +630,14 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 builderData.risks,
                 builderData.processId 
             );
+
+            // 2. Call Generate Flow API
+            const flowData = await apiService.generateFlow(builderData.processId);
             
             onFlowGenerated(flowData);
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            addSystemMessage(`Flow Generation Error: ${e}`);
+            addSystemMessage(`Flow Generation Error: ${e.message || e}`);
         } finally {
             setIsLoading(false);
         }

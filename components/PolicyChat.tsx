@@ -2,8 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
     Send, Loader2, Sparkles, ShieldCheck, 
-    ArrowRight, MessageSquare, Copy, ThumbsUp, ThumbsDown, Info,
-    AlertTriangle, FileText, List, Image as ImageIcon, Mic, ArrowLeft
+    AlertTriangle, FileText, List, ArrowLeft
 } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';

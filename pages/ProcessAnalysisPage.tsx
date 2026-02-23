@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactFlow, { 
     Background, 
     useNodesState, 
@@ -9,7 +9,7 @@ import ReactFlow, {
     Node,
     Edge
 } from 'reactflow';
-import { LayoutDashboard, ArrowLeft, Loader2, Info, Check, Settings2, Play, Grid } from 'lucide-react';
+import { LayoutDashboard, ArrowLeft, Loader2, Info, Settings2, Play, Grid } from 'lucide-react';
 import { SopResponse, Product } from '../types';
 import { apiService } from '../services/apiService';
 import { convertSopToAnalysisData, filterDummyData, FlowNodeType } from '../utils/analysisUtils';
@@ -24,7 +24,6 @@ const ProcessAnalysisContent: React.FC<ProcessAnalysisPageProps> = ({ product, o
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isConfigOpen, setIsConfigOpen] = useState(false);
-    const [sopData, setSopData] = useState<SopResponse | null>(null);
     const { fitView } = useReactFlow();
 
     // Custom Flow Config State - Added 'output' by default
@@ -54,7 +53,6 @@ const ProcessAnalysisContent: React.FC<ProcessAnalysisPageProps> = ({ product, o
         setIsLoading(true);
         try {
             const data = await apiService.getProcessFlow(product.product_name);
-            setSopData(data);
             const { nodes: newNodes, edges: newEdges } = convertSopToAnalysisData(data);
             setNodes(newNodes);
             setEdges(newEdges);

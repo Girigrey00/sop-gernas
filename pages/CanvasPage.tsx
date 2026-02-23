@@ -18,14 +18,12 @@ import {
     Layers,
     Maximize,
     Download,
-    ArrowLeft,
     Users,
     X,
     LayoutDashboard,
     Compass,
     Brain,
     FilePenLine,
-    Save,
     RotateCcw
 } from 'lucide-react';
 
@@ -214,7 +212,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
             }));
 
             // Extract risks
-            const currentRisks = sopData.inherentRisks?.map((r, i) => ({
+            const currentRisks = sopData.inherentRisks?.map((r) => ({
                 id: r.riskId,
                 key: r.riskType,
                 value: r.description,
