@@ -42,7 +42,7 @@ interface StageData {
 
 // 1. High-Fidelity Animated Robot (Image Based)
 const RobotAvatar = ({ compact = false }: { compact?: boolean }) => {
-    const ROBOT_IMAGE_SRC = "/gernas-robot.png";
+    const ROBOT_IMAGE_SRC = "folder/gernas-robot.png";
 
     return (
         <div className={`relative ${compact ? 'w-12 h-12' : 'w-72 h-72'} flex items-center justify-center pointer-events-none`}>
@@ -648,9 +648,22 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onNotif
             <div className="flex flex-col h-full w-full relative overflow-hidden font-sans items-center justify-center">
 
                 {/* Modern Dynamic Background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-blue-50/50 -z-20"></div>
-                <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-100/40 rounded-full blur-[100px] animate-pulse -z-10"></div>
-                <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-indigo-100/40 rounded-full blur-[80px] animate-pulse delay-1000 -z-10"></div>
+                <div className="absolute inset-0 z-0 bg-white">
+                    <video
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover"
+                    >
+                        <source src="/folder/bgvideo.mp4" type="video/mp4" />
+                    </video>
+                    {/* Semi-transparent white overlay */}
+                    <div className="absolute inset-0 bg-white/50"></div>
+                </div>
+
+                <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-100/40 rounded-full blur-[100px] animate-pulse z-0 pointer-events-none"></div>
+                <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-indigo-100/40 rounded-full blur-[80px] animate-pulse delay-1000 z-0 pointer-events-none"></div>
 
                 <button
                     onClick={onBack}
