@@ -1,10 +1,10 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { 
-    ChevronLeft, Paperclip, Plus, X, 
+import {
+    ChevronLeft, Paperclip, Plus, X,
     FileText, PlayCircle, Loader2, CheckCircle2,
     Sparkles, ArrowUp, TableProperties, Hammer, Zap,
-    Workflow, Layers, Network, 
+    Workflow, Layers, Network,
     Boxes, FileStack, ArrowRightCircle,
     Bot, Rocket, Send, Edit2, Trash2, Cpu, File, List,
     Target, ShieldAlert, LayoutList, Lock, Unlock, Users,
@@ -16,7 +16,8 @@ import { SopResponse, BuilderResponse } from '../types';
 
 interface ProcessBuilderPageProps {
     onBack: () => void;
-    onFlowGenerated: (data: SopResponse) => void;
+    onNotification?: (msg: string, type: 'success' | 'error') => void;
+    onStartPollingFlow?: (productName: string, initialMessage: string) => void;
 }
 
 // Simplified Flow: Welcome -> Name -> Stages -> Review
@@ -41,18 +42,18 @@ interface StageData {
 
 // 1. High-Fidelity Animated Robot (Image Based)
 const RobotAvatar = ({ compact = false }: { compact?: boolean }) => {
-    const ROBOT_IMAGE_SRC = "/gernas-robot.png"; 
+    const ROBOT_IMAGE_SRC = "/gernas-robot.png";
 
     return (
         <div className={`relative ${compact ? 'w-12 h-12' : 'w-72 h-72'} flex items-center justify-center pointer-events-none`}>
             {!compact && (
                 <>
-                    <motion.div 
+                    <motion.div
                         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-cyan-400/30 rounded-full blur-[60px]"
                         animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.3, 0.6, 0.3] }}
                         transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
                     />
-                    <motion.div 
+                    <motion.div
                         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100%] h-[100%] bg-blue-500/10 rounded-full blur-[80px]"
                         animate={{ scale: [1.1, 0.9, 1.1], opacity: [0.2, 0.4, 0.2] }}
                         transition={{ repeat: Infinity, duration: 6, ease: "easeInOut", delay: 1 }}
@@ -63,14 +64,14 @@ const RobotAvatar = ({ compact = false }: { compact?: boolean }) => {
                 src={ROBOT_IMAGE_SRC}
                 alt="GERNAS AI Assistant"
                 className="w-full h-full object-contain relative z-10 drop-shadow-2xl"
-                animate={{ 
+                animate={{
                     y: compact ? 0 : [0, -15, 0],
                     scale: compact ? 1 : [1, 1.02, 1]
                 }}
-                transition={{ 
-                    repeat: Infinity, 
-                    duration: 4.5, 
-                    ease: "easeInOut" 
+                transition={{
+                    repeat: Infinity,
+                    duration: 4.5,
+                    ease: "easeInOut"
                 }}
                 onError={(e) => {
                     e.currentTarget.style.display = 'none';
@@ -85,13 +86,13 @@ const RobotAvatar = ({ compact = false }: { compact?: boolean }) => {
 };
 
 // 2. Google Style Message Bubble
-const MessageBubble = ({ role, content, isTyping }: { 
-    role: 'system' | 'user', 
-    content: React.ReactNode, 
+const MessageBubble = ({ role, content, isTyping }: {
+    role: 'system' | 'user',
+    content: React.ReactNode,
     isTyping?: boolean
 }) => {
     const isSystem = role === 'system';
-    
+
     if (isSystem) {
         return (
             <div className="flex flex-col gap-2 w-full max-w-4xl mx-auto mb-6">
@@ -159,7 +160,7 @@ const StageCard = ({ stage, index, onDelete }: { stage: StageData, index: number
             </div>
             <div className="w-0.5 h-full bg-slate-200 min-h-[20px] rounded-full group-last:hidden"></div>
         </div>
-        
+
         <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group-hover:border-blue-200 flex flex-col gap-2">
             <div className="flex justify-between items-start">
                 <div className="space-y-1">
@@ -220,7 +221,7 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, files: File[], raci?:
                     <Plus size={12} className="text-slate-400" />
                 </div>
             </div>
-            
+
             <div className="flex-1">
                 <div className="bg-white border border-slate-200 shadow-lg shadow-slate-100/50 rounded-2xl p-4 flex flex-col gap-4 transition-all focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300">
                     <div className="space-y-3">
@@ -249,7 +250,7 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, files: File[], raci?:
                                 />
                             </div>
                         </div>
-                        
+
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Documents <span className="text-rose-500">*</span></label>
                             {files.length > 0 && (
@@ -262,33 +263,32 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, files: File[], raci?:
                                     ))}
                                 </div>
                             )}
-                            
+
                             <div className="flex gap-3">
-                                <button 
+                                <button
                                     onClick={() => fileRef.current?.click()}
-                                    className={`flex-1 py-2.5 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all ${
-                                        files.length === 0 
-                                        ? 'border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50' 
+                                    className={`flex-1 py-2.5 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all ${files.length === 0
+                                        ? 'border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50'
                                         : 'border-blue-200 bg-blue-50/50 text-blue-600 hover:bg-blue-100'
-                                    }`}
+                                        }`}
                                 >
                                     <Paperclip size={16} />
                                     {files.length === 0 ? "Upload Documents (Required)" : "Attach More Files"}
                                 </button>
-                                <input 
-                                    type="file" 
-                                    ref={fileRef} 
-                                    onChange={handleFileChange} 
-                                    className="hidden" 
-                                    accept=".pdf,.docx,.txt,.xlsx" 
-                                    multiple 
+                                <input
+                                    type="file"
+                                    ref={fileRef}
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                    accept=".pdf,.docx,.txt,.xlsx"
+                                    multiple
                                 />
                             </div>
                         </div>
                     </div>
 
                     <div className="pt-2 border-t border-slate-100 flex justify-end">
-                        <button 
+                        <button
                             onClick={handleSubmit}
                             disabled={!name.trim() || files.length === 0}
                             className="bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md flex items-center gap-2 text-sm font-bold"
@@ -303,14 +303,14 @@ const StageInputForm = ({ onAdd }: { onAdd: (name: string, files: File[], raci?:
     );
 };
 
-const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowGenerated }) => {
+const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onNotification, onStartPollingFlow }) => {
     // State
     const [currentStep, setCurrentStep] = useState<BuilderStep>('WELCOME');
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState('');
-    const [isTyping, setIsTyping] = useState(false); 
+    const [isTyping, setIsTyping] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    
+
     // Loading Status State
     const [loadingMessage, setLoadingMessage] = useState('Generating procedure...');
     const [loadingProgress, setLoadingProgress] = useState(0);
@@ -318,7 +318,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     // Data Store
     const [itemName, setItemName] = useState('');
     const [stages, setStages] = useState<StageData[]>([]);
-    
+
     // Review Tab State
     const [activeReviewTab, setActiveReviewTab] = useState<ReviewTab>('OBJECTIVES');
     const [builderData, setBuilderData] = useState<BuilderResponse | null>(null);
@@ -332,7 +332,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     // Dynamic Columns State
     const tableColumns = useMemo(() => {
         if (!builderData || !builderData.definition || builderData.definition.length === 0) return [];
-        
+
         // Get all unique keys from all rows
         const allKeys = new Set<string>();
         builderData.definition.forEach(row => {
@@ -345,11 +345,11 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
         // Define preferred order
         const order = ['id', 'l2Process', 'stepName', 'description', 'actor', 'stepType', 'controls', 'risksMitigated', 'policies', 'systemInUse', 'processingTime'];
-        
+
         return availableKeys.sort((a, b) => {
             const idxA = order.indexOf(a);
             const idxB = order.indexOf(b);
-            
+
             // If both are in the order list, sort by index
             if (idxA !== -1 && idxB !== -1) return idxA - idxB;
             // If only A is in list, A comes first
@@ -364,26 +364,26 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     // Initialize Column Widths
     useEffect(() => {
         if (tableColumns.length > 0) {
-             setColumnWidths(prev => {
-                 const next = { ...prev };
-                 let changed = false;
-                 tableColumns.forEach(key => {
-                     if (!next[key]) {
-                         const lower = key.toLowerCase();
-                         if (lower.includes('description') || lower.includes('policy') || lower.includes('risk') || lower.includes('control') || lower.includes('output') || lower.includes('input')) {
-                             next[key] = 300;
-                         } else if (lower.includes('id') || lower.includes('time') || lower.includes('type') || lower.includes('sla') || lower.includes('kpi')) {
-                             next[key] = 100;
-                         } else if (lower.includes('process') || lower.includes('name')) {
-                             next[key] = 220;
-                         } else {
-                             next[key] = 180;
-                         }
-                         changed = true;
-                     }
-                 });
-                 return changed ? next : prev;
-             });
+            setColumnWidths(prev => {
+                const next = { ...prev };
+                let changed = false;
+                tableColumns.forEach(key => {
+                    if (!next[key]) {
+                        const lower = key.toLowerCase();
+                        if (lower.includes('description') || lower.includes('policy') || lower.includes('risk') || lower.includes('control') || lower.includes('output') || lower.includes('input')) {
+                            next[key] = 300;
+                        } else if (lower.includes('id') || lower.includes('time') || lower.includes('type') || lower.includes('sla') || lower.includes('kpi')) {
+                            next[key] = 100;
+                        } else if (lower.includes('process') || lower.includes('name')) {
+                            next[key] = 220;
+                        } else {
+                            next[key] = 180;
+                        }
+                        changed = true;
+                    }
+                });
+                return changed ? next : prev;
+            });
         }
     }, [tableColumns]);
 
@@ -453,9 +453,9 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         const parts = text.split(/(\*\*.*?\*\*)/g);
         return (
             <span>
-                {parts.map((part, i) => 
-                    part.startsWith('**') && part.endsWith('**') 
-                        ? <strong key={i} className="font-bold text-blue-600">{part.slice(2, -2)}</strong> 
+                {parts.map((part, i) =>
+                    part.startsWith('**') && part.endsWith('**')
+                        ? <strong key={i} className="font-bold text-blue-600">{part.slice(2, -2)}</strong>
                         : <span key={i}>{part}</span>
                 )}
             </span>
@@ -467,7 +467,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     const handleStartBuilding = () => {
         setCurrentStep('NAME');
         setIsTyping(true);
-        
+
         setTimeout(() => {
             setMessages([{
                 id: 'init',
@@ -496,7 +496,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
     const handleSendMessage = async () => {
         if (!inputValue.trim() && currentStep !== 'STAGES') return;
-        
+
         const text = inputValue.trim();
         setInputValue('');
 
@@ -505,7 +505,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
             setItemName(text);
             setCurrentStep('STAGES');
             addSystemMessage(`Now, list the L2 process stages for **${text}**.\n\nYou must upload documents for each stage to generate specific logic.`);
-        } 
+        }
     };
 
     const handleAddStage = (name: string, files: File[], raci?: string) => {
@@ -528,24 +528,24 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         setIsLoading(true);
         setLoadingMessage('Initializing upload...');
         setLoadingProgress(0);
-        
+
         try {
             const data = await apiService.generateTableFromBuilder({
                 productName: itemName,
-                stages: stages, 
+                stages: stages,
                 onLog: (msg, progress) => {
                     setLoadingMessage(msg);
                     setLoadingProgress(progress);
                 }
             });
-            
+
             setBuilderData(data);
-            setCurrentStep('REVIEW'); 
-            setActiveReviewTab('OBJECTIVES'); 
+            setCurrentStep('REVIEW');
+            setActiveReviewTab('OBJECTIVES');
         } catch (e: any) {
             console.error("Failed", e);
             addSystemMessage(`Error: ${e.message || "Procedure creation failed."}`);
-            setCurrentStep('STAGES'); 
+            setCurrentStep('STAGES');
         } finally {
             setIsLoading(false);
         }
@@ -576,7 +576,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         if (!builderData) return;
         setIsLoading(true);
         setLoadingMessage('Saving changes...');
-        
+
         try {
             const baseSop: SopResponse = {
                 startNode: { stepId: 'START', stepName: 'Start', description: 'Start', actor: 'System', stepType: 'Start', nextStep: null },
@@ -588,18 +588,22 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                 metadata: { product_name: itemName }
             };
 
-            await apiService.updateProcessFlowFromTable(
-                itemName, 
-                builderData.definition, 
-                baseSop, 
-                builderData.objectives, 
+            const saveRes = await apiService.updateProcessFlowFromTable(
+                itemName,
+                builderData.definition,
+                baseSop,
+                builderData.objectives,
                 builderData.risks,
-                builderData.processId 
+                builderData.processId
             );
-            addSystemMessage("**Success:** Changes saved to procedure definition.");
+
+            const successMessage = (saveRes && (saveRes as any).message)
+                ? (saveRes as any).message
+                : "Changes saved to procedure definition.";
+            if (onNotification) onNotification(successMessage, 'success');
         } catch (e) {
             console.error(e);
-            addSystemMessage(`Save Error: ${e}`);
+            if (onNotification) onNotification("Failed to save changes", 'error');
         } finally {
             setIsLoading(false);
         }
@@ -609,32 +613,19 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
         if (!builderData) return;
         setIsLoading(true);
         setLoadingMessage('Generating Procedure Flow...');
-        
+
         try {
-            const baseSop: SopResponse = {
-                startNode: { stepId: 'START', stepName: 'Start', description: 'Start', actor: 'System', stepType: 'Start', nextStep: null },
-                endNode: { stepId: 'END', stepName: 'End', description: 'End', actor: 'System', stepType: 'End', nextStep: null },
-                processDefinition: { title: itemName, version: '1.0', classification: 'Internal', documentLink: '#' },
-                processObjectives: [],
-                inherentRisks: [],
-                processFlow: { stages: [] },
-                metadata: { product_name: itemName }
-            };
 
-            // 1. Save changes first
-            await apiService.updateProcessFlowFromTable(
-                itemName, 
-                builderData.definition, 
-                baseSop, 
-                builderData.objectives, 
-                builderData.risks,
-                builderData.processId 
-            );
 
-            // 2. Call Generate Flow API
-            const flowData = await apiService.generateFlow(builderData.processId);
-            
-            onFlowGenerated(flowData);
+            // 1. Call Generate Flow API (POST)
+            const genRes = await apiService.generateFlow(builderData.processId);
+
+            let currentMessage = (genRes && genRes.message) ? genRes.message : 'Flow generation started from process creation';
+
+            // 2. We don't poll here. We hand off to CanvasPage to do the polling
+            if (onStartPollingFlow) {
+                onStartPollingFlow(itemName, currentMessage);
+            }
         } catch (e: any) {
             console.error(e);
             addSystemMessage(`Flow Generation Error: ${e.message || e}`);
@@ -655,21 +646,21 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     if (currentStep === 'WELCOME') {
         return (
             <div className="flex flex-col h-full w-full relative overflow-hidden font-sans items-center justify-center">
-                
+
                 {/* Modern Dynamic Background */}
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-blue-50/50 -z-20"></div>
                 <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-100/40 rounded-full blur-[100px] animate-pulse -z-10"></div>
                 <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-indigo-100/40 rounded-full blur-[80px] animate-pulse delay-1000 -z-10"></div>
 
-                <button 
-                    onClick={onBack} 
+                <button
+                    onClick={onBack}
                     className="absolute top-8 left-8 p-3 rounded-full bg-white/80 backdrop-blur-md hover:bg-white shadow-sm border border-slate-200 transition-all z-20 text-slate-500 hover:text-slate-800 hover:scale-105 active:scale-95 group"
                 >
                     <ChevronLeft size={24} className="group-hover:-translate-x-0.5 transition-transform" />
                 </button>
 
                 <div className="flex flex-col items-center max-w-4xl px-6 text-center z-10">
-                    
+
                     {/* Animated Robot Avatar */}
                     <div className="mb-8 hover:scale-105 transition-transform duration-700 ease-out cursor-default">
                         <RobotAvatar />
@@ -677,16 +668,16 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
 
                     {/* Typography */}
                     <h1 className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-800 via-blue-800 to-indigo-900 mb-6 tracking-tight leading-tight drop-shadow-sm">
-                        Design Your <br className="hidden md:block"/> Procedure Workflow
+                        Design Your <br className="hidden md:block" /> Procedure Workflow
                     </h1>
-                    
+
                     <p className="text-lg md:text-xl text-slate-500 mb-10 leading-relaxed max-w-2xl font-medium">
-                        AI-powered architecture for complex SOPs.<br/>
+                        AI-powered architecture for complex SOPs.<br />
                         Transform your concepts into structured diagrams in minutes.
                     </p>
-                    
+
                     {/* CTA Button */}
-                    <button 
+                    <button
                         onClick={handleStartBuilding}
                         className="group relative flex items-center gap-4 px-10 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full font-bold text-lg shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
                     >
@@ -723,15 +714,15 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                         <p className="text-sm text-slate-500 mt-1">Refine objectives, steps, and risks before generating the final diagram.</p>
                     </div>
                     <div className="flex gap-3">
-                        <button 
+                        <button
                             onClick={() => setCurrentStep('STAGES')}
                             className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl font-bold text-sm transition-colors"
                         >
                             Back
                         </button>
-                        
+
                         {excelUrl && (
-                            <a 
+                            <a
                                 href={excelUrl}
                                 target="_blank"
                                 rel="noreferrer"
@@ -741,7 +732,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                             </a>
                         )}
 
-                        <button 
+                        <button
                             onClick={handleSaveChanges}
                             disabled={isLoading}
                             className="px-5 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl font-bold text-sm transition-all flex items-center gap-2 disabled:opacity-70"
@@ -749,7 +740,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                             <Save size={16} /> Save Changes
                         </button>
 
-                        <button 
+                        <button
                             onClick={handleFinalGenerate}
                             disabled={isLoading}
                             className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-70"
@@ -774,11 +765,10 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveReviewTab(tab.id as ReviewTab)}
-                                    className={`flex items-center gap-2 pb-4 text-sm font-bold border-b-2 transition-all ${
-                                        isActive 
-                                        ? 'text-blue-600 border-blue-600' 
+                                    className={`flex items-center gap-2 pb-4 text-sm font-bold border-b-2 transition-all ${isActive
+                                        ? 'text-blue-600 border-blue-600'
                                         : 'text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300'
-                                    }`}
+                                        }`}
                                 >
                                     <Icon size={16} />
                                     {tab.label}
@@ -805,32 +795,30 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                                 <div className="w-1/3">
                                                     <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Objective Type</label>
                                                     <div className="relative">
-                                                        <input 
-                                                            type="text" 
+                                                        <input
+                                                            type="text"
                                                             value={obj.key}
                                                             onChange={(e) => handleKeyValueChange('objectives', obj.id, 'key', e.target.value)}
                                                             disabled={!obj.editable}
-                                                            className={`w-full p-2.5 rounded-lg border text-sm font-bold ${
-                                                                obj.editable 
-                                                                ? 'bg-white border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100' 
+                                                            className={`w-full p-2.5 rounded-lg border text-sm font-bold ${obj.editable
+                                                                ? 'bg-white border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
                                                                 : 'bg-slate-50 border-transparent text-slate-600'
-                                                            }`}
+                                                                }`}
                                                         />
                                                         {!obj.editable && <Lock size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />}
                                                     </div>
                                                 </div>
                                                 <div className="flex-1">
                                                     <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Description</label>
-                                                    <textarea 
+                                                    <textarea
                                                         value={obj.value}
                                                         onChange={(e) => handleKeyValueChange('objectives', obj.id, 'value', e.target.value)}
                                                         disabled={!obj.editable}
                                                         rows={2}
-                                                        className={`w-full p-2.5 rounded-lg border text-sm resize-none ${
-                                                            obj.editable 
-                                                            ? 'bg-white border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100' 
+                                                        className={`w-full p-2.5 rounded-lg border text-sm resize-none ${obj.editable
+                                                            ? 'bg-white border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
                                                             : 'bg-slate-50 border-transparent text-slate-600'
-                                                        }`}
+                                                            }`}
                                                     />
                                                 </div>
                                             </div>
@@ -850,8 +838,8 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                         <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm">
                                             <tr>
                                                 {tableColumns.map(key => (
-                                                    <th 
-                                                        key={key} 
+                                                    <th
+                                                        key={key}
                                                         style={{ width: columnWidths[key], minWidth: columnWidths[key] }}
                                                         className="p-3 font-bold text-slate-500 uppercase text-xs tracking-wide relative group select-none border-r border-slate-100 last:border-0"
                                                     >
@@ -859,7 +847,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                                             <span className="truncate mr-2">{formatLabel(key)}</span>
                                                         </div>
                                                         {/* Resizer Handle */}
-                                                        <div 
+                                                        <div
                                                             onMouseDown={(e) => startResizing(e, key)}
                                                             className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 group-hover:bg-slate-300 transition-colors z-20"
                                                         />
@@ -908,32 +896,30 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                                 <div className="w-1/3">
                                                     <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Risk Category</label>
                                                     <div className="relative">
-                                                        <input 
-                                                            type="text" 
+                                                        <input
+                                                            type="text"
                                                             value={risk.key}
                                                             onChange={(e) => handleKeyValueChange('risks', risk.id, 'key', e.target.value)}
                                                             disabled={!risk.editable}
-                                                            className={`w-full p-2.5 rounded-lg border text-sm font-bold text-rose-700 ${
-                                                                risk.editable 
-                                                                ? 'bg-white border-slate-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-100' 
+                                                            className={`w-full p-2.5 rounded-lg border text-sm font-bold text-rose-700 ${risk.editable
+                                                                ? 'bg-white border-slate-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-100'
                                                                 : 'bg-slate-50 border-transparent'
-                                                            }`}
+                                                                }`}
                                                         />
                                                         {!risk.editable && <Lock size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />}
                                                     </div>
                                                 </div>
                                                 <div className="flex-1">
                                                     <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Risk Description</label>
-                                                    <textarea 
+                                                    <textarea
                                                         value={risk.value}
                                                         onChange={(e) => handleKeyValueChange('risks', risk.id, 'value', e.target.value)}
                                                         disabled={!risk.editable}
                                                         rows={2}
-                                                        className={`w-full p-2.5 rounded-lg border text-sm resize-none ${
-                                                            risk.editable 
-                                                            ? 'bg-white border-slate-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-100' 
+                                                        className={`w-full p-2.5 rounded-lg border text-sm resize-none ${risk.editable
+                                                            ? 'bg-white border-slate-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-100'
                                                             : 'bg-slate-50 border-transparent text-slate-600'
-                                                        }`}
+                                                            }`}
                                                     />
                                                 </div>
                                             </div>
@@ -960,7 +946,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
     // --- MAIN CHAT / BUILDER VIEW ---
     return (
         <div className="flex flex-col h-full bg-slate-50 font-sans relative">
-            
+
             {/* Loading Overlay for Process Generation */}
             {isLoading && (
                 <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in">
@@ -971,11 +957,11 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                         </div>
                     </div>
                     <h3 className="mt-6 text-xl font-bold text-slate-800">{loadingMessage}</h3>
-                    
+
                     {/* Progress Bar */}
                     <div className="w-64 h-2 bg-slate-100 rounded-full mt-4 overflow-hidden">
-                        <div 
-                            className="h-full bg-blue-600 transition-all duration-500 ease-out" 
+                        <div
+                            className="h-full bg-blue-600 transition-all duration-500 ease-out"
                             style={{ width: `${loadingProgress}%` }}
                         ></div>
                     </div>
@@ -997,18 +983,18 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                         </div>
                     </div>
                 </div>
-                
+
                 {/* Progress Indicators */}
                 <div className="hidden md:flex items-center gap-2">
                     {['NAME', 'STAGES'].map((step, i) => {
                         const logicalOrder = ['NAME', 'STAGES', 'REVIEW'];
                         const currIdx = logicalOrder.indexOf(currentStep);
                         const isActive = i <= currIdx;
-                        
+
                         return (
                             <div key={step} className="flex items-center gap-2">
                                 <div className={`w-2.5 h-2.5 rounded-full transition-colors ${isActive ? 'bg-blue-600' : 'bg-slate-300'}`}></div>
-                                {i < 1 && <div className={`w-8 h-0.5 rounded-full ${isActive && (i+1) <= currIdx ? 'bg-blue-600' : 'bg-slate-200'}`}></div>}
+                                {i < 1 && <div className={`w-8 h-0.5 rounded-full ${isActive && (i + 1) <= currIdx ? 'bg-blue-600' : 'bg-slate-200'}`}></div>}
                             </div>
                         );
                     })}
@@ -1018,14 +1004,14 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
             {/* Chat Area */}
             <div className="flex-1 overflow-y-auto p-4 pb-32 scroll-smooth">
                 {messages.map((msg) => (
-                    <MessageBubble 
-                        key={msg.id} 
-                        role={msg.role} 
-                        content={msg.content} 
-                        isTyping={msg.isTyping} 
+                    <MessageBubble
+                        key={msg.id}
+                        role={msg.role}
+                        content={msg.content}
+                        isTyping={msg.isTyping}
                     />
                 ))}
-                
+
                 {/* Stages List */}
                 {currentStep === 'STAGES' && (
                     <div className="w-full max-w-4xl mx-auto pl-12 animate-in fade-in pb-20">
@@ -1035,7 +1021,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                         <StageInputForm onAdd={handleAddStage} />
                     </div>
                 )}
-                
+
                 <div ref={messagesEndRef} />
             </div>
 
@@ -1045,7 +1031,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                     <div className="text-sm font-medium text-slate-500 mr-auto pl-4">
                         {stages.length} Stage{stages.length !== 1 ? 's' : ''} added so far.
                     </div>
-                    <button 
+                    <button
                         onClick={handleFinishStages}
                         disabled={isLoading}
                         className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-70 disabled:scale-100"
@@ -1072,7 +1058,7 @@ const ProcessBuilderPage: React.FC<ProcessBuilderPageProps> = ({ onBack, onFlowG
                                 autoFocus
                                 disabled={isTyping}
                             />
-                            <button 
+                            <button
                                 onClick={handleSendMessage}
                                 disabled={!inputValue.trim() || isTyping}
                                 className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:scale-95 transition-all shadow-md"

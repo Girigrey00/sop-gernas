@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { 
-    Upload, FileText, Search, Edit3, Trash2, 
+import {
+    Upload, FileText, Search, Edit3, Trash2,
     Square, X, FileStack, Plus, Loader2,
     GitMerge, Bot, Calendar, User, RefreshCw, ArrowLeft, Activity,
     AlertTriangle, CheckCircle2, Clock
@@ -16,10 +16,11 @@ interface LibraryPageProps {
     preselectedProduct?: Product | null;
     onBack?: () => void;
     onNotification?: (msg: string, type: 'success' | 'error') => void;
+    onViewFlow?: () => void;
 }
 
-const LibraryPage: React.FC<LibraryPageProps> = ({ 
-    initialUploadOpen = false, 
+const LibraryPage: React.FC<LibraryPageProps> = ({
+    initialUploadOpen = false,
     onCloseInitialUpload,
     preselectedProduct,
     onBack,
@@ -27,19 +28,19 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
 }) => {
     const [documents, setDocuments] = useState<LibraryDocument[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    
+
     // Modal States
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-    
+
     // Upload State
     const [sopFile, setSopFile] = useState<File | null>(null);
     const [llmFiles, setLlmFiles] = useState<File[]>([]);
     const [isUploading, setIsUploading] = useState(false);
-    
+
     // Delete Confirmation State
     const [docToDelete, setDocToDelete] = useState<LibraryDocument | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    
+
     // Metadata State
     const [productName, setProductName] = useState('');
 
@@ -62,7 +63,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
             setProductName(preselectedProduct.product_name);
             setLiveProduct(preselectedProduct);
         } else {
-            if(!isUploadModalOpen) setProductName(''); // Only reset if modal closed
+            if (!isUploadModalOpen) setProductName(''); // Only reset if modal closed
         }
     }, [preselectedProduct, isUploadModalOpen]);
 
@@ -106,7 +107,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
 
     // Automatic Polling System for Documents
     useEffect(() => {
-        const hasActiveDocs = documents.some(d => 
+        const hasActiveDocs = documents.some(d =>
             d.status === 'Processing' || d.status === 'Uploading' || d.status === 'Draft'
         );
         const intervalDelay = hasActiveDocs ? 3000 : 10000;
@@ -155,7 +156,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
             if (sopFile) {
                 const metadata = {
                     category: "Policy", // Default category hidden from UI
-                    Root_Folder: rootFolder, 
+                    Root_Folder: rootFolder,
                     Linked_App: "cbgknowledgehub",
                     is_financial: "false",
                     target_index: targetIndex,
@@ -203,13 +204,13 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
             // Use metadata index_name or fallback to default
             const indexName = docToDelete.indexName || docToDelete.metadata?.index_name || 'cbgknowledgehub';
             const response = await apiService.deleteDocument(docToDelete.id, indexName);
-            
+
             if (onNotification) {
                 onNotification(response.message || `Document '${docToDelete.documentName}' deleted`, 'success');
             }
             await fetchDocuments();
             setDocToDelete(null);
-        } catch(e) {
+        } catch (e) {
             console.error(e);
             if (onNotification) onNotification("Failed to delete document", 'error');
         } finally {
@@ -222,11 +223,11 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     const filteredDocuments = documents.filter(doc => {
         // Search Filter
         const matchesSearch = doc.documentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              (doc.rootFolder && doc.rootFolder.toLowerCase().includes(searchTerm.toLowerCase()));
-        
+            (doc.rootFolder && doc.rootFolder.toLowerCase().includes(searchTerm.toLowerCase()));
+
         // Product Context Filter
         // If a product is selected, ensure the document belongs to it (by rootFolder or sopName match)
-        const matchesProduct = preselectedProduct 
+        const matchesProduct = preselectedProduct
             ? doc.rootFolder === preselectedProduct.product_name || doc.sopName === preselectedProduct.product_name
             : true;
 
@@ -236,30 +237,29 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     // Determine Upload Validation Mode (Initial vs Update)
     const hasExistingDocs = documents.some(d => d.rootFolder === productName);
     // If no existing docs for this product, strictly require both. Otherwise allow updates (partial upload).
-    const isStrictUpload = !hasExistingDocs; 
+    const isStrictUpload = !hasExistingDocs;
     const isUploadDisabled = isUploading || (isStrictUpload ? (!sopFile || llmFiles.length === 0) : (!sopFile && llmFiles.length === 0));
 
     // Helper for Status Card
     const renderProductStatus = () => {
         if (!liveProduct) return null;
-        
+
         const isProcessing = liveProduct.flow_status === 'Processing';
         const isCompleted = liveProduct.flow_status === 'Completed';
         const isFailed = liveProduct.flow_status === 'Failed';
-        const latestLog = liveProduct.flow_logs && liveProduct.flow_logs.length > 0 
-            ? liveProduct.flow_logs[liveProduct.flow_logs.length - 1] 
+        const latestLog = liveProduct.flow_logs && liveProduct.flow_logs.length > 0
+            ? liveProduct.flow_logs[liveProduct.flow_logs.length - 1]
             : null;
 
         return (
             <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg p-2.5 shadow-sm max-w-lg animate-in fade-in">
-                <div className={`p-2 rounded-lg flex items-center justify-center ${
-                    isProcessing ? 'bg-blue-100 text-blue-600' :
+                <div className={`p-2 rounded-lg flex items-center justify-center ${isProcessing ? 'bg-blue-100 text-blue-600' :
                     isCompleted ? 'bg-emerald-100 text-emerald-600' :
-                    isFailed ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-500'
-                }`}>
-                    {isProcessing ? <Loader2 size={18} className="animate-spin" /> : 
-                     isCompleted ? <CheckCircle2 size={18} /> : 
-                     isFailed ? <AlertTriangle size={18} /> : <Clock size={18} />}
+                        isFailed ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-500'
+                    }`}>
+                    {isProcessing ? <Loader2 size={18} className="animate-spin" /> :
+                        isCompleted ? <CheckCircle2 size={18} /> :
+                            isFailed ? <AlertTriangle size={18} /> : <Clock size={18} />}
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -287,18 +287,18 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
 
     return (
         <div className="h-full flex flex-col bg-slate-50 relative overflow-hidden">
-            
+
             {/* Header (Matched with CBG Knowledge Hub Style) */}
             <div className="px-8 pt-8 pb-6 flex flex-col gap-6 bg-white border-b border-slate-200">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                     <div className="flex flex-col gap-4 w-full">
-                        
+
                         {/* Title Row with Back Icon Above */}
                         <div className="flex justify-between items-start w-full">
                             <div>
                                 {onBack && (
                                     <div className="mb-2">
-                                        <button 
+                                        <button
                                             onClick={onBack}
                                             className="flex items-center gap-2 text-slate-500 hover:text-fab-royal transition-colors group"
                                             title="Back"
@@ -314,20 +314,20 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                     Document Library
                                 </h2>
                                 <p className="text-slate-500 text-sm ml-1 mb-4">
-                                    {preselectedProduct 
-                                        ? `Managing documents for: ${preselectedProduct.product_name}` 
+                                    {preselectedProduct
+                                        ? `Managing documents for: ${preselectedProduct.product_name}`
                                         : 'Manage documents and monitor ingestion status.'}
                                 </p>
-                                
+
                                 {/* Product Status Card */}
                                 {renderProductStatus()}
                             </div>
 
-                             {/* Action Buttons */}
+                            {/* Action Buttons */}
                             <div className="flex gap-2">
-                                <button 
+                                <button
                                     onClick={() => {
-                                        if(!preselectedProduct) setProductName('PIL-CONV-001');
+                                        if (!preselectedProduct) setProductName('PIL-CONV-001');
                                         setIsUploadModalOpen(true);
                                     }}
                                     className="px-4 py-2.5 bg-fab-royal text-white rounded-full text-xs font-bold shadow-lg shadow-fab-royal/20 hover:bg-fab-blue transition-all flex items-center gap-2 h-fit"
@@ -346,9 +346,9 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
             <div className="px-8 py-3 bg-slate-50 border-b border-slate-200/50 shrink-0">
                 <div className="relative max-w-md">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input 
-                        type="text" 
-                        placeholder="Search by Document Name..." 
+                    <input
+                        type="text"
+                        placeholder="Search by Document Name..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-fab-royal/30 text-xs shadow-sm"
@@ -387,13 +387,12 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                         <td className="p-3">
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-xs font-bold text-fab-navy truncate" title={doc.rootFolder}>{doc.rootFolder || 'Unassigned'}</span>
-                                                <span className={`px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-md border w-fit ${
-                                                    doc.categoryDisplay === 'Process Definition' 
+                                                <span className={`px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-md border w-fit ${doc.categoryDisplay === 'Process Definition'
                                                     ? 'bg-purple-50 text-purple-600 border-purple-100'
                                                     : doc.categoryDisplay === 'Policy Documents'
-                                                    ? 'bg-indigo-50 text-indigo-600 border-indigo-100'
-                                                    : 'bg-slate-100 text-slate-500 border-slate-200'
-                                                }`}>
+                                                        ? 'bg-indigo-50 text-indigo-600 border-indigo-100'
+                                                        : 'bg-slate-100 text-slate-500 border-slate-200'
+                                                    }`}>
                                                     {doc.categoryDisplay || 'General'}
                                                 </span>
                                             </div>
@@ -418,19 +417,18 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                             </div>
                                         </td>
                                         <td className="p-3">
-                                             <div className="flex items-center gap-2 text-slate-600">
+                                            <div className="flex items-center gap-2 text-slate-600">
                                                 <Calendar size={12} className="text-slate-400" />
                                                 <span className="text-[11px]">{doc.uploadedDate.split(' ')[0]}</span>
                                             </div>
                                         </td>
                                         <td className="p-3">
-                                             <div className="flex flex-col gap-1.5">
+                                            <div className="flex flex-col gap-1.5">
                                                 <div className="flex items-center justify-between">
-                                                    <span className={`flex items-center gap-1 text-[10px] font-bold uppercase ${
-                                                        doc.status === 'Completed' ? 'text-emerald-600' :
+                                                    <span className={`flex items-center gap-1 text-[10px] font-bold uppercase ${doc.status === 'Completed' ? 'text-emerald-600' :
                                                         (doc.status === 'Processing' || doc.status === 'Uploading') ? 'text-blue-600' :
-                                                        doc.status === 'Failed' ? 'text-rose-600' : 'text-slate-500'
-                                                    }`}>
+                                                            doc.status === 'Failed' ? 'text-rose-600' : 'text-slate-500'
+                                                        }`}>
                                                         {(doc.status === 'Processing' || doc.status === 'Uploading') && <RefreshCw size={10} className="animate-spin" />}
                                                         {doc.status || 'Unknown'}
                                                     </span>
@@ -440,32 +438,31 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                                 </div>
 
                                                 <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                                                    <div 
-                                                        className={`h-full rounded-full transition-all duration-500 ${
-                                                             doc.status === 'Completed' ? 'bg-emerald-500' :
-                                                             doc.status === 'Failed' ? 'bg-rose-500' :
-                                                             'bg-blue-500'
-                                                        }`}
+                                                    <div
+                                                        className={`h-full rounded-full transition-all duration-500 ${doc.status === 'Completed' ? 'bg-emerald-500' :
+                                                            doc.status === 'Failed' ? 'bg-rose-500' :
+                                                                'bg-blue-500'
+                                                            }`}
                                                         style={{ width: `${doc.progressPercentage || (doc.status === 'Completed' ? 100 : 5)}%` }}
                                                     ></div>
                                                 </div>
-                                                
+
                                                 {doc.latestLog && (doc.status === 'Processing' || doc.status === 'Uploading') && (
-                                                     <p className="text-[9px] text-slate-400 italic truncate" title={doc.latestLog}>
+                                                    <p className="text-[9px] text-slate-400 italic truncate" title={doc.latestLog}>
                                                         {doc.latestLog}
                                                     </p>
                                                 )}
-                                             </div>
+                                            </div>
                                         </td>
                                         <td className="p-3 text-right">
                                             <div className="flex items-center justify-end gap-1">
-                                                <button 
+                                                <button
                                                     onClick={() => handleEdit(doc)}
                                                     className="p-1.5 text-slate-400 hover:text-fab-royal hover:bg-fab-royal/10 rounded transition-colors"
                                                 >
                                                     <Edit3 size={14} />
                                                 </button>
-                                                <button 
+                                                <button
                                                     onClick={() => handleDeleteClick(doc)}
                                                     className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
                                                 >
@@ -509,9 +506,9 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                             </div>
                             <div className="border-t border-slate-100"></div>
                             <div className="space-y-4">
-                                 <div className="flex items-start gap-3"><div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg mt-1"><Bot size={20} /></div><div><h4 className="text-sm font-bold text-slate-800">Policy Documents</h4><p className="text-xs text-slate-500">Additional context for AI Chatbot.</p></div></div>
+                                <div className="flex items-start gap-3"><div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg mt-1"><Bot size={20} /></div><div><h4 className="text-sm font-bold text-slate-800">Policy Documents</h4><p className="text-xs text-slate-500">Additional context for AI Chatbot.</p></div></div>
                                 <div className="pl-12">
-                                     <div onClick={() => llmInputRef.current?.click()} className="border border-slate-200 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all mb-3"><Plus size={18} className="text-emerald-500" /><span className="text-sm font-medium text-slate-600">Add Supporting Documents</span><input type="file" ref={llmInputRef} onChange={handleLlmFileChange} accept=".pdf,.docx,.doc,.txt,.xlsx" multiple className="hidden" /></div>
+                                    <div onClick={() => llmInputRef.current?.click()} className="border border-slate-200 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all mb-3"><Plus size={18} className="text-emerald-500" /><span className="text-sm font-medium text-slate-600">Add Supporting Documents</span><input type="file" ref={llmInputRef} onChange={handleLlmFileChange} accept=".pdf,.docx,.doc,.txt,.xlsx" multiple className="hidden" /></div>
                                     {llmFiles.length > 0 && (<div className="space-y-2 max-h-32 overflow-y-auto">{llmFiles.map((file, idx) => (<div key={idx} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-100 rounded text-sm"><div className="flex items-center gap-2"><FileStack size={14} className="text-slate-400" /><span className="text-slate-700 truncate max-w-[200px]">{file.name}</span></div><button onClick={() => removeLlmFile(idx)} className="text-slate-400 hover:text-rose-500"><X size={14} /></button></div>))}</div>)}
                                 </div>
                             </div>
@@ -528,26 +525,26 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
             {docToDelete && (
                 <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 transform transition-all scale-100 opacity-100">
-                         <div className="flex flex-col items-center text-center gap-4">
-                             <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-2">
+                        <div className="flex flex-col items-center text-center gap-4">
+                            <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-2">
                                 <AlertTriangle size={24} />
-                             </div>
-                             <div>
+                            </div>
+                            <div>
                                 <h3 className="text-lg font-bold text-slate-800">Delete Document?</h3>
                                 <p className="text-sm text-slate-500 mt-2 leading-relaxed">
                                     Are you sure you want to delete <strong>{docToDelete.documentName}</strong>?
-                                    <br/><span className="text-rose-600 font-medium text-xs">This action cannot be undone.</span>
+                                    <br /><span className="text-rose-600 font-medium text-xs">This action cannot be undone.</span>
                                 </p>
-                             </div>
-                             <div className="flex gap-3 w-full mt-4">
-                                <button 
+                            </div>
+                            <div className="flex gap-3 w-full mt-4">
+                                <button
                                     onClick={() => setDocToDelete(null)}
                                     disabled={isDeleting}
                                     className="flex-1 py-2.5 text-slate-600 font-bold text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
                                 >
                                     Cancel
                                 </button>
-                                <button 
+                                <button
                                     onClick={confirmDeleteDoc}
                                     disabled={isDeleting}
                                     className="flex-1 py-2.5 text-white font-bold text-sm bg-rose-600 hover:bg-rose-700 rounded-lg shadow-lg shadow-rose-200 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
@@ -555,8 +552,8 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                     {isDeleting && <Loader2 size={14} className="animate-spin" />}
                                     Delete
                                 </button>
-                             </div>
-                         </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

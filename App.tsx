@@ -8,12 +8,12 @@ import ProcessLineagePage from './pages/ProcessLineagePage';
 import ProcessBuilderPage from './pages/ProcessBuilderPage';
 import { View, SopResponse, Product, ChatSession } from './types';
 import { apiService } from './services/apiService';
-import { 
-    FileText, Lock, User, ArrowRight, Search, ShieldAlert, 
-    Briefcase, Menu, Plus, Loader2, CreditCard, Landmark, ShieldCheck, Wallet, 
+import {
+    FileText, Lock, User, ArrowRight, Search, ShieldAlert,
+    Briefcase, Menu, Plus, Loader2, CreditCard, Landmark, ShieldCheck, Wallet,
     Banknote, Coins, FileSpreadsheet, Zap,
-    PieChart, TrendingUp, Globe, Building2, Scale, FileSignature, Calculator, 
-    Receipt, Gem, Key, Database, Smartphone, Award, Target, BarChart, Stamp, BadgeDollarSign, 
+    PieChart, TrendingUp, Globe, Building2, Scale, FileSignature, Calculator,
+    Receipt, Gem, Key, Database, Smartphone, Award, Target, BarChart, Stamp, BadgeDollarSign,
     Vault, ScrollText, Truck, ShoppingCart, Anchor, Gavel, FileCheck, Layers, Trash2,
     X, CheckCircle, AlertTriangle, AlertOctagon
 } from 'lucide-react';
@@ -21,12 +21,12 @@ import {
 // --- Icon Helper ---
 const PRODUCT_ICONS = [
     // Finance & Banking
-    Briefcase, CreditCard, Landmark, ShieldCheck, Wallet, Banknote, Coins, 
+    Briefcase, CreditCard, Landmark, ShieldCheck, Wallet, Banknote, Coins,
     Receipt, Gem, BadgeDollarSign, Vault, Calculator,
     // Business & Enterprise
-    Building2, PieChart, TrendingUp, Target, BarChart, Globe, ShoppingCart, Truck, 
+    Building2, PieChart, TrendingUp, Target, BarChart, Globe, ShoppingCart, Truck,
     // Process & Compliance
-    FileSpreadsheet, FileSignature, Scale, Gavel, Stamp, FileCheck, ScrollText, 
+    FileSpreadsheet, FileSignature, Scale, Gavel, Stamp, FileCheck, ScrollText,
     // Tech & General
     Zap, Key, Database, Smartphone, Award, Layers, Anchor, FileText
 ];
@@ -75,13 +75,13 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
     return (
         <div className="h-screen w-screen bg-fab-navy flex items-center justify-center relative overflow-hidden">
             <div className="absolute inset-0 overflow-hidden">
-                 <div className="absolute top-[-30%] left-[-10%] w-[800px] h-[800px] bg-fab-royal/40 blur-[120px] rounded-full animate-pulse"></div>
-                 <div className="absolute bottom-[-30%] right-[-10%] w-[800px] h-[800px] bg-fab-blue/30 blur-[120px] rounded-full animate-pulse delay-700"></div>
+                <div className="absolute top-[-30%] left-[-10%] w-[800px] h-[800px] bg-fab-royal/40 blur-[120px] rounded-full animate-pulse"></div>
+                <div className="absolute bottom-[-30%] right-[-10%] w-[800px] h-[800px] bg-fab-blue/30 blur-[120px] rounded-full animate-pulse delay-700"></div>
             </div>
 
             <div className="w-full max-w-md z-10 p-6">
                 <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-2xl shadow-black/50 relative overflow-hidden">
-                    
+
                     <div className="flex flex-col items-center gap-4 mb-10 relative z-10">
                         {/* New G Logo for Login */}
                         <div className="w-24 h-24 flex items-center justify-center mb-2 group">
@@ -95,11 +95,11 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
                                         </linearGradient>
                                     </defs>
                                     <path d="M 50 10 A 40 40 0 0 1 90 50" fill="none" stroke="url(#login-g-gradient)" strokeWidth="4" strokeLinecap="round" className="opacity-60" />
-                                    <path 
-                                        d="M 60 45 L 50 45 L 50 55 L 75 55 A 25 25 0 1 1 50 25" 
-                                        fill="none" 
-                                        stroke="white" 
-                                        strokeWidth="8" 
+                                    <path
+                                        d="M 60 45 L 50 45 L 50 55 L 75 55 A 25 25 0 1 1 50 25"
+                                        fill="none"
+                                        stroke="white"
+                                        strokeWidth="8"
                                         strokeLinecap="round"
                                         className="drop-shadow-[0_0_10px_rgba(166,225,250,0.5)]"
                                     />
@@ -120,8 +120,8 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <User size={18} className="text-white/50 group-focus-within:text-fab-sky transition-colors" />
                                 </div>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
                                     className="w-full pl-10 pr-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fab-sky/50 focus:border-fab-sky/50 transition-all"
@@ -136,8 +136,8 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Lock size={18} className="text-white/50 group-focus-within:text-fab-sky transition-colors" />
                                 </div>
-                                <input 
-                                    type="password" 
+                                <input
+                                    type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="w-full pl-10 pr-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-fab-sky/50 focus:border-fab-sky/50 transition-all"
@@ -152,7 +152,7 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
                             </div>
                         )}
 
-                        <button 
+                        <button
                             type="submit"
                             disabled={isLoading}
                             className="w-full py-3.5 bg-gradient-to-r from-fab-royal to-fab-light hover:from-fab-blue hover:to-fab-royal text-white rounded-xl font-semibold shadow-lg shadow-black/20 transition-all transform hover:scale-[1.02] disabled:opacity-70 disabled:scale-100 flex items-center justify-center gap-2 mt-4"
@@ -167,7 +167,7 @@ const LoginPage = ({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
                             )}
                         </button>
                     </form>
-                    
+
                     <div className="mt-8 text-center">
                         <p className="text-[10px] text-fab-sky/50">Restricted System • Authorized Personnel Only</p>
                     </div>
@@ -187,13 +187,13 @@ interface HomePageProps {
     isAnalysisMode?: boolean; // Keep for legacy compatibility if needed
 }
 
-const HomePage = ({ 
-    onStart, 
-    onSelectProduct, 
-    onNotification, 
-    pageTitle = 'Procedures', 
+const HomePage = ({
+    onStart,
+    onSelectProduct,
+    onNotification,
+    pageTitle = 'Procedures',
     pageSubtitle = 'Select a product to view its operational flow.',
-    isAnalysisMode = false 
+    isAnalysisMode = false
 }: HomePageProps) => {
     const [products, setProducts] = useState<Product[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -215,7 +215,7 @@ const HomePage = ({
             const data = await apiService.getProducts();
             setProducts(data);
             if (!pollingRef.current) {
-               pollingRef.current = setInterval(() => fetchProducts(true), 5000);
+                pollingRef.current = setInterval(() => fetchProducts(true), 5000);
             }
         } catch (error) {
             console.error("Failed to fetch products", error);
@@ -236,7 +236,7 @@ const HomePage = ({
     }, [fetchProducts]);
 
     const handleCreateProduct = async () => {
-        if(!newProductName) return;
+        if (!newProductName) return;
         setIsCreating(true);
         try {
             await apiService.createProduct({
@@ -244,7 +244,7 @@ const HomePage = ({
                 folder_name: newProductName.toLowerCase().replace(/\s+/g, '_') + '_folder',
                 product_description: newProductDesc || 'No description'
             });
-            await fetchProducts(); 
+            await fetchProducts();
             setIsCreateOpen(false);
             setNewProductName('');
             setNewProductDesc('');
@@ -289,7 +289,7 @@ const HomePage = ({
         // If it's a standard flow view, the parent will handle navigation to CANVAS.
         // We only check for flow status if we intend to open the canvas.
         // For simplicity here, we assume standard behavior unless overridden.
-        
+
         if (!isAnalysisMode && product.flow_status === 'Completed') {
             setIsLoading(true);
             try {
@@ -307,12 +307,12 @@ const HomePage = ({
             }
         } else if (!product.flow_status) {
             // New product, might need upload
-            onSelectProduct(product, true); 
-        } 
+            onSelectProduct(product, true);
+        }
     };
 
     // If isAnalysisMode is true, strictly show only the dummy product and nothing else from API.
-    const displayList = isAnalysisMode 
+    const displayList = isAnalysisMode
         ? [{
             _id: 'dummy-analysis',
             id: 'dummy-analysis',
@@ -329,13 +329,13 @@ const HomePage = ({
 
     const filteredProducts = displayList
         .filter(item => {
-            return item.product_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                   (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+            return item.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
         })
         .sort((a, b) => {
-             const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-             const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-             return dateB - dateA;
+            const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+            const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+            return dateB - dateA;
         });
 
     return (
@@ -346,11 +346,11 @@ const HomePage = ({
                         <h2 className="text-2xl font-bold text-fab-navy mb-1">{pageTitle}</h2>
                         <p className="text-slate-500 text-sm">{pageSubtitle}</p>
                     </div>
-                    
+
                     {/* Hide Create New Button in Analysis Mode if strictly demo */}
                     {!isAnalysisMode && (
                         <div className="flex items-center gap-3 w-full md:w-auto">
-                            <button 
+                            <button
                                 onClick={() => setIsCreateOpen(true)}
                                 className="px-4 py-2 bg-fab-royal text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-fab-blue transition-colors"
                             >
@@ -358,9 +358,9 @@ const HomePage = ({
                             </button>
                             <div className="relative w-full md:w-64">
                                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <input 
-                                    type="text" 
-                                    placeholder="Search products..." 
+                                <input
+                                    type="text"
+                                    placeholder="Search products..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-fab-royal/50 text-sm"
@@ -373,10 +373,10 @@ const HomePage = ({
 
             <div className="flex-1 overflow-y-auto px-8 py-8">
                 {isLoading ? (
-                     <div className="flex flex-col items-center justify-center h-64 text-slate-500">
+                    <div className="flex flex-col items-center justify-center h-64 text-slate-500">
                         <div className="w-10 h-10 border-4 border-fab-royal/20 border-t-fab-royal rounded-full animate-spin mb-4"></div>
                         <p>Loading Data...</p>
-                     </div>
+                    </div>
                 ) : filteredProducts.length === 0 ? (
                     <div className="text-center py-20 text-slate-400">
                         <Briefcase size={48} className="mx-auto mb-4 opacity-20" />
@@ -396,7 +396,7 @@ const HomePage = ({
                             const currentStep = item.flow_current_step || (latestLog ? latestLog.step : 'Processing');
 
                             return (
-                                <button 
+                                <button
                                     key={i}
                                     onClick={(e) => handleCardClick(item, e)}
                                     className="p-5 rounded-xl border border-slate-200 bg-white hover:border-fab-royal/50 hover:shadow-lg hover:shadow-fab-royal/5 transition-all text-left group flex flex-col h-full relative overflow-hidden"
@@ -404,16 +404,16 @@ const HomePage = ({
                                     {/* Hide Delete button for Dummy Analysis Item */}
                                     {item.id !== 'dummy-analysis' && (
                                         <div className="absolute top-3 right-3 z-20 delete-btn">
-                                             <div 
+                                            <div
                                                 onClick={(e) => {
-                                                    e.stopPropagation(); 
+                                                    e.stopPropagation();
                                                     handleDeleteClick(item);
                                                 }}
                                                 className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors bg-white/50 backdrop-blur-sm"
                                                 title="Delete Product"
-                                             >
+                                            >
                                                 <Trash2 size={16} />
-                                             </div>
+                                            </div>
                                         </div>
                                     )}
 
@@ -422,25 +422,25 @@ const HomePage = ({
                                             {isProcessing ? <Loader2 size={24} className="animate-spin" /> : <DynamicIcon size={24} strokeWidth={1.5} />}
                                         </div>
                                     </div>
-                                    
+
                                     <h3 className="text-sm font-bold text-fab-navy group-hover:text-fab-royal mb-2 pr-6">{item.product_name}</h3>
-                                    
+
                                     {isProcessing ? (
                                         <div className="mt-2 mb-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100 w-full">
                                             <div className="flex justify-between items-center mb-1.5">
-                                                 <span className="text-[10px] font-bold text-fab-royal uppercase tracking-wider truncate max-w-[70%]">{currentStep}</span>
-                                                 <span className="text-[10px] font-mono text-slate-500 font-bold">{progress}%</span>
+                                                <span className="text-[10px] font-bold text-fab-royal uppercase tracking-wider truncate max-w-[70%]">{currentStep}</span>
+                                                <span className="text-[10px] font-mono text-slate-500 font-bold">{progress}%</span>
                                             </div>
                                             <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mb-2">
-                                                 <div className="h-full bg-fab-royal rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
+                                                <div className="h-full bg-fab-royal rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
                                             </div>
                                             {latestLog && (
-                                                 <div className="flex items-start gap-1.5">
+                                                <div className="flex items-start gap-1.5">
                                                     <Loader2 size={10} className="animate-spin text-fab-royal mt-0.5 shrink-0" />
                                                     <p className="text-[10px] text-slate-500 leading-tight line-clamp-2 break-words" title={latestLog.message}>
                                                         {latestLog.message}
                                                     </p>
-                                                 </div>
+                                                </div>
                                             )}
                                         </div>
                                     ) : (
@@ -449,11 +449,10 @@ const HomePage = ({
 
                                     {!isProcessing && (
                                         <div className="mb-4">
-                                            <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded-full border inline-flex items-center gap-1 ${
-                                                isCompleted ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                            <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded-full border inline-flex items-center gap-1 ${isCompleted ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                                                 isFailed ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                                'bg-slate-50 text-slate-400 border-slate-100'
-                                            }`}>
+                                                    'bg-slate-50 text-slate-400 border-slate-100'
+                                                }`}>
                                                 {isCompleted ? 'Ready' : isFailed ? 'Failed' : 'Draft'}
                                             </span>
                                         </div>
@@ -480,8 +479,8 @@ const HomePage = ({
                         <div className="space-y-4">
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Product Name</label>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     value={newProductName}
                                     onChange={e => setNewProductName(e.target.value)}
                                     className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-fab-royal/20 outline-none"
@@ -490,7 +489,7 @@ const HomePage = ({
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Description</label>
-                                <textarea 
+                                <textarea
                                     value={newProductDesc}
                                     onChange={e => setNewProductDesc(e.target.value)}
                                     className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-fab-royal/20 outline-none h-24 resize-none"
@@ -499,13 +498,13 @@ const HomePage = ({
                             </div>
                         </div>
                         <div className="flex justify-end gap-3 mt-6">
-                            <button 
+                            <button
                                 onClick={() => setIsCreateOpen(false)}
                                 className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-bold text-sm"
                             >
                                 Cancel
                             </button>
-                            <button 
+                            <button
                                 onClick={handleCreateProduct}
                                 disabled={isCreating || !newProductName}
                                 className="px-4 py-2 bg-fab-royal text-white rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-fab-blue disabled:opacity-50"
@@ -521,26 +520,26 @@ const HomePage = ({
             {productToDelete && (
                 <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 transform transition-all scale-100 opacity-100">
-                         <div className="flex flex-col items-center text-center gap-4">
-                             <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-2">
+                        <div className="flex flex-col items-center text-center gap-4">
+                            <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-2">
                                 <AlertTriangle size={24} />
-                             </div>
-                             <div>
+                            </div>
+                            <div>
                                 <h3 className="text-lg font-bold text-slate-800">Delete Product?</h3>
                                 <p className="text-sm text-slate-500 mt-2 leading-relaxed">
                                     Are you sure you want to delete <strong>{productToDelete.product_name}</strong>?
-                                    <br/><span className="text-rose-600 font-medium text-xs">This action cannot be undone.</span>
+                                    <br /><span className="text-rose-600 font-medium text-xs">This action cannot be undone.</span>
                                 </p>
-                             </div>
-                             <div className="flex gap-3 w-full mt-4">
-                                <button 
+                            </div>
+                            <div className="flex gap-3 w-full mt-4">
+                                <button
                                     onClick={() => setProductToDelete(null)}
                                     disabled={isDeleting}
                                     className="flex-1 py-2.5 text-slate-600 font-bold text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
                                 >
                                     Cancel
                                 </button>
-                                <button 
+                                <button
                                     onClick={confirmDeleteProduct}
                                     disabled={isDeleting}
                                     className="flex-1 py-2.5 text-white font-bold text-sm bg-rose-600 hover:bg-rose-700 rounded-lg shadow-lg shadow-rose-200 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
@@ -548,8 +547,8 @@ const HomePage = ({
                                     {isDeleting && <Loader2 size={14} className="animate-spin" />}
                                     Delete
                                 </button>
-                             </div>
-                         </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -559,286 +558,305 @@ const HomePage = ({
 
 // --- Main App Component ---
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentView, setCurrentView] = useState<View>('HOME');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(true); 
-  const [initialPrompt, setInitialPrompt] = useState<string>('');
-  const [selectedSop, setSelectedSop] = useState<SopResponse | null>(null);
-  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
-  const [autoOpenUpload, setAutoOpenUpload] = useState(false);
-  const [selectedContextProduct, setSelectedContextProduct] = useState<Product | null>(null);
-  const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(undefined);
-  
-  const handleLogin = (u: string, p: string) => {
-      if (u === 'admin' && p === 'admin') {
-          setIsAuthenticated(true);
-          return true;
-      }
-      return false;
-  };
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [currentView, setCurrentView] = useState<View>('HOME');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(true);
+    const [initialPrompt, setInitialPrompt] = useState<string>('');
+    const [selectedSop, setSelectedSop] = useState<SopResponse | null>(null);
+    const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+    const [autoOpenUpload, setAutoOpenUpload] = useState(false);
+    const [selectedContextProduct, setSelectedContextProduct] = useState<Product | null>(null);
+    const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(undefined);
+    const [canvasLoadingMessage, setCanvasLoadingMessage] = useState<string | undefined>(undefined);
 
-  const handleLogout = () => {
-      setIsAuthenticated(false);
-      setCurrentView('HOME');
-      setInitialPrompt('');
-      setSelectedSop(null);
-      setSelectedContextProduct(null);
-      setCurrentSessionId(undefined);
-  };
-
-  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
-      setNotification({ message, type });
-      setTimeout(() => setNotification(null), 6000);
-  };
-
-  const handleStartWithData = (data: SopResponse) => {
-      setSelectedSop(data);
-      setInitialPrompt('');
-      setCurrentSessionId(undefined);
-      setCurrentView('CANVAS');
-      setIsSidebarOpen(false);
-  };
-
-  const handleProductSelect = (product: Product, redirect: boolean) => {
-      setSelectedContextProduct(product);
-      if (redirect) {
-          setAutoOpenUpload(true);
-          setCurrentView('LIBRARY');
-      }
-  };
-
-  // Handler for Analysis Mode (Now Process Lineage Visual)
-  const handleProcessAnalysisSelect = (product: Product, redirect: boolean) => {
-      setSelectedContextProduct(product);
-      if(!redirect) {
-          setCurrentView('ANALYSIS_CANVAS');
-      }
-  };
-
-  // Default Context for Policy Chat
-  const GENERIC_POLICY_PRODUCT: Product = {
-      _id: 'policy-std',
-      id: 'policy-std',
-      product_name: 'Policy Standards',
-      index_name: 'policy-index', // Using dummy or general index
-      has_index: 'Yes',
-      has_flow: 'No',
-      document_count: 0
-  };
-
-  const handleOpenSession = async (session: ChatSession) => {
-      const productName = session.product || "General Chat";
-      const indexName = session.index_name || "cbgknowledgehub";
-
-      setCurrentSessionId(session._id);
-      setSelectedContextProduct({ 
-          product_name: productName, 
-          index_name: indexName,
-          _id: session._id, id: session._id, has_index: 'Yes', has_flow: 'No', document_count: 0 
-      }); 
-
-      try {
-          if (productName && productName !== "General Chat") {
-               const flowData = await apiService.getProcessFlow(productName);
-               if (flowData && flowData.processFlow) {
-                   setSelectedSop(flowData);
-               } else {
-                   setSelectedSop(createFallbackSop(productName, indexName));
-               }
-          } else {
-               setSelectedSop(createFallbackSop(productName, indexName));
-          }
-      } catch (e) {
-          console.warn("Failed to load flow for this session. Opening in Chat-Only mode.", e);
-          setSelectedSop(createFallbackSop(productName, indexName));
-      }
-
-      setCurrentView('CANVAS');
-      setIsSidebarOpen(false);
-  };
-
-  const handleFlowGenerated = (_data: SopResponse, _prompt: string) => {};
-
-  const renderContent = () => {
-    switch (currentView) {
-      case 'HOME':
-      case 'SOPS':
-        return (
-            <HomePage 
-                onStart={handleStartWithData} 
-                onSelectProduct={handleProductSelect} 
-                onNotification={showNotification} 
-                pageTitle="Procedures"
-                pageSubtitle="View Operational Procedures and Flows"
-            />
-        );
-      
-      case 'PROCESS_ANALYSIS': // Now Visual Process Lineage
-        return (
-            <HomePage 
-                onStart={() => {}} 
-                onSelectProduct={handleProcessAnalysisSelect} 
-                onNotification={showNotification} 
-                isAnalysisMode={true}
-                pageTitle="Process Lineage"
-                pageSubtitle="Visual Analysis of Process Flows"
-            />
-        );
-      case 'ANALYSIS_CANVAS':
-        if(selectedContextProduct) {
-            return (
-                <ProcessAnalysisPage 
-                    product={selectedContextProduct} 
-                    onBack={() => {
-                        setCurrentView('PROCESS_ANALYSIS');
-                        setSelectedContextProduct(null);
-                    }} 
-                />
-            );
+    const handleLogin = (u: string, p: string) => {
+        if (u === 'admin' && p === 'admin') {
+            setIsAuthenticated(true);
+            return true;
         }
-        return <HomePage onStart={() => {}} onSelectProduct={handleProcessAnalysisSelect} onNotification={showNotification} isAnalysisMode={true} pageTitle="Process Lineage" pageSubtitle="Visual Analysis of Process Flows" />;
-      
-      case 'PROCESS_LINEAGE': // Policy Standards (Chat) - Directly Render Chat Interface
-        return (
-            <ProcessLineagePage 
-                product={GENERIC_POLICY_PRODUCT}
-                onBack={() => setCurrentView('HOME')}
-            />
-        );
+        return false;
+    };
 
-      case 'PROCESS_BUILDER':
-        return (
-            <ProcessBuilderPage 
-                onBack={() => setCurrentView('HOME')}
-                onFlowGenerated={handleStartWithData}
-            />
-        );
+    const handleLogout = () => {
+        setIsAuthenticated(false);
+        setCurrentView('HOME');
+        setInitialPrompt('');
+        setSelectedSop(null);
+        setSelectedContextProduct(null);
+        setCurrentSessionId(undefined);
+        setCanvasLoadingMessage(undefined);
+    };
 
-      case 'IMPACT_ASSESSMENT':
-        // Placeholder or future implementation
-        return (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                <AlertOctagon size={48} className="mb-4 text-fab-royal opacity-50" />
-                <h2 className="text-2xl font-bold text-fab-navy mb-2">Impact Assessment</h2>
-                <p className="text-sm font-medium">This module is coming soon.</p>
-            </div>
-        );
+    const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+        setNotification({ message, type });
+        setTimeout(() => setNotification(null), 6000);
+    };
 
-      case 'LIBRARY':
-        return (
-            <LibraryPage 
-                initialUploadOpen={autoOpenUpload}
-                onCloseInitialUpload={() => {
-                    setAutoOpenUpload(false);
-                }}
-                preselectedProduct={selectedContextProduct}
-                onBack={async () => {
-                    if (selectedContextProduct) {
-                        setSelectedSop(null); 
-                        setCurrentView('CANVAS');
-                    } else {
-                        setCurrentView('HOME');
-                        setSelectedContextProduct(null); 
-                    }
-                }}
-                onNotification={showNotification}
-                onViewFlow={async () => {
-                     if (selectedContextProduct) {
-                         if(selectedContextProduct.flow_status === 'Completed') {
-                             try {
-                                 const flowData = await apiService.getProcessFlow(selectedContextProduct.product_name);
-                                 handleStartWithData(flowData);
-                             } catch(e) {
-                                 console.error(e);
-                                 showNotification("Error loading flow. Please check console.", 'error');
-                             }
-                         } else {
-                             showNotification(`Flow is ${selectedContextProduct.flow_status || 'not ready'}`, 'error');
-                         }
-                     }
-                }}
-            />
-        );
-      case 'CANVAS':
-        return (
-            <CanvasPage 
-                initialPrompt={initialPrompt} 
-                initialData={selectedSop}
-                onFlowGenerated={handleFlowGenerated}
-                onBack={() => {
-                    setCurrentView('HOME');
-                    setSelectedContextProduct(null);
-                    setCurrentSessionId(undefined);
-                }}
-                productContext={selectedContextProduct}
-                initialSessionId={currentSessionId}
-            />
-        );
-      default:
-        return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} onNotification={showNotification} />;
-    }
-  };
+    const handleStartWithData = (data: SopResponse) => {
+        setSelectedSop(data);
+        setInitialPrompt('');
+        setCurrentSessionId(undefined);
+        setCurrentView('CANVAS');
+        setIsSidebarOpen(false);
+    };
 
-  if (!isAuthenticated) {
-      return <LoginPage onLogin={handleLogin} />;
-  }
+    const handleProductSelect = (product: Product, redirect: boolean) => {
+        setSelectedContextProduct(product);
+        if (redirect) {
+            setAutoOpenUpload(true);
+            setCurrentView('LIBRARY');
+        }
+    };
 
-  return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900 relative">
-      
-      {/* Toast Notification Layer */}
-      {notification && (
-        <div className={`fixed bottom-6 right-6 px-6 py-4 rounded-xl shadow-2xl text-white font-medium z-[100] flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300 ${notification.type === 'error' ? 'bg-rose-600' : 'bg-emerald-600'}`}>
-            {notification.type === 'success' ? <CheckCircle size={20} /> : <ShieldAlert size={20} />}
-            <span className="text-sm">{notification.message}</span>
-            <button onClick={() => setNotification(null)} className="ml-2 opacity-80 hover:opacity-100 p-1 hover:bg-white/20 rounded"><X size={16}/></button>
-        </div>
-      )}
+    // Handler for Analysis Mode (Now Process Lineage Visual)
+    const handleProcessAnalysisSelect = (product: Product, redirect: boolean) => {
+        setSelectedContextProduct(product);
+        if (!redirect) {
+            setCurrentView('ANALYSIS_CANVAS');
+        }
+    };
 
-      <div className={`fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)}></div>
-      
-      {/* Corrected Sidebar Wrapper Width */}
-      <div className={`fixed inset-y-0 left-0 z-50 ${isCollapsed ? 'w-20' : 'w-72'} transform lg:relative lg:translate-x-0 transition-all duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <Sidebar 
-            currentView={currentView === 'SOPS' ? 'HOME' : currentView} 
-            onNavigate={(view) => { 
-                if (view === 'HISTORY') {
-                    setIsCollapsed(false); 
+    // Default Context for Policy Chat
+    const GENERIC_POLICY_PRODUCT: Product = {
+        _id: 'policy-std',
+        id: 'policy-std',
+        product_name: 'Policy Standards',
+        index_name: 'policy-index', // Using dummy or general index
+        has_index: 'Yes',
+        has_flow: 'No',
+        document_count: 0
+    };
+
+    const handleOpenSession = async (session: ChatSession) => {
+        const productName = session.product || "General Chat";
+        const indexName = session.index_name || "cbgknowledgehub";
+
+        setCurrentSessionId(session._id);
+        setSelectedContextProduct({
+            product_name: productName,
+            index_name: indexName,
+            _id: session._id, id: session._id, has_index: 'Yes', has_flow: 'No', document_count: 0
+        });
+
+        try {
+            if (productName && productName !== "General Chat") {
+                const flowData = await apiService.getProcessFlow(productName);
+                if (flowData && flowData.processFlow) {
+                    setSelectedSop(flowData);
                 } else {
-                    setCurrentView(view);
-                    setIsSidebarOpen(false);
+                    setSelectedSop(createFallbackSop(productName, indexName));
                 }
-            }} 
-            onLogout={handleLogout}
-            isCollapsed={isCollapsed}
-            onToggle={() => setIsCollapsed(!isCollapsed)}
-            productContext={selectedContextProduct}
-            onLoadSession={handleOpenSession}
-          />
-      </div>
+            } else {
+                setSelectedSop(createFallbackSop(productName, indexName));
+            }
+        } catch (e) {
+            console.warn("Failed to load flow for this session. Opening in Chat-Only mode.", e);
+            setSelectedSop(createFallbackSop(productName, indexName));
+        }
 
-      <main className="flex-1 h-full overflow-hidden relative bg-white flex flex-col transition-all duration-300">
-        <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 bg-white z-30">
-            <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-fab-navy to-fab-blue rounded-lg flex items-center justify-center text-white">
-                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10H12v3h7.6C18.9 17.5 15.8 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8c2.04 0 3.89.78 5.31 2.05l2.25-2.25C17.2 1.9 14.76 0 12 0z" />
-                    </svg>
+        setCurrentView('CANVAS');
+        setIsSidebarOpen(false);
+    };
+
+    const handleFlowGenerated = (_data: SopResponse, _prompt: string) => { };
+
+    const renderContent = () => {
+        switch (currentView) {
+            case 'HOME':
+            case 'SOPS':
+                return (
+                    <HomePage
+                        onStart={handleStartWithData}
+                        onSelectProduct={handleProductSelect}
+                        onNotification={showNotification}
+                        pageTitle="Procedures"
+                        pageSubtitle="View Operational Procedures and Flows"
+                    />
+                );
+
+            case 'PROCESS_ANALYSIS': // Now Visual Process Lineage
+                return (
+                    <HomePage
+                        onStart={() => { }}
+                        onSelectProduct={handleProcessAnalysisSelect}
+                        onNotification={showNotification}
+                        isAnalysisMode={true}
+                        pageTitle="Process Lineage"
+                        pageSubtitle="Visual Analysis of Process Flows"
+                    />
+                );
+            case 'ANALYSIS_CANVAS':
+                if (selectedContextProduct) {
+                    return (
+                        <ProcessAnalysisPage
+                            product={selectedContextProduct}
+                            onBack={() => {
+                                setCurrentView('PROCESS_ANALYSIS');
+                                setSelectedContextProduct(null);
+                            }}
+                        />
+                    );
+                }
+                return <HomePage onStart={() => { }} onSelectProduct={handleProcessAnalysisSelect} onNotification={showNotification} isAnalysisMode={true} pageTitle="Process Lineage" pageSubtitle="Visual Analysis of Process Flows" />;
+
+            case 'PROCESS_LINEAGE': // Policy Standards (Chat) - Directly Render Chat Interface
+                return (
+                    <ProcessLineagePage
+                        product={GENERIC_POLICY_PRODUCT}
+                        onBack={() => setCurrentView('HOME')}
+                    />
+                );
+
+            case 'PROCESS_BUILDER':
+                return (
+                    <ProcessBuilderPage
+                        onBack={() => setCurrentView('HOME')}
+                        onStartPollingFlow={(productName, message) => {
+                            setSelectedContextProduct({
+                                product_name: productName,
+                                index_name: 'cbgknowledgehub',
+                                id: 'temp',
+                                _id: 'temp',
+                                has_index: 'Yes',
+                                has_flow: 'No',
+                                flow_status: 'Processing',
+                                document_count: 0
+                            } as Product);
+                            setCanvasLoadingMessage(message);
+                            setSelectedSop(null);
+                            setCurrentView('CANVAS');
+                        }}
+                        onNotification={showNotification}
+                    />
+                );
+
+            case 'IMPACT_ASSESSMENT':
+                // Placeholder or future implementation
+                return (
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                        <AlertOctagon size={48} className="mb-4 text-fab-royal opacity-50" />
+                        <h2 className="text-2xl font-bold text-fab-navy mb-2">Impact Assessment</h2>
+                        <p className="text-sm font-medium">This module is coming soon.</p>
+                    </div>
+                );
+
+            case 'LIBRARY':
+                return (
+                    <LibraryPage
+                        initialUploadOpen={autoOpenUpload}
+                        onCloseInitialUpload={() => {
+                            setAutoOpenUpload(false);
+                        }}
+                        preselectedProduct={selectedContextProduct}
+                        onBack={async () => {
+                            if (selectedContextProduct) {
+                                setSelectedSop(null);
+                                setCurrentView('CANVAS');
+                            } else {
+                                setCurrentView('HOME');
+                                setSelectedContextProduct(null);
+                            }
+                        }}
+                        onNotification={showNotification}
+                        onViewFlow={async () => {
+                            if (selectedContextProduct) {
+                                if (selectedContextProduct.flow_status === 'Completed') {
+                                    try {
+                                        const flowData = await apiService.getProcessFlow(selectedContextProduct.product_name);
+                                        handleStartWithData(flowData);
+                                    } catch (e) {
+                                        console.error(e);
+                                        showNotification("Error loading flow. Please check console.", 'error');
+                                    }
+                                } else {
+                                    showNotification(`Flow is ${selectedContextProduct.flow_status || 'not ready'}`, 'error');
+                                }
+                            }
+                        }}
+                    />
+                );
+            case 'CANVAS':
+                return (
+                    <CanvasPage
+                        initialPrompt={initialPrompt}
+                        initialData={selectedSop}
+                        onFlowGenerated={handleFlowGenerated}
+                        onBack={() => {
+                            setCurrentView('HOME');
+                            setSelectedContextProduct(null);
+                            setCurrentSessionId(undefined);
+                            setCanvasLoadingMessage(undefined);
+                        }}
+                        productContext={selectedContextProduct}
+                        initialSessionId={currentSessionId}
+                        initialLoadingMessage={canvasLoadingMessage}
+                    />
+                );
+            default:
+                return <HomePage onStart={handleStartWithData} onSelectProduct={handleProductSelect} onNotification={showNotification} />;
+        }
+    };
+
+    if (!isAuthenticated) {
+        return <LoginPage onLogin={handleLogin} />;
+    }
+
+    return (
+        <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900 relative">
+
+            {/* Toast Notification Layer */}
+            {notification && (
+                <div className={`fixed bottom-6 right-6 px-6 py-4 rounded-xl shadow-2xl text-white font-medium z-[100] flex items-center gap-3 animate-in slide-in-from-bottom-5 fade-in duration-300 ${notification.type === 'error' ? 'bg-rose-600' : 'bg-emerald-600'}`}>
+                    {notification.type === 'success' ? <CheckCircle size={20} /> : <ShieldAlert size={20} />}
+                    <span className="text-sm">{notification.message}</span>
+                    <button onClick={() => setNotification(null)} className="ml-2 opacity-80 hover:opacity-100 p-1 hover:bg-white/20 rounded"><X size={16} /></button>
                 </div>
-                <span className="font-bold text-fab-navy">GERNAS</span>
+            )}
+
+            <div className={`fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)}></div>
+
+            {/* Corrected Sidebar Wrapper Width */}
+            <div className={`fixed inset-y-0 left-0 z-50 ${isCollapsed ? 'w-20' : 'w-72'} transform lg:relative lg:translate-x-0 transition-all duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <Sidebar
+                    currentView={currentView === 'SOPS' ? 'HOME' : currentView}
+                    onNavigate={(view) => {
+                        if (view === 'HISTORY') {
+                            setIsCollapsed(false);
+                        } else {
+                            setCurrentView(view);
+                            setIsSidebarOpen(false);
+                        }
+                    }}
+                    onLogout={handleLogout}
+                    isCollapsed={isCollapsed}
+                    onToggle={() => setIsCollapsed(!isCollapsed)}
+                    productContext={selectedContextProduct}
+                    onLoadSession={handleOpenSession}
+                />
             </div>
-            <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
-                <Menu size={24} />
-            </button>
+
+            <main className="flex-1 h-full overflow-hidden relative bg-white flex flex-col transition-all duration-300">
+                <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 bg-white z-30">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-to-br from-fab-navy to-fab-blue rounded-lg flex items-center justify-center text-white">
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10H12v3h7.6C18.9 17.5 15.8 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8c2.04 0 3.89.78 5.31 2.05l2.25-2.25C17.2 1.9 14.76 0 12 0z" />
+                            </svg>
+                        </div>
+                        <span className="font-bold text-fab-navy">GERNAS</span>
+                    </div>
+                    <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                        <Menu size={24} />
+                    </button>
+                </div>
+
+                <div className="flex-1 overflow-hidden relative">
+                    {renderContent()}
+                </div>
+            </main>
         </div>
-        
-        <div className="flex-1 overflow-hidden relative">
-            {renderContent()}
-        </div>
-      </main>
-    </div>
-  );
+    );
 };
 
 export default App;

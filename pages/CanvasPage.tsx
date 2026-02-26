@@ -1,18 +1,18 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import ReactFlow, { 
-    Background, 
-    useNodesState, 
-    useEdgesState, 
+import ReactFlow, {
+    Background,
+    useNodesState,
+    useEdgesState,
     Node,
     ReactFlowProvider,
     useReactFlow,
     getRectOfNodes
 } from 'reactflow';
 import { toJpeg } from 'html-to-image';
-import { 
-    GitMerge, 
-    Columns, 
+import {
+    GitMerge,
+    Columns,
     ArrowRight,
     Info,
     Layers,
@@ -41,15 +41,16 @@ interface CanvasPageProps {
     onBack: () => void;
     productContext?: Product | null;
     initialSessionId?: string;
+    initialLoadingMessage?: string;
 }
 
 // Internal component containing the logic that requires the ReactFlow context
-const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, onFlowGenerated, onBack, productContext, initialSessionId }) => {
+const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialData, onFlowGenerated, onBack, productContext, initialSessionId, initialLoadingMessage }) => {
     // Flow State
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const [sopData, setSopData] = useState<SopResponse | null>(null);
-    
+
     // UI State
     const [layoutMode, setLayoutMode] = useState<LayoutType>('SWIMLANE');
     const [activeStage, setActiveStage] = useState<string>('ALL');
@@ -57,17 +58,17 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
     const [isSidebarOpen, setIsSidebarOpen] = useState(!!initialSessionId); // Open by default if session ID provided
     const [activePanel, setActivePanel] = useState<'GUIDE' | 'CHAT'>(initialSessionId ? 'CHAT' : 'GUIDE'); // Default to Chat if session ID provided
     const [isLoading, setIsLoading] = useState(false);
-    const [loadingMessage, setLoadingMessage] = useState<string>('Generating Flow...');
+    const [loadingMessage, setLoadingMessage] = useState<string>(initialLoadingMessage || 'Generating Flow...');
     const [isDownloading, setIsDownloading] = useState(false);
-    
+
     // Edit Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [processTable, setProcessTable] = useState<ProcessDefinitionRow[]>([]);
     const [isTableLoading, setIsTableLoading] = useState(false);
-    
+
     // CHANGED: Set to true by default as requested
     const [isLegendOpen, setIsLegendOpen] = useState(true);
-    
+
     // Maximized Sidebar State
     const [isSidebarMaximized, setIsSidebarMaximized] = useState(false);
 
@@ -86,7 +87,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
             const { nodes: newNodes, edges: newEdges } = convertSopToFlowData(data, layoutMode);
             setNodes(newNodes);
             setEdges(newEdges);
-            
+
             setTimeout(() => {
                 fitView({ padding: 0.2, duration: 1000 });
             }, 100);
@@ -99,33 +100,35 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
     const pollFlowData = useCallback(async (productName: string) => {
         setIsLoading(true);
         // Set initial message based on context status if available
-        if (productContext?.flow_status === 'Draft') {
-             setLoadingMessage('Please upload documents to generate flow or wait for flow generated...');
+        if (initialLoadingMessage) {
+            setLoadingMessage(initialLoadingMessage);
+        } else if (productContext?.flow_status === 'Draft') {
+            setLoadingMessage('Please upload documents to generate flow or wait for flow generated...');
         } else {
-             setLoadingMessage('Checking flow status...');
+            setLoadingMessage('Checking flow status...');
         }
 
         const poll = async () => {
-             try {
-                 const flowData = await apiService.getProcessFlow(productName);
-                 loadData(flowData);
-                 setIsLoading(false);
-             } catch (e: any) {
-                 if (e.status === 'Processing') {
-                     setLoadingMessage('Flow generation in progress...');
-                     // Keep polling
-                     setTimeout(poll, 3000);
-                 } else if (e.status === 'Failed') {
-                      setIsLoading(false);
-                      console.error("Flow failed to generate");
-                 } else {
-                      // Fallback for 404 (Draft/Missing) or other errors
-                      // Matches requirement: "show loader and message"
-                      setLoadingMessage('Please upload documents to generate flow or wait for flow generated...');
-                      // Continue polling slowly in case user is just waiting for backend to start
-                      setTimeout(poll, 5000);
-                 }
-             }
+            try {
+                const flowData = await apiService.getProcessFlow(productName);
+                loadData(flowData);
+                setIsLoading(false);
+            } catch (e: any) {
+                if (e.status === 'Processing') {
+                    setLoadingMessage(e.message || 'Flow generation in progress...');
+                    // Keep polling every 2s
+                    setTimeout(poll, 2000);
+                } else if (e.status === 'Failed') {
+                    setIsLoading(false);
+                    console.error("Flow failed to generate");
+                } else {
+                    // Fallback for 404 (Draft/Missing) or other errors
+                    // Matches requirement: "show loader and message"
+                    setLoadingMessage('Please upload documents to generate flow or wait for flow generated...');
+                    // Continue polling slowly in case user is just waiting for backend to start
+                    setTimeout(poll, 5000);
+                }
+            }
         };
         poll();
     }, [loadData, productContext]);
@@ -165,7 +168,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                 setIsLoading(false);
                 return;
             }
-            
+
             // Real API Call to Gemini
             const response = await generateSopFlow(prompt);
             loadData(response);
@@ -202,11 +205,11 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
             // Get Objectives and Risks (Assuming no change in this modal yet)
             // Ideally this modal should support editing those too, but for now we pass existing ones
             // or pass undefined if we only want to update steps and rely on backend merge logic
-            
+
             // Extract objectives from SOP to pass back if needed (or backend preserves them)
-            const currentObjectives = sopData.processObjectives?.map((o, i) => ({ 
-                id: o.id || `o${i}`, 
-                key: o.type || 'Type', 
+            const currentObjectives = sopData.processObjectives?.map((o, i) => ({
+                id: o.id || `o${i}`,
+                key: o.type || 'Type',
                 value: o.description,
                 editable: true
             }));
@@ -239,7 +242,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
     const handleDownload = useCallback(() => {
         const nodes = getNodes();
         if (nodes.length === 0) return;
-        
+
         setIsDownloading(true);
 
         // Calculate the bounding box of all nodes
@@ -247,7 +250,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
         const padding = 100;
         const width = nodesBounds.width + padding * 2;
         const height = nodesBounds.height + padding * 2;
-        
+
         // Determine transform to shift the top-left to 0,0 plus padding
         const transformX = -nodesBounds.x + padding;
         const transformY = -nodesBounds.y + padding;
@@ -269,18 +272,18 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                 cacheBust: true, // Prevents CORS issues with cached images
                 skipAutoScale: true,
             })
-            .then((dataUrl) => {
-                const link = document.createElement('a');
-                link.download = `${sopData?.processDefinition?.title.replace(/\s+/g, '_') || 'sop-flow'}.jpg`;
-                link.href = dataUrl;
-                link.click();
-            })
-            .catch((err) => {
-                console.error('Failed to download image', err);
-            })
-            .finally(() => {
-                setIsDownloading(false);
-            });
+                .then((dataUrl) => {
+                    const link = document.createElement('a');
+                    link.download = `${sopData?.processDefinition?.title.replace(/\s+/g, '_') || 'sop-flow'}.jpg`;
+                    link.href = dataUrl;
+                    link.click();
+                })
+                .catch((err) => {
+                    console.error('Failed to download image', err);
+                })
+                .finally(() => {
+                    setIsDownloading(false);
+                });
         } else {
             setIsDownloading(false);
         }
@@ -297,7 +300,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
         if (!currentStageObj) return { nodes, edges };
 
         const stageStepIds = new Set(currentStageObj.steps.map(s => s.stepId));
-        
+
         // Determine if we should show start/end nodes
         const isFirstStage = sopData.processFlow.stages[0]?.stageId === activeStage;
         const isLastStage = sopData.processFlow.stages[sopData.processFlow.stages.length - 1]?.stageId === activeStage;
@@ -305,10 +308,10 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
         const filteredNodes = nodes.filter(node => {
             // Always show the Stage Group Header if in Swimlane
             if (node.id === `stage-${activeStage}`) return true;
-            
+
             // Show Start Node if first stage
             if (isFirstStage && sopData.startNode && node.id === sopData.startNode.stepId) return true;
-            
+
             // Show End Node if last stage
             if (isLastStage && sopData.endNode && node.id === sopData.endNode.stepId) return true;
 
@@ -317,8 +320,8 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
         });
 
         const visibleNodeIds = new Set(filteredNodes.map(n => n.id));
-        
-        const filteredEdges = edges.filter(edge => 
+
+        const filteredEdges = edges.filter(edge =>
             visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target)
         );
 
@@ -349,13 +352,13 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
         if (targetNode && targetNode.data.details) {
             setSelectedStep(targetNode.data.details);
             setCenter(targetNode.position.x + 150, targetNode.position.y + 75, { zoom: 1, duration: 1000 });
-            
+
             // If we are in stage view, switch to the stage containing this step
             if (activeStage !== 'ALL' && sopData && sopData.processFlow && sopData.processFlow.stages) {
-                 const stage = sopData.processFlow.stages.find(s => s.steps.some(step => step.stepId === nextStepId));
-                 if (stage && stage.stageId !== activeStage) {
-                     setActiveStage(stage.stageId);
-                 }
+                const stage = sopData.processFlow.stages.find(s => s.steps.some(step => step.stepId === nextStepId));
+                if (stage && stage.stageId !== activeStage) {
+                    setActiveStage(stage.stageId);
+                }
             }
 
         } else if (nextStepId === 'END' && sopData && sopData.endNode) {
@@ -378,7 +381,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
     const actorLegend = useMemo(() => {
         // Strict null checks to prevent crashes if data is partial
         if (!sopData || !sopData.processFlow || !Array.isArray(sopData.processFlow.stages)) return [];
-        
+
         const actors = new Set<string>();
         sopData.processFlow.stages.forEach(s => {
             if (s && Array.isArray(s.steps)) {
@@ -405,15 +408,15 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
 
     return (
         <div className="flex h-full w-full bg-slate-50 relative overflow-hidden">
-            
+
             {/* Top Control Bar Container */}
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-3 w-full max-w-7xl px-4 pointer-events-none">
-                
+
                 {/* Controls Row */}
                 <div className="flex items-center gap-3 pointer-events-auto w-full justify-center relative">
-                    
+
                     {/* Back Button (Moved to consistent place but floating) */}
-                    <button 
+                    <button
                         onClick={onBack}
                         className="absolute left-0 bg-white text-slate-500 hover:text-fab-royal hover:bg-slate-50 shadow-md border border-slate-200 rounded-full py-2.5 px-4 flex items-center gap-2 transition-all group"
                         title="Back to Hub"
@@ -427,14 +430,13 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                         {layoutOptions.map(opt => {
                             const Icon = opt.icon;
                             return (
-                                <button 
+                                <button
                                     key={opt.id}
                                     onClick={() => setLayoutMode(opt.id)}
-                                    className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
-                                        layoutMode === opt.id 
-                                        ? 'bg-slate-800 text-white shadow-md' 
-                                        : 'text-slate-500 hover:bg-slate-100'
-                                    }`}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap ${layoutMode === opt.id
+                                            ? 'bg-slate-800 text-white shadow-md'
+                                            : 'text-slate-500 hover:bg-slate-100'
+                                        }`}
                                     title={opt.label}
                                 >
                                     <Icon size={14} />
@@ -475,7 +477,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                 {/* 3. Stage Navigation Bar */}
                 {sopData && sopData.processFlow && sopData.processFlow.stages && (
                     <div className="bg-white/90 backdrop-blur shadow-md border border-slate-200 rounded-xl p-1 flex items-center gap-1 overflow-x-auto max-w-full pointer-events-auto no-scrollbar w-auto">
-                         <button 
+                        <button
                             onClick={() => {
                                 setActiveStage('ALL');
                                 // 'ALL' generally closes the sidebar or reverts to process overview
@@ -483,11 +485,10 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                                 setIsSidebarOpen(true);
                                 setActivePanel('GUIDE');
                             }}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-                                activeStage === 'ALL'
-                                ? 'bg-blue-600 text-white shadow-sm'
-                                : 'text-slate-600 hover:bg-slate-100'
-                            }`}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${activeStage === 'ALL'
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : 'text-slate-600 hover:bg-slate-100'
+                                }`}
                         >
                             <Maximize size={12} />
                             All Stages
@@ -503,11 +504,10 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                                     setIsSidebarOpen(true);
                                     setActivePanel('GUIDE');
                                 }}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-                                    activeStage === stage.stageId
-                                    ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                                    : 'text-slate-500 hover:bg-slate-100'
-                                }`}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${activeStage === stage.stageId
+                                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                                        : 'text-slate-500 hover:bg-slate-100'
+                                    }`}
                             >
                                 <Layers size={12} className={activeStage === stage.stageId ? 'text-blue-500' : 'text-slate-400'} />
                                 {stage.stageName}
@@ -534,11 +534,11 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                         <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                             {actorLegend.map((item, idx) => (
                                 <div key={idx} className="flex items-center gap-3">
-                                    <div 
-                                        className="w-2.5 h-2.5 rounded-full shadow-sm ring-1 ring-inset ring-black/5" 
+                                    <div
+                                        className="w-2.5 h-2.5 rounded-full shadow-sm ring-1 ring-inset ring-black/5"
                                         style={{ backgroundColor: item.bg, borderColor: item.border }}
                                     ></div>
-                                    <span 
+                                    <span
                                         className="text-[10px] font-bold uppercase truncate text-slate-600"
                                     >
                                         {item.label}
@@ -550,13 +550,12 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                 )}
 
                 {/* Toggle Button */}
-                <button 
+                <button
                     onClick={() => setIsLegendOpen(!isLegendOpen)}
-                    className={`p-3 rounded-full shadow-lg border transition-all duration-200 ${
-                        isLegendOpen 
-                        ? 'bg-slate-800 text-white border-slate-700' 
-                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:scale-105'
-                    }`}
+                    className={`p-3 rounded-full shadow-lg border transition-all duration-200 ${isLegendOpen
+                            ? 'bg-slate-800 text-white border-slate-700'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:scale-105'
+                        }`}
                     title="View Actors"
                 >
                     <Users size={20} />
@@ -574,7 +573,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                         </div>
                     </div>
                 )}
-                
+
                 <ReactFlow
                     nodes={visibleData.nodes}
                     edges={visibleData.edges}
@@ -591,16 +590,14 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
             </div>
 
             {/* Right Sidebar - Process Guide / Chat */}
-            <div 
-                className={`bg-white border-l border-slate-200 shadow-2xl z-30 transition-all duration-300 flex flex-col absolute right-0 top-0 h-full ${
-                    isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-                } ${
-                    isSidebarMaximized ? 'w-full md:w-[95%]' : 'w-full md:w-[500px]' // Widened default sidebar
-                }`}
+            <div
+                className={`bg-white border-l border-slate-200 shadow-2xl z-30 transition-all duration-300 flex flex-col absolute right-0 top-0 h-full ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+                    } ${isSidebarMaximized ? 'w-full md:w-[95%]' : 'w-full md:w-[500px]' // Widened default sidebar
+                    }`}
             >
                 {/* Sidebar Toggle Tabs */}
                 <div className="absolute right-full top-6 flex flex-col gap-2 mr-[-1px]">
-                     <button 
+                    <button
                         onClick={() => {
                             if (isSidebarOpen && activePanel === 'GUIDE') setIsSidebarOpen(false);
                             else {
@@ -608,14 +605,13 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                                 setActivePanel('GUIDE');
                             }
                         }}
-                        className={`p-3 rounded-l-xl shadow-md border-y border-l border-slate-200 transition-all ${
-                            isSidebarOpen && activePanel === 'GUIDE' ? 'bg-white text-blue-600 translate-x-1' : 'bg-slate-50 text-slate-500 hover:bg-white'
-                        }`}
+                        className={`p-3 rounded-l-xl shadow-md border-y border-l border-slate-200 transition-all ${isSidebarOpen && activePanel === 'GUIDE' ? 'bg-white text-blue-600 translate-x-1' : 'bg-slate-50 text-slate-500 hover:bg-white'
+                            }`}
                         title="Process Guide"
                     >
                         <Compass size={20} />
                     </button>
-                    <button 
+                    <button
                         onClick={() => {
                             if (isSidebarOpen && activePanel === 'CHAT') setIsSidebarOpen(false);
                             else {
@@ -623,9 +619,8 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                                 setActivePanel('CHAT');
                             }
                         }}
-                        className={`p-3 rounded-l-xl shadow-md border-y border-l border-slate-200 transition-all ${
-                            isSidebarOpen && activePanel === 'CHAT' ? 'bg-white text-emerald-600 translate-x-1' : 'bg-slate-50 text-slate-500 hover:bg-white'
-                        }`}
+                        className={`p-3 rounded-l-xl shadow-md border-y border-l border-slate-200 transition-all ${isSidebarOpen && activePanel === 'CHAT' ? 'bg-white text-emerald-600 translate-x-1' : 'bg-slate-50 text-slate-500 hover:bg-white'
+                            }`}
                         title="AI Knowledge Base"
                     >
                         <Brain size={20} />
@@ -635,7 +630,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                 {sopData && (
                     <>
                         {activePanel === 'GUIDE' ? (
-                            <FlowDetails 
+                            <FlowDetails
                                 step={selectedStep}
                                 stage={currentActiveStageObject}
                                 processData={sopData}
@@ -643,7 +638,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                                 onNextStep={handleStepNavigation}
                             />
                         ) : (
-                            <ChatAssistant 
+                            <ChatAssistant
                                 sopData={sopData}
                                 onClose={() => setIsSidebarOpen(false)}
                                 productContext={productContext}
@@ -661,7 +656,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
             {isEditModalOpen && (
                 <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        
+
                         {/* Modal Header */}
                         <div className="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
                             <div>
@@ -672,7 +667,7 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                                 <p className="text-xs text-slate-500 mt-1">Modify step details, actors, and descriptions. Click "Regenerate Flow" to update the diagram.</p>
                             </div>
                             <div className="flex items-center gap-3">
-                                <button 
+                                <button
                                     onClick={() => setIsEditModalOpen(false)}
                                     className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
                                 >
@@ -710,32 +705,32 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                                                     <td className="p-2 border-r border-slate-100 font-mono font-medium text-slate-500 bg-slate-50/50">{row.id}</td>
                                                     <td className="p-2 border-r border-slate-100">{row.l2Process}</td>
                                                     <td className="p-2 border-r border-slate-100">
-                                                        <input 
-                                                            type="text" 
-                                                            value={row.stepName} 
+                                                        <input
+                                                            type="text"
+                                                            value={row.stepName}
                                                             onChange={(e) => handleTableChange(row.id, 'stepName', e.target.value)}
                                                             className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all px-1 py-0.5 font-bold text-slate-800"
                                                         />
                                                     </td>
                                                     <td className="p-2 border-r border-slate-100">
-                                                        <textarea 
-                                                            value={row.stepDescription} 
+                                                        <textarea
+                                                            value={row.stepDescription}
                                                             onChange={(e) => handleTableChange(row.id, 'stepDescription', e.target.value)}
                                                             className="w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all px-1 py-0.5 resize-none h-8 focus:h-16 text-slate-600 leading-tight"
                                                         />
                                                     </td>
                                                     <td className="p-2 border-r border-slate-100">
-                                                        <input 
-                                                            type="text" 
-                                                            value={row.actor} 
+                                                        <input
+                                                            type="text"
+                                                            value={row.actor}
                                                             onChange={(e) => handleTableChange(row.id, 'actor', e.target.value)}
                                                             className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all px-1 py-0.5 text-slate-700 font-medium"
                                                         />
                                                     </td>
                                                     <td className="p-2 border-r border-slate-100">
-                                                        <input 
-                                                            type="text" 
-                                                            value={row.stepType} 
+                                                        <input
+                                                            type="text"
+                                                            value={row.stepType}
                                                             onChange={(e) => handleTableChange(row.id, 'stepType', e.target.value)}
                                                             className="w-full bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white outline-none transition-all px-1 py-0.5 text-slate-500"
                                                         />
@@ -757,13 +752,13 @@ const CanvasPageContent: React.FC<CanvasPageProps> = ({ initialPrompt, initialDa
                                 Note: Updating the table will trigger a logic re-evaluation via the backend. Ensure all connected steps (Next Step logic) are consistent.
                             </p>
                             <div className="flex gap-3">
-                                <button 
+                                <button
                                     onClick={() => setIsEditModalOpen(false)}
                                     className="px-4 py-2.5 text-slate-600 font-bold text-sm hover:bg-slate-200 rounded-lg transition-colors"
                                 >
                                     Cancel
                                 </button>
-                                <button 
+                                <button
                                     onClick={handleRegenerateFlow}
                                     disabled={isTableLoading}
                                     className="px-6 py-2.5 bg-fab-royal text-white rounded-lg font-bold text-sm shadow-lg shadow-fab-royal/20 hover:bg-fab-blue hover:scale-105 transition-all disabled:opacity-70 flex items-center gap-2"

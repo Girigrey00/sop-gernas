@@ -38,7 +38,7 @@ const mockChatStream = async (payload: any) => {
         await new Promise(r => setTimeout(r, 20));
         payload.onToken(token);
     }
-    
+
     if (payload.onComplete) {
         await new Promise(r => setTimeout(r, 100));
         payload.onComplete({
@@ -60,29 +60,29 @@ class JsonStreamParser {
     private isEscaped = false;
     private answerDone = false;
     private citationsBuffer = '';
-    
+
     constructor(
         private onToken: (text: string) => void,
         private onData: (data: { citations?: any, related_questions?: string[] }) => void
-    ) {}
+    ) { }
 
     process(chunk: string) {
         if (!this.hasCheckJson) {
             this.buffer += chunk;
             const trimmed = this.buffer.trimStart();
-            if (trimmed.length === 0) return; 
+            if (trimmed.length === 0) return;
             if (trimmed.startsWith('{') || trimmed.includes('"answer"')) {
                 this.isJson = true;
                 this.hasCheckJson = true;
-                this.buffer = trimmed; 
+                this.buffer = trimmed;
             } else if (trimmed.length > 50) {
                 this.isJson = false;
                 this.hasCheckJson = true;
                 this.onToken(this.buffer);
                 this.buffer = '';
             }
-        } 
-        
+        }
+
         if (!this.isJson && this.hasCheckJson) {
             this.onToken(chunk);
             return;
@@ -96,13 +96,13 @@ class JsonStreamParser {
                     this.inAnswer = true;
                     const startIdx = (match.index || 0) + match[0].length;
                     const remaining = this.buffer.substring(startIdx);
-                    this.buffer = ''; 
+                    this.buffer = '';
                     this.processStringContent(remaining);
                 }
-            } 
+            }
             else if (this.inAnswer) {
                 this.processStringContent(chunk);
-            } 
+            }
             else if (this.answerDone) {
                 this.citationsBuffer += chunk;
             }
@@ -117,7 +117,7 @@ class JsonStreamParser {
                 else if (char === 't') this.onToken('\t');
                 else if (char === '"') this.onToken('"');
                 else if (char === '\\') this.onToken('\\');
-                else this.onToken(char); 
+                else this.onToken(char);
                 this.isEscaped = false;
             } else {
                 if (char === '\\') {
@@ -146,7 +146,7 @@ class JsonStreamParser {
                         const endIndex = this.citationsBuffer.lastIndexOf('}');
                         if (endIndex > startBrace) {
                             const jsonStr = this.citationsBuffer.substring(startBrace, endIndex + 1);
-                            try { result.citations = JSON.parse(jsonStr); } catch(e) {}
+                            try { result.citations = JSON.parse(jsonStr); } catch (e) { }
                         }
                     }
                 }
@@ -160,10 +160,10 @@ class JsonStreamParser {
 export interface ApiServiceInterface {
     checkHealth(): Promise<boolean>;
     initializeSession(payload: { session_id?: string, product?: string, index_name?: string }): Promise<any>;
-    chatInference(payload: { 
-        question: string, 
-        index_name?: string, 
-        session_id?: string, 
+    chatInference(payload: {
+        question: string,
+        index_name?: string,
+        session_id?: string,
         question_id?: string,
         product?: string,
         onToken: (token: string) => void,
@@ -183,16 +183,16 @@ export interface ApiServiceInterface {
     getProcessFlow(productName: string): Promise<SopResponse>;
     getProcessTable(productName: string, sopData?: SopResponse): Promise<ProcessDefinitionRow[]>;
     updateProcessFlowFromTable(productName: string, tableData: ProcessDefinitionRow[], originalSop?: SopResponse, objectives?: KeyValueItem[], risks?: KeyValueItem[], processId?: string): Promise<SopResponse>;
-    generateTableFromBuilder(inputs: { 
-        productName: string, 
+    generateTableFromBuilder(inputs: {
+        productName: string,
         stages: { id: number, name: string, files: File[], raci?: string }[],
-        onLog?: (message: string, progress: number) => void 
+        onLog?: (message: string, progress: number) => void
     }): Promise<BuilderResponse>;
     createProcess(payload: CreateProcessRequest): Promise<CreateProcessResponse>;
     updateProcess(processId: string, payload: UpdateProcessRequest): Promise<ProcessStatusResponse>;
     getProcessStatus(processId: string): Promise<ProcessStatusResponse>;
     mapProcessResultToBuilder(data: ProcessResultData): BuilderResponse;
-    generateFlow(processId: string, jwtToken?: string): Promise<SopResponse>;
+    generateFlow(processId: string, jwtToken?: string): Promise<any>;
 }
 
 export const apiService: ApiServiceInterface = {
@@ -222,10 +222,10 @@ export const apiService: ApiServiceInterface = {
     },
 
     // --- Chat Endpoint ---
-    chatInference: async (payload: { 
-        question: string, 
-        index_name?: string, 
-        session_id?: string, 
+    chatInference: async (payload: {
+        question: string,
+        index_name?: string,
+        session_id?: string,
         question_id?: string,
         product?: string,
         onToken: (token: string) => void,
@@ -235,9 +235,9 @@ export const apiService: ApiServiceInterface = {
         try {
             const response = await fetch(`${API_BASE_URL}/inference/stream`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'text/event-stream, application/json' 
+                    'Accept': 'text/event-stream, application/json'
                 },
                 body: JSON.stringify({
                     question: payload.question,
@@ -249,9 +249,9 @@ export const apiService: ApiServiceInterface = {
             });
 
             if (!response.ok) {
-                 console.warn("Backend chat failed, switching to mock mode for demo.");
-                 await mockChatStream(payload);
-                 return;
+                console.warn("Backend chat failed, switching to mock mode for demo.");
+                await mockChatStream(payload);
+                return;
             }
 
             const contentType = response.headers.get('content-type');
@@ -291,7 +291,7 @@ export const apiService: ApiServiceInterface = {
                     if (!trimmedLine || trimmedLine === 'data: [DONE]') continue;
                     if (trimmedLine.startsWith('data: ')) {
                         try {
-                            const jsonStr = trimmedLine.substring(6); 
+                            const jsonStr = trimmedLine.substring(6);
                             const data = JSON.parse(jsonStr);
                             if (data.token) parser.process(data.token);
                             if (data.citations || data.related_questions) {
@@ -342,7 +342,7 @@ export const apiService: ApiServiceInterface = {
     getChatSessionDetails: async (sessionId: string): Promise<ChatSessionDetail | null> => {
         try {
             const res = await fetch(`${API_BASE_URL}/history/sessions/${sessionId}`);
-            if(res.ok) return await res.json();
+            if (res.ok) return await res.json();
             return null;
         } catch (e) { return null; }
     },
@@ -381,7 +381,7 @@ export const apiService: ApiServiceInterface = {
                 } else if (['Policy', 'Procedure', 'Manual', 'KnowledgeBase'].includes(rawCategory)) {
                     categoryDisplay = 'Policy Documents';
                 }
-                
+
                 const latestLog = doc.logs && Array.isArray(doc.logs) && doc.logs.length > 0 ? doc.logs[doc.logs.length - 1].message : null;
 
                 return {
@@ -396,14 +396,14 @@ export const apiService: ApiServiceInterface = {
                     indexName: doc.index_name,
                     status: doc.status,
                     version: '1.0',
-                    rootFolder: doc.root_folder, 
+                    rootFolder: doc.root_folder,
                     progressPercentage: doc.progress_percentage || 0,
                     logs: doc.logs || [],
                     latestLog: latestLog,
                     categoryDisplay: categoryDisplay,
                     suggested_questions: doc.suggested_questions || [],
                     metadata: {
-                        linkedApp: 'ProcessHub', 
+                        linkedApp: 'ProcessHub',
                         productId: doc.product_id,
                         category: doc.category,
                         generate_flow: doc.generate_flow,
@@ -411,7 +411,7 @@ export const apiService: ApiServiceInterface = {
                     }
                 };
             });
-        } catch(e) { return []; }
+        } catch (e) { return []; }
     },
 
     uploadToAzure: async (file: File): Promise<string> => {
@@ -420,7 +420,7 @@ export const apiService: ApiServiceInterface = {
         const realBlobUrl = `${sasUrl.origin}${sasUrl.pathname}/${fileName}${sasUrl.search}`;
         const isDev = import.meta.env.MODE === 'development';
         const uploadUrl = isDev ? `/azure-blob${sasUrl.pathname}/${fileName}${sasUrl.search}` : realBlobUrl;
-        
+
         console.log(`Uploading to ${isDev ? 'Proxy' : 'Direct'} URL:`, uploadUrl);
 
         const response = await fetch(uploadUrl, {
@@ -449,9 +449,9 @@ export const apiService: ApiServiceInterface = {
                     Root_Folder: metadata.Root_Folder || "PIL",
                     Linked_App: metadata.Linked_App || "cbgknowledgehub",
                     is_financial: "false",
-                    target_index: "cbgknowledgehub", 
+                    target_index: "cbgknowledgehub",
                     generate_flow: metadata.generate_flow === true,
-                    ...metadata 
+                    ...metadata
                 }
             };
             return handleResponse(await fetch(`${API_BASE_URL}/ingest`, {
@@ -476,7 +476,7 @@ export const apiService: ApiServiceInterface = {
             const json = await handleResponse(await fetch(url));
             if (json.status === 'Processing') throw { status: 'Processing', message: json.message };
             if (json.status === 'Failed') throw { status: 'Failed', message: json.message };
-            
+
             const core = json.process_flow || json.processFlow || json;
             if (!core) throw new Error("Invalid API Response");
 
@@ -551,7 +551,7 @@ export const apiService: ApiServiceInterface = {
                     stepType: step.stepType,
                     actor: step.actor,
                 };
-                
+
                 // Copy all other fields dynamically
                 Object.keys(step).forEach(key => {
                     if (!['stepId', 'stepName', 'description', 'stepType', 'actor', 'decisionBranches', 'nextStep'].includes(key)) {
@@ -566,13 +566,13 @@ export const apiService: ApiServiceInterface = {
                                 row[key] = val.join(', ');
                             }
                         } else if (typeof val === 'object' && val !== null) {
-                             row[key] = JSON.stringify(val);
+                            row[key] = JSON.stringify(val);
                         } else {
-                             row[key] = val;
+                            row[key] = val;
                         }
                     }
                 });
-                
+
                 rows.push(row);
             });
         });
@@ -583,7 +583,7 @@ export const apiService: ApiServiceInterface = {
         // If we have a processId, we use the PUT endpoint to perform a real update
         if (processId) {
             console.log("Updating Process via API...", processId);
-            
+
             // 1. Group rows by Stage (l2Process)
             const stageGroups = new Map<string, ProcessDefinitionRow[]>();
             tableData.forEach(row => {
@@ -594,17 +594,17 @@ export const apiService: ApiServiceInterface = {
             // 2. Construct Stage Payloads
             const stagePayloads: any[] = [];
             let sCounter = 1;
-            
+
             // We iterate stage groups to build payload
             const originalStages = originalSop?.processFlow?.stages || [];
 
             stageGroups.forEach((rows, stageName) => {
                 const originalStage = originalStages.find(s => s.stageName === stageName);
                 const stageId = originalStage?.stageId || `S${sCounter++}`;
-                
+
                 const stepsPayload = rows.map(row => {
                     const originalStep = originalStage?.steps.find(s => s.stepId === row.id);
-                    
+
                     const newStep: any = {
                         stepId: row.id,
                         stepName: row.stepName,
@@ -616,9 +616,9 @@ export const apiService: ApiServiceInterface = {
                     // Reconstruct dynamic fields
                     Object.keys(row).forEach(key => {
                         if (['id', 'l2Process', 'stepName', 'description', 'actor', 'stepType'].includes(key)) return;
-                        
+
                         let val = row[key];
-                        
+
                         // Parse known array fields
                         if (key === 'controls') {
                             newStep[key] = val ? val.split(',').map((c: string, i: number) => ({
@@ -633,7 +633,7 @@ export const apiService: ApiServiceInterface = {
                             newStep[key] = val;
                         }
                     });
-                    
+
                     return newStep;
                 });
 
@@ -661,12 +661,19 @@ export const apiService: ApiServiceInterface = {
             });
 
             // 5. Map Result back to SopResponse
-            if (!updateResponse.result_data) throw new Error("Update failed, no result data");
-            
+            if (updateResponse.message === "Process updated successfully") {
+                // Return original SOP mixed with response message so the UI just shows success
+                return { ...originalSop, message: updateResponse.message } as any;
+            }
+
+            if (!updateResponse.result_data) {
+                return { ...originalSop, message: updateResponse.message || "Updated successfully" } as any;
+            }
+
             // Re-use getProcessFlow logic indirectly by mapping result_data to SopResponse manually here
             // (or ideally fetch getProcessFlow again, but let's use the response to avoid latency)
             // const mapped = apiService.mapProcessResultToBuilder(updateResponse.result_data);
-            
+
             // We need to convert BuilderResponse back to SopResponse structure for the Canvas
             const core = updateResponse.result_data;
             const stages = core.stages.map((s: any) => ({
@@ -717,10 +724,10 @@ export const apiService: ApiServiceInterface = {
 
         } else {
             // FALLBACK LOCAL LOGIC (Keep existing implementation for safety/demos)
-            await new Promise(resolve => setTimeout(resolve, 1500)); 
+            await new Promise(resolve => setTimeout(resolve, 1500));
             const newSop = JSON.parse(JSON.stringify(originalSop || {})) as SopResponse;
             const stagesMap = new Map<string, any>();
-            
+
             tableData.forEach(row => {
                 if (!stagesMap.has(row.l2Process)) {
                     const existingStage = newSop.processFlow?.stages?.find(s => s.stageName === row.l2Process);
@@ -735,7 +742,7 @@ export const apiService: ApiServiceInterface = {
 
             stagesMap.forEach(stage => stage.steps = []);
             const allSteps: any[] = [];
-            
+
             tableData.forEach((row, index) => {
                 const stage = stagesMap.get(row.l2Process);
                 const step: any = {
@@ -744,9 +751,9 @@ export const apiService: ApiServiceInterface = {
                     description: row.description,
                     actor: row.actor,
                     stepType: row.stepType,
-                    nextStep: null 
+                    nextStep: null
                 };
-                
+
                 // Copy extra fields back
                 Object.keys(row).forEach(key => {
                     if (!['id', 'l2Process', 'stepName', 'description', 'actor', 'stepType'].includes(key)) {
@@ -759,7 +766,7 @@ export const apiService: ApiServiceInterface = {
             });
 
             for (let i = 0; i < allSteps.length; i++) {
-                if (i < allSteps.length - 1) allSteps[i].nextStep = allSteps[i+1].stepId;
+                if (i < allSteps.length - 1) allSteps[i].nextStep = allSteps[i + 1].stepId;
                 else allSteps[i].nextStep = 'END';
             }
 
@@ -780,8 +787,8 @@ export const apiService: ApiServiceInterface = {
     },
 
     updateProcess: async (processId: string, payload: UpdateProcessRequest): Promise<ProcessStatusResponse> => {
-        return handleResponse(await fetch(`${API_BASE_URL}/createprocess/${processId}`, {
-            method: 'PUT',
+        return handleResponse(await fetch(`${API_BASE_URL}/createprocess/${processId}/edit`, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         }));
@@ -791,7 +798,7 @@ export const apiService: ApiServiceInterface = {
         return handleResponse(await fetch(`${API_BASE_URL}/createprocess/${processId}`));
     },
 
-    generateFlow: async (processId: string, jwtToken?: string): Promise<SopResponse> => {
+    generateFlow: async (processId: string, jwtToken?: string): Promise<any> => {
         const body: any = {};
         if (jwtToken) body.jwt_token = jwtToken;
 
@@ -804,23 +811,23 @@ export const apiService: ApiServiceInterface = {
     },
 
     // New Helper: Generate table using the Create Process Flow
-    generateTableFromBuilder: async (inputs: { 
-        productName: string, 
-        stages: { id: number, name: string, files: File[], raci?: string }[], 
-        onLog?: (message: string, progress: number) => void 
+    generateTableFromBuilder: async (inputs: {
+        productName: string,
+        stages: { id: number, name: string, files: File[], raci?: string }[],
+        onLog?: (message: string, progress: number) => void
     }): Promise<BuilderResponse> => {
-        
+
         // 1. Upload Files for each stage
         const stagePayloads = [];
         for (const stage of inputs.stages) {
             if (inputs.onLog) inputs.onLog(`Uploading documents for stage: ${stage.name}...`, 10);
-            
+
             const docUrls = [];
             for (const file of stage.files) {
                 const url = await apiService.uploadToAzure(file);
                 docUrls.push(url);
             }
-            
+
             stagePayloads.push({
                 id: stage.id,
                 stageName: stage.name,
@@ -831,24 +838,24 @@ export const apiService: ApiServiceInterface = {
 
         // 2. Initiate Process Creation
         if (inputs.onLog) inputs.onLog("Initiating process generation...", 20);
-        
+
         const createRes = await apiService.createProcess({
             productName: inputs.productName,
             stages: stagePayloads
         });
-        
+
         const processId = createRes.processId;
 
         // 3. Poll for Completion
         let statusRes: ProcessStatusResponse;
         while (true) {
             await new Promise(r => setTimeout(r, 2000)); // 2s polling delay
-            
+
             statusRes = await apiService.getProcessStatus(processId);
-            
+
             if (inputs.onLog) {
-                const msg = statusRes.logs && statusRes.logs.length > 0 
-                    ? statusRes.logs[statusRes.logs.length-1].message 
+                const msg = statusRes.logs && statusRes.logs.length > 0
+                    ? statusRes.logs[statusRes.logs.length - 1].message
                     : `Processing... ${statusRes.current_step}`;
                 inputs.onLog(msg, statusRes.progress);
             }
@@ -862,14 +869,14 @@ export const apiService: ApiServiceInterface = {
 
         // 4. Map Result to BuilderResponse
         if (!statusRes.result_data) throw new Error("No result data returned.");
-        
+
         return apiService.mapProcessResultToBuilder(statusRes.result_data);
     },
 
     mapProcessResultToBuilder: (data: ProcessResultData): BuilderResponse => {
         const definitions: ProcessDefinitionRow[] = [];
         const risks: KeyValueItem[] = [];
-        const riskSet = new Set<string>(); 
+        const riskSet = new Set<string>();
 
         data.stages.forEach(stage => {
             stage.steps.forEach(step => {
@@ -888,9 +895,9 @@ export const apiService: ApiServiceInterface = {
                 Object.keys(step).forEach(key => {
                     // Skip keys already mapped manually above
                     if (['stepId', 'stepName', 'description', 'stepType', 'actor', 'decisionBranches'].includes(key)) return;
-                    
+
                     const val = (step as any)[key];
-                    
+
                     // Flatten Arrays to Strings for Table Display
                     if (Array.isArray(val)) {
                         if (val.length > 0 && typeof val[0] === 'object' && val[0].name) {

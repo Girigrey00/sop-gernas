@@ -42,7 +42,7 @@ export interface ProcessStep {
   decisionBranches?: DecisionBranch[];
   risksMitigated?: string[]; // IDs
   controls?: Control[];
-  policies?: string[]; 
+  policies?: string[];
   standards?: string[];    // New field
   automationLevel?: string;
   manualEffort?: number;
@@ -79,12 +79,12 @@ export interface ProcessDefinition {
 }
 
 export interface Metric {
-    metricId: string;
-    type: string;
-    description: string;
-    target: string;
-    unit: string;
-    currentValue?: string | number; // Added for dashboard viz
+  metricId: string;
+  type: string;
+  description: string;
+  target: string;
+  unit: string;
+  currentValue?: string | number; // Added for dashboard viz
 }
 
 export interface ProcessObjective {
@@ -111,60 +111,60 @@ export interface SopResponse {
 // --- History & Chat API Types ---
 
 export interface ChatMessageDetail {
-    question_id: string;
-    question: string;
-    answer: string;
-    citations?: Record<string, string>;
-    clarification_needed?: boolean;
-    timestamp: string;
+  question_id: string;
+  question: string;
+  answer: string;
+  citations?: Record<string, string>;
+  clarification_needed?: boolean;
+  timestamp: string;
 }
 
 export interface ChatSessionDetail {
-    _id: string;
-    user_id: string;
-    product: string;
-    index_name: string;
-    created_at: string;
-    last_activity: string;
-    metadata: any;
-    messages: ChatMessageDetail[];
+  _id: string;
+  user_id: string;
+  product: string;
+  index_name: string;
+  created_at: string;
+  last_activity: string;
+  metadata: any;
+  messages: ChatMessageDetail[];
 }
 
 export interface ChatSession {
-    _id: string;
-    session_id?: string;
-    user_id?: string;
-    product: string;
-    index_name: string;
-    created_at: string;
-    last_activity: string;
-    message_count: number;
-    last_message?: {
-        question_id?: string;
-        question: string;
-        answer: string;
-        timestamp: string;
-    };
-    session_title?: string;
-    // UI Helpers
-    title?: string; // Derived from last message or product
+  _id: string;
+  session_id?: string;
+  user_id?: string;
+  product: string;
+  index_name: string;
+  created_at: string;
+  last_activity: string;
+  message_count: number;
+  last_message?: {
+    question_id?: string;
+    question: string;
+    answer: string;
+    timestamp: string;
+  };
+  session_title?: string;
+  // UI Helpers
+  title?: string; // Derived from last message or product
 }
 
 export interface HistoryItem {
-    id: string;
-    timestamp: string;
-    title: string;
-    prompt: string;
-    data?: SopResponse; // Optional now as we fetch fresh
-    productName?: string; // For API fetching
-    sessionId?: string;
+  id: string;
+  timestamp: string;
+  title: string;
+  prompt: string;
+  data?: SopResponse; // Optional now as we fetch fresh
+  productName?: string; // For API fetching
+  sessionId?: string;
 }
 
 // --- New Library Document Interface ---
 export interface LogEntry {
-    timestamp: string;
-    message: string;
-    status: string;
+  timestamp: string;
+  message: string;
+  status: string;
 }
 
 export interface LibraryDocument {
@@ -178,7 +178,7 @@ export interface LibraryDocument {
   indexName: string;
   status: 'Active' | 'Draft' | 'Archived' | 'Processing' | 'Completed' | 'Failed' | 'Uploading';
   version: string;
-  
+
   // Enhanced Fields for GERNAS
   rootFolder?: string; // Mapped to Product Name
   progressPercentage?: number;
@@ -189,88 +189,88 @@ export interface LibraryDocument {
   suggested_questions?: string[]; // AI Generated Questions
 
   metadata?: {
-      linkedApp?: string;
-      productId?: string;
-      category?: string;
-      generate_flow?: boolean;
-      [key: string]: any;
+    linkedApp?: string;
+    productId?: string;
+    category?: string;
+    generate_flow?: boolean;
+    [key: string]: any;
   };
 }
 
 // --- Flow Logs ---
 export interface FlowLog {
-    timestamp: string;
-    step: string;
-    message: string;
-    status: string;
-    progress?: number;
+  timestamp: string;
+  step: string;
+  message: string;
+  status: string;
+  progress?: number;
 }
 
 // --- Product Interface ---
 export interface Product {
-    _id: string;
-    id: string;
-    product_name: string;
-    index_name: string;
-    process_flow_id?: string;
-    has_index: "Yes" | "No";
-    has_flow: "Yes" | "No";
-    document_count: number;
-    description?: string;
-    
-    // Enhanced Flow Status Fields
-    flow_status?: string; // e.g., "Completed", "Processing", "Failed", or null
-    flow_source_file?: string;
-    flow_blob_url?: string;
-    flow_error_message?: string | null;
-    flow_last_generated?: string;
-    
-    // Live Stats from API
-    flow_logs?: FlowLog[];
-    flow_progress?: number;
-    flow_current_step?: string;
-    
-    created_at?: string;
-    last_updated?: string;
-    metadata?: any;
+  _id: string;
+  id: string;
+  product_name: string;
+  index_name: string;
+  process_flow_id?: string;
+  has_index: "Yes" | "No";
+  has_flow: "Yes" | "No";
+  document_count: number;
+  description?: string;
+
+  // Enhanced Flow Status Fields
+  flow_status?: string; // e.g., "Completed", "Processing", "Failed", or null
+  flow_source_file?: string;
+  flow_blob_url?: string;
+  flow_error_message?: string | null;
+  flow_last_generated?: string;
+
+  // Live Stats from API
+  flow_logs?: FlowLog[];
+  flow_progress?: number;
+  flow_current_step?: string;
+
+  created_at?: string;
+  last_updated?: string;
+  metadata?: any;
 }
 
 // --- Chat & Feedback Types ---
 export interface FeedbackPayload {
-    question_id: string;
-    session_id: string;
-    feedback_type: 'thumbs_up' | 'thumbs_down';
-    comment?: string;
-    jwt_token?: string;
+  question_id: string;
+  session_id: string;
+  feedback_type: 'thumbs_up' | 'thumbs_down';
+  comment?: string;
+  jwt_token?: string;
 }
 
 // --- Process Table Interface ---
 // CHANGED: Made dynamic to support all keys from API response
 export interface ProcessDefinitionRow {
-    id: string;
-    l2Process: string;
-    stepName: string;
-    description: string; // Changed from stepDescription to match JSON
-    stepType: string;
-    actor: string;
-    // Allow any other key from the API response
-    [key: string]: any;
+  id: string;
+  l2Process: string;
+  stepName: string;
+  description: string; // Changed from stepDescription to match JSON
+  stepType: string;
+  actor: string;
+  // Allow any other key from the API response
+  [key: string]: any;
 }
 
 // --- Builder Response Types ---
 export interface KeyValueItem {
-    id: string;
-    key: string;
-    value: string;
-    editable: boolean;
+  id: string;
+  key: string;
+  value: string;
+  editable: boolean;
 }
 
 export interface BuilderResponse {
-    processId: string; // Link back to API ID
-    objectives: KeyValueItem[];
-    definition: ProcessDefinitionRow[];
-    risks: KeyValueItem[];
-    rawResultData?: ProcessResultData; // Store source for PUT mapping
+  processId: string; // Link back to API ID
+  objectives: KeyValueItem[];
+  definition: ProcessDefinitionRow[];
+  risks: KeyValueItem[];
+  rawResultData?: ProcessResultData; // Store source for PUT mapping
 }
 
 // --- Create Process API Types ---
@@ -286,8 +286,8 @@ export interface CreateProcessRequest {
 }
 
 export interface UpdateProcessRequest {
-    stages?: any[]; // Simplified structure for payload
-    processObjectives?: any[];
+  stages?: any[]; // Simplified structure for payload
+  processObjectives?: any[];
 }
 
 export interface CreateProcessResponse {
@@ -357,6 +357,7 @@ export interface ProcessStatusResponse {
   created_at?: string;
   last_updated?: string;
   completed_at?: string;
+  message?: string;
 }
 
 // Layout types
